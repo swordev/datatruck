@@ -1,0 +1,98 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+env:
+  PNPM_CACHE_FOLDER: .pnpm-store
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+      - uses: actions/cache@v2
+        with:
+          path: ${{ env.PNPM_CACHE_FOLDER }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Use pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 6
+      - name: Setup pnpm config
+        run: pnpm config set store-dir $PNPM_CACHE_FOLDER
+      - name: Setup system config
+        run: git config --global user.email "datatruck@localhost" && git config --global user.name "Datatruck"
+      - name: Install dependencies
+        run: pnpm install
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Install system dependencies
+        run: sudo apt-get install p7zip restic git -y
+      - name: Update restic
+        run: sudo restic self-update
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Create release pull request or publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: "chore: update versions"
+          title: Update versions
+          publish: pnpm exec changeset publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - id: changesets_meta
+        name: Build changesets meta
+        uses: actions/github-script@v5
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        with:
+          script: |-
+            const output = {};
+            const published = JSON.parse(process.env.PUBLISHED_PACKAGES);
+            output['@datatruck/cli:published'] = false;
+            published.forEach(({ name, version }) => {
+              const vars = { version, published: true };
+              Object.keys(vars).forEach(n => output[`${name}:${n}`] = vars[n]);
+            });
+            console.log(output);
+            Object.keys(output).forEach(k => core.setOutput(k, output[k]));
+      - id: image_meta
+        name: Build image metadata
+        uses: docker/metadata-action@v3
+        if: steps.changesets_meta.outputs['@datatruck/cli:version'] != ''
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |-
+            type=schedule
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}},value=v${{ steps.changesets_meta.outputs['@datatruck/cli:version'] }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ steps.changesets_meta.outputs['@datatruck/cli:version'] }}
+            type=semver,pattern={{major}},value=v${{ steps.changesets_meta.outputs['@datatruck/cli:version'] }}
+            type=sha
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login Docker
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish image
+        uses: docker/build-push-action@v2
+        with:
+          tags: ${{ steps.image_meta.outputs.tags }}
+          labels: ${{ steps.image_meta.outputs.labels }}
+          push: ${{ steps.changesets_meta.outputs['@datatruck/cli:published'] }}
