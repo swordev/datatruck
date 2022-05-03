@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "exclude": ["**/temp/", "**/.*/", "**/lib", "**/node_modules"],
+  "extends": "@tsconfig/node16"
+}

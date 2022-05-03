@@ -1,0 +1,62 @@
+{
+  "name": "@datatruck/cli",
+  "version": "0.0.1",
+  "description": "Tool for creating and managing backups",
+  "homepage": "https://github.com/swordev/datatruck#readme",
+  "bugs": {
+    "url": "https://github.com/swordev/datatruck/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swordev/datatruck"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Juanra GM",
+    "email": "juanrgm724@gmail.com",
+    "url": "https://github.com/juanrgm"
+  },
+  "exports": {
+    "./*": "./lib/*.js"
+  },
+  "main": "lib/index.js",
+  "bin": {
+    "datatruck": "lib/bin.js",
+    "dtt": "lib/bin.js"
+  },
+  "files": [
+    "lib",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "watch": "tsc --build -w"
+  },
+  "dependencies": {
+    "ajv": "^8.10.0",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.1",
+    "commander": "^9.0.0",
+    "concurrently": "^7.0.0",
+    "dayjs": "^1.10.7",
+    "fast-glob": "^3.2.11",
+    "fs-extra": "^10.0.1",
+    "micromatch": "^4.0.4",
+    "sqlite": "^4.0.23",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/json-schema": "^7.0.9",
+    "@types/micromatch": "^4.0.2",
+    "json-schema": "^0.4.0"
+  },
+  "optionalDependencies": {
+    "ts-node": "^10.5.0",
+    "yaml": "^1.10.2"
+  },
+  "engine": {
+    "node": ">=16.0.0"
+  }
+}

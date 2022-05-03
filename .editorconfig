@@ -1,0 +1,4 @@
+root = true
+
+[*.ts]
+end_of_line = lf

@@ -1,0 +1,9 @@
+.history
+.wireit
+.pnpm-store
+coverage
+lib
+node_modules
+tsconfig.tsbuildinfo
+/datatruck*.ts
+/datatruck*.json

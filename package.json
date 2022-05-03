@@ -1,0 +1,84 @@
+{
+  "name": "datatruck",
+  "private": true,
+  "description": "Tool for do and managing backups",
+  "homepage": "https://github.com/swordev/datatruck#readme",
+  "bugs": {
+    "url": "https://github.com/swordev/datatruck/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swordev/datatruck"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Juanra GM",
+    "email": "juanrgm724@gmail.com",
+    "url": "https://github.com/juanrgm"
+  },
+  "scripts": {
+    "build": "wireit",
+    "build:ts": "wireit",
+    "clean": "wireit",
+    "clean:ts": "wireit",
+    "clean:wireit": "wireit",
+    "format": "prettier -w .",
+    "format:check": "prettier -c .",
+    "start": "node packages/datatruck/lib",
+    "test": "jest",
+    "watch": "tsc --build tsconfig.build.json -w"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.4.4",
+    "@changesets/cli": "^2.22.0",
+    "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "@tsconfig/node16": "^1.0.2",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^16.11.25",
+    "jest": "^27.5.1",
+    "prettier": "2.5.1",
+    "prettier-plugin-packagejson": "^2.2.17",
+    "prettier-plugin-sort-json": "^0.0.2",
+    "rimraf": "^3.0.2",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.6.3",
+    "wireit": "^0.2.1"
+  },
+  "engine": {
+    "node": ">=16.0.0"
+  },
+  "wireit": {
+    "clean": {
+      "dependencies": [
+        "clean:ts",
+        "clean:wireit"
+      ]
+    },
+    "clean:ts": {
+      "command": "rimraf packages/*/lib packages/*/tsconfig.tsbuildinfo"
+    },
+    "clean:wireit": {
+      "command": "rimraf .wireit"
+    },
+    "build": {
+      "dependencies": [
+        "build:ts"
+      ]
+    },
+    "build:ts": {
+      "command": "tsc -b tsconfig.build.json --pretty",
+      "clean": "if-file-deleted",
+      "files": [
+        "packages/*/src/**/*.ts",
+        "packages/*/src/tsconfig.json"
+      ],
+      "output": [
+        "packages/*/lib/**",
+        "packages/*/.tsbuildinfo"
+      ],
+      "packageLocks": [
+        "pnpm-lock.yaml"
+      ]
+    }
+  }
+}
