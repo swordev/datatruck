@@ -1,5 +1,14 @@
 # datatruck
 
+## 0.0.3
+
+### Patch Changes
+
+- [`051a7da`](https://github.com/swordev/datatruck/commit/051a7da225fcfea1c30a4fbfa8aea1b8f5538367) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix dist files
+
+- Updated dependencies [[`051a7da`](https://github.com/swordev/datatruck/commit/051a7da225fcfea1c30a4fbfa8aea1b8f5538367)]:
+  - @datatruck/cli@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes
