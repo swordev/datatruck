@@ -16,22 +16,14 @@
     "email": "juanrgm724@gmail.com",
     "url": "https://github.com/juanrgm"
   },
-  "exports": {
-    "./*": "./lib/*.js"
-  },
-  "main": "lib/index.js",
   "bin": {
-    "datatruck": "lib/bin.js",
-    "dtt": "lib/bin.js"
+    "datatruck": "bin.js",
+    "dtt": "bin.js"
   },
-  "files": [
-    "lib",
-    "migrations"
-  ],
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
-    "watch": "tsc --build -w"
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "watch": "tsc -b -w"
   },
   "dependencies": {
     "ajv": "^8.10.0",
@@ -56,7 +48,22 @@
     "ts-node": "^10.5.0",
     "yaml": "^1.10.2"
   },
+  "publishConfig": {
+    "directory": "lib"
+  },
   "engine": {
     "node": ">=16.0.0"
+  },
+  "x-wspa": {
+    "distDir": "lib",
+    "outFiles": [
+      "lib",
+      "tsconfig.tsbuildinfo"
+    ],
+    "distFiles": [
+      "CHANGELOG.md",
+      "node_modules",
+      "migrations"
+    ]
   }
 }

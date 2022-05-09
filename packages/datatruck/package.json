@@ -17,21 +17,32 @@
     "url": "https://github.com/juanrgm"
   },
   "bin": {
-    "datatruck": "lib/index.js",
-    "dtt": "lib/index.js"
+    "datatruck": "index.js",
+    "dtt": "index.js"
   },
-  "files": [
-    "lib"
-  ],
   "scripts": {
-    "build": "tsc --build",
-    "clean": "tsc --build --clean",
-    "watch": "tsc --build -w"
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "watch": "tsc -b -w"
   },
   "dependencies": {
     "@datatruck/cli": "workspace:*"
   },
+  "publishConfig": {
+    "directory": "lib"
+  },
   "engine": {
     "node": ">=16.0.0"
+  },
+  "x-wspa": {
+    "distDir": "lib",
+    "outFiles": [
+      "lib",
+      "tsconfig.tsbuildinfo"
+    ],
+    "distFiles": [
+      "CHANGELOG.md",
+      "node_modules"
+    ]
   }
 }

@@ -24,9 +24,10 @@
     "clean:wireit": "wireit",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
+    "patch": "wspa patch",
     "start": "node packages/datatruck/lib",
     "test": "jest",
-    "watch": "tsc --build tsconfig.build.json -w"
+    "watch": "tsc -b tsconfig.build.json -w"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.4.4",
@@ -42,7 +43,8 @@
     "rimraf": "^3.0.2",
     "ts-jest": "^27.1.3",
     "typescript": "^4.6.3",
-    "wireit": "^0.2.1"
+    "wireit": "^0.2.1",
+    "wspa": "^0.0.5"
   },
   "engine": {
     "node": ">=16.0.0"
@@ -55,7 +57,7 @@
       ]
     },
     "clean:ts": {
-      "command": "rimraf packages/*/lib packages/*/tsconfig.tsbuildinfo"
+      "command": "wspa clean"
     },
     "clean:wireit": {
       "command": "rimraf .wireit"
