@@ -65,7 +65,7 @@ export async function parseFile(path: string, jsKey?: string) {
 }
 
 export function parsePackageFile() {
-  return require(`${__dirname}/../../package.json`) as {
+  return require(`${__dirname}/../package.json`) as {
     name: string;
     version: string;
     description: string;
