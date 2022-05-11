@@ -9,7 +9,7 @@
     }
   ],
   "commit": false,
-  "fixed": [],
+  "fixed": [["@datatruck/cli", "datatruck"]],
   "ignore": [],
   "linked": [],
   "updateInternalDependencies": "patch"
