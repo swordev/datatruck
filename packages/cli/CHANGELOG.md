@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.0.4
+
+### Patch Changes
+
+- [`d9e534b`](https://github.com/swordev/datatruck/commit/d9e534bd968acf9cd1c93f20e6152c004cb1f23b) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix package file read
+
+* [`b882c58`](https://github.com/swordev/datatruck/commit/b882c58183e9a75abc876645e18d7b67186dd662) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix read of migrations
+
 ## 0.0.3
 
 ### Patch Changes
