@@ -1,3 +1,4 @@
+import { rootPath } from "./path-util";
 import { randomBytes } from "crypto";
 import { createReadStream } from "fs";
 import { createWriteStream, WriteStream } from "fs";
@@ -65,7 +66,7 @@ export async function parseFile(path: string, jsKey?: string) {
 }
 
 export function parsePackageFile() {
-  return require(`${__dirname}/../package.json`) as {
+  return require(`${rootPath}/package.json`) as {
     name: string;
     version: string;
     description: string;

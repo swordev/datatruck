@@ -5,6 +5,7 @@ import { RestoreSessionEntity } from "../Entity/RestoreSessionEntity";
 import { RestoreSessionRepositoryEntity } from "../Entity/RestoreSessionRepositoryEntity";
 import { logExec } from "../util/cli-util";
 import { makeTableSelector } from "../util/entity-util";
+import { rootPath } from "../util/path-util";
 import { logExecStdout } from "../util/process-util";
 import {
   ActionEnum,
@@ -31,7 +32,7 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
       driver: sqlite3.Database,
     });
     await this.db.migrate({
-      migrationsPath: __dirname + "/../../migrations",
+      migrationsPath: join(rootPath, "migrations"),
     });
   }
 
