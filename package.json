@@ -1,5 +1,5 @@
 {
-  "name": "datatruck",
+  "name": "@datatruck/root",
   "private": true,
   "description": "Tool for do and managing backups",
   "homepage": "https://github.com/swordev/datatruck#readme",
@@ -36,6 +36,8 @@
     "@tsconfig/node16": "^1.0.2",
     "@types/jest": "^27.4.1",
     "@types/node": "^16.11.25",
+    "@wspa/cli": "^0.1.1",
+    "@wspa/config": "^0.0.4",
     "jest": "^27.5.1",
     "prettier": "2.5.1",
     "prettier-plugin-packagejson": "^2.2.17",
@@ -43,8 +45,7 @@
     "rimraf": "^3.0.2",
     "ts-jest": "^27.1.3",
     "typescript": "^4.6.3",
-    "wireit": "^0.2.1",
-    "wspa": "^0.0.5"
+    "wireit": "^0.2.1"
   },
   "engine": {
     "node": ">=16.0.0"
@@ -81,6 +82,26 @@
       "packageLocks": [
         "pnpm-lock.yaml"
       ]
+    }
+  },
+  "x-wspa": {
+    "extends": "@wspa/config/auto",
+    "pkgManifest": {
+      "description": "Tool for creating and managing backups",
+      "homepage": "https://github.com/swordev/datatruck#readme",
+      "bugs": {
+        "url": "https://github.com/swordev/datatruck/issues"
+      },
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/swordev/datatruck"
+      },
+      "license": "MIT",
+      "author": {
+        "name": "Juanra GM",
+        "email": "juanrgm724@gmail.com",
+        "url": "https://github.com/juanrgm"
+      }
     }
   }
 }

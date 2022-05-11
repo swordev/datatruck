@@ -1,25 +1,6 @@
 {
   "name": "@datatruck/cli",
   "version": "0.0.4",
-  "description": "Tool for creating and managing backups",
-  "homepage": "https://github.com/swordev/datatruck#readme",
-  "bugs": {
-    "url": "https://github.com/swordev/datatruck/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/swordev/datatruck"
-  },
-  "license": "MIT",
-  "author": {
-    "name": "Juanra GM",
-    "email": "juanrgm724@gmail.com",
-    "url": "https://github.com/juanrgm"
-  },
-  "bin": {
-    "datatruck": "bin.js",
-    "dtt": "bin.js"
-  },
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean",
@@ -55,15 +36,11 @@
     "node": ">=16.0.0"
   },
   "x-wspa": {
-    "distDir": "lib",
-    "outFiles": [
-      "lib",
-      "tsconfig.tsbuildinfo"
-    ],
-    "distFiles": [
-      "CHANGELOG.md",
-      "node_modules",
-      "migrations"
-    ]
+    "pkgManifest": {
+      "bin": {
+        "datatruck": "bin.js",
+        "dtt": "bin.js"
+      }
+    }
   }
 }
