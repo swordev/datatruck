@@ -16,6 +16,7 @@ RUN set -x \
     && npm install -g pnpm@6 \
     && pnpm install \
     && pnpm build \
+    && pnpm patch \
     && BIN_PATH=/usr/local/bin/datatruck \
     && ALTBIN_PATH=/usr/local/bin/dtt \
     && echo "#!/bin/sh" > $BIN_PATH \
