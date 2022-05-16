@@ -4,5 +4,6 @@ pnpm-lock.yaml
 .wireit
 coverage
 lib
+backup
 node_modules
 tsconfig.tsbuildinfo
