@@ -13,6 +13,7 @@ export const configDefinition: JSONSchema7 = {
   required: ["repositories", "packages"],
   additionalProperties: false,
   properties: {
+    $schema: { type: "string" },
     repositories: {
       type: "array",
       items: makeRef(DefinitionEnum.repository),

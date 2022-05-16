@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "wireit",
+    "build:schema": "wireit",
     "build:ts": "wireit",
     "clean": "wspa clean && rimraf .wireit",
     "format": "prettier -w .",
@@ -51,8 +52,15 @@
   "wireit": {
     "build": {
       "dependencies": [
-        "build:ts"
+        "build:ts",
+        "build:schema"
       ]
+    },
+    "build:schema": {
+      "dependencies": [
+        "build:ts"
+      ],
+      "command": "node ./packages/cli/scripts/gen-schema.js"
     },
     "build:ts": {
       "command": "tsc -b tsconfig.build.json --pretty",
