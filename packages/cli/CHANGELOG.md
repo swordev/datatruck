@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.1.0
+
+### Minor Changes
+
+- [`88d46cd`](https://github.com/swordev/datatruck/commit/88d46cd56293df4c6fc21a9ad61d6236ac91f325) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `custom` output format
+
+### Patch Changes
+
+- [`24a1e5e`](https://github.com/swordev/datatruck/commit/24a1e5e86336e7a92556287e49548dc542f0e579) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
 ## 0.0.6
 
 ### Patch Changes
