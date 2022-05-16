@@ -19,9 +19,7 @@
   "scripts": {
     "build": "wireit",
     "build:ts": "wireit",
-    "clean": "wireit",
-    "clean:ts": "wireit",
-    "clean:wireit": "wireit",
+    "clean": "wspa clean && rimraf .wireit",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "patch": "wspa patch",
@@ -51,18 +49,6 @@
     "node": ">=16.0.0"
   },
   "wireit": {
-    "clean": {
-      "dependencies": [
-        "clean:ts",
-        "clean:wireit"
-      ]
-    },
-    "clean:ts": {
-      "command": "wspa clean"
-    },
-    "clean:wireit": {
-      "command": "rimraf .wireit"
-    },
     "build": {
       "dependencies": [
         "build:ts"
