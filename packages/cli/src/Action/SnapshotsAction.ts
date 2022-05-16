@@ -26,6 +26,7 @@ export type SnapshotsActionOptionsType = {
 };
 
 export type SnapshotExtendedType = {
+  shortId: string;
   repositoryName: string;
   repositoryType: string;
 } & SnapshotResultType;
@@ -57,6 +58,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
         (item) =>
           ({
             ...item,
+            shortId: item.id.slice(0, 8),
             repositoryName: repo.name,
             repositoryType: repo.type,
           } as SnapshotExtendedType)

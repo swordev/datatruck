@@ -82,7 +82,7 @@ program.option(
 );
 program.option(
   "-o,--output-format <format>",
-  "Output format (json, pjson, yaml, table)",
+  "Output format (json, pjson, yaml, table, custom=$)",
   "table" as FormatType
 );
 

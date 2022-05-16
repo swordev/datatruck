@@ -1,7 +1,10 @@
+import { AppError } from "../Error/AppError";
 import Table from "cli-table3";
 import { formatWithOptions } from "util";
 
-export type FormatType = "json" | "pjson" | "table" | "yaml";
+export type FormatType = "json" | "pjson" | "table" | "yaml" | "custom";
+
+const customPrefix = "custom=";
 
 export class DataFormat<TItem extends Record<string, unknown>> {
   constructor(
@@ -55,6 +58,15 @@ export class DataFormat<TItem extends Record<string, unknown>> {
       return this.formatToPrettyJson();
     } else if (format === "yaml") {
       return this.formatToYaml();
+    } else if (format.startsWith(customPrefix)) {
+      const code = format.slice(customPrefix.length);
+      return runCustomCode(this.options.items, code);
+    } else {
+      throw new AppError(`Invalid output format: ${format}`);
     }
   }
+}
+
+function runCustomCode($: Record<string, unknown>[], __code: string) {
+  return eval(__code);
 }
