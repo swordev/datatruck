@@ -1,4 +1,4 @@
-lockfileVersion: 5.3
+lockfileVersion: 5.4
 
 importers:
 
@@ -34,7 +34,7 @@ importers:
       prettier-plugin-packagejson: 2.2.17_prettier@2.5.1
       prettier-plugin-sort-json: 0.0.2_prettier@2.5.1
       rimraf: 3.0.2
-      ts-jest: 27.1.4_eecc682348e44222a66a9b13407b285a
+      ts-jest: 27.1.4_53ggqi2i4rbcfjtktmjua6zili
       typescript: 4.6.4
       wireit: 0.2.1
 
@@ -70,7 +70,7 @@ importers:
       sqlite: 4.1.1
       sqlite3: 5.0.5
     optionalDependencies:
-      ts-node: 10.7.0_a4262a62498b23fb032f5b253175dd5e
+      ts-node: 10.7.0
       yaml: 1.10.2
     devDependencies:
       '@types/fs-extra': 9.0.13
@@ -447,12 +447,16 @@ packages:
     resolution: {integrity: sha512-oG0ej7efjEXxb4UgE+klVx+3j4MVo+A2vCzm7OUN4CLo6WhQ+vSOD2yJ8m7B+DghObxtLxt3EfgMWpq+AsWehQ==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+    dependencies:
+      '@babel/types': 7.17.0
     dev: true
 
   /@babel/parser/7.17.9:
     resolution: {integrity: sha512-vqUSBLP8dQHFPdPi9bc5GK9vRkYHJ49fsZdtoJ8EQ8ibpwk5rPKfvNIwChB0KVXcIjcepEBBd2VHC5r9Gy8ueg==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+    dependencies:
+      '@babel/types': 7.17.0
     dev: true
 
   /@babel/plugin-syntax-async-generators/7.8.4_@babel+core@7.17.9:
@@ -2049,6 +2053,8 @@ packages:
       ssri: 8.0.1
       tar: 6.1.11
       unique-filename: 1.1.1
+    transitivePeerDependencies:
+      - bluebird
     dev: false
     optional: true
 
@@ -3907,6 +3913,7 @@ packages:
       socks-proxy-agent: 6.2.0
       ssri: 8.0.1
     transitivePeerDependencies:
+      - bluebird
       - supports-color
     dev: false
     optional: true
@@ -4155,6 +4162,7 @@ packages:
       tar: 6.1.11
       which: 2.0.2
     transitivePeerDependencies:
+      - bluebird
       - supports-color
     dev: false
     optional: true
@@ -4513,6 +4521,11 @@ packages:
 
   /promise-inflight/1.0.1:
     resolution: {integrity: sha1-mEcocL8igTL8vdhoEputEsPAKeM=}
+    peerDependencies:
+      bluebird: '*'
+    peerDependenciesMeta:
+      bluebird:
+        optional: true
     dev: false
     optional: true
 
@@ -4946,6 +4959,7 @@ packages:
     optionalDependencies:
       node-gyp: 8.4.1
     transitivePeerDependencies:
+      - bluebird
       - encoding
       - supports-color
     dev: false
@@ -5177,7 +5191,7 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /ts-jest/27.1.4_eecc682348e44222a66a9b13407b285a:
+  /ts-jest/27.1.4_53ggqi2i4rbcfjtktmjua6zili:
     resolution: {integrity: sha512-qjkZlVPWVctAezwsOD1OPzbZ+k7zA5z3oxII4dGdZo5ggX/PL7kvwTM0pXTr10fAtbiVpJaL3bWd502zAhpgSQ==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
     hasBin: true
@@ -5211,7 +5225,7 @@ packages:
       yargs-parser: 20.2.9
     dev: true
 
-  /ts-node/10.7.0_a4262a62498b23fb032f5b253175dd5e:
+  /ts-node/10.7.0:
     resolution: {integrity: sha512-TbIGS4xgJoX2i3do417KSaep1uRAW/Lu+WAL2doDHC0D6ummjirVOXU5/7aiZotbQ5p1Zp9tP7U6cYhA0O7M8A==}
     hasBin: true
     requiresBuild: true
@@ -5231,14 +5245,12 @@ packages:
       '@tsconfig/node12': 1.0.9
       '@tsconfig/node14': 1.0.1
       '@tsconfig/node16': 1.0.2
-      '@types/node': 16.11.31
       acorn: 8.7.1
       acorn-walk: 8.2.0
       arg: 4.1.3
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 4.6.4
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     dev: false
