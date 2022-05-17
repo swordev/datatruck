@@ -1,7 +1,12 @@
 import { AppError } from "../Error/AppError";
 import { RepositoryType, ResticUtil } from "../util/ResticUtil";
+import { logExec } from "../util/cli-util";
 import { parsePaths } from "../util/datatruck/paths-util";
-import { mkdirIfNotExists, parsePackageFile } from "../util/fs-util";
+import {
+  mkdirIfNotExists,
+  parsePackageFile,
+  writeGitIgnoreList,
+} from "../util/fs-util";
 import { formatUri, makePathPatterns } from "../util/string-util";
 import {
   RepositoryAbstract,
@@ -15,6 +20,7 @@ import {
   PruneDataType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
+import FastGlob from "fast-glob";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { resolve } from "path";
@@ -196,16 +202,31 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     ok(sourcePath);
 
-    const include = (
-      await parsePaths(pkg.include ?? [], {
-        cwd: sourcePath,
-        verbose: data.options.verbose,
-      })
-    ).map(normalize);
+    const include = await parsePaths(pkg.include ?? ["**"], {
+      cwd: sourcePath,
+      verbose: data.options.verbose,
+    });
 
-    // https://github.com/restic/restic/issues/233
-    // https://github.com/restic/restic/pull/2311
-    if (include.length) throw new AppError(`Include is not supported`);
+    const exclude = pkg.exclude
+      ? await parsePaths(pkg.exclude, {
+          cwd: sourcePath,
+          verbose: data.options.verbose,
+        })
+      : undefined;
+
+    const stream = FastGlob.stream(include, {
+      cwd: sourcePath,
+      ignore: exclude,
+      dot: true,
+      onlyFiles: true,
+      markDirectories: true,
+    });
+
+    if (data.options.verbose) logExec(`Writing paths lists`);
+
+    const gitignorePath = await writeGitIgnoreList({
+      paths: stream,
+    });
 
     if (
       data.options.tags?.some((tag) =>
@@ -231,17 +252,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       cwd: sourcePath,
       paths: ["."],
       allowEmptySnapshot: true,
+      excludeFile: [gitignorePath],
       parent: lastSnapshot?.id,
       // https://github.com/restic/restic/pull/3200
       ...((await restic.checkBackupSetPathSupport()) && {
         setPaths: [`/datatruck/${data.package.name}`],
       }),
-      exclude: (
-        await parsePaths(pkg.exclude ?? [], {
-          cwd: sourcePath,
-          verbose: data.options.verbose,
-        })
-      ).map(normalize),
       tags: [
         ResticRepository.buildSnapshotTag(SnapshotTagEnum.ID, data.snapshot.id),
         ResticRepository.buildSnapshotTag(

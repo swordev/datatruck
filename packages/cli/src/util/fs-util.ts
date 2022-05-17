@@ -6,7 +6,7 @@ import { mkdir } from "fs-extra";
 import { readdir, readFile, stat, writeFile } from "fs/promises";
 import { isMatch } from "micromatch";
 import { tmpdir } from "os";
-import { join } from "path";
+import { dirname, join } from "path";
 import { isAbsolute } from "path";
 
 export function isLocalDir(path: string) {
@@ -188,6 +188,42 @@ export async function forEachFile(
   }
 }
 
+export async function writeGitIgnoreList(options: {
+  paths: NodeJS.ReadableStream | string[];
+}) {
+  const tempDir = await mkTmpDir("gitignore-list");
+  const path = join(tempDir, `.gitignore`);
+  const stream = createWriteStream(path);
+  const dirs = new Set();
+  stream.write("*\n");
+  for await (const value of options.paths) {
+    const dir = dirname(value.toString());
+    if (dir !== ".") {
+      let parentPath: string | undefined;
+      for (const value of dir.split("/")) {
+        if (!parentPath) {
+          parentPath = `!${value}`;
+        } else {
+          parentPath += `/${value}`;
+        }
+        if (!dirs.has(parentPath)) {
+          stream.write(`${parentPath}\n`);
+          stream.write(`${parentPath.slice(1)}/*\n`);
+          dirs.add(parentPath);
+        }
+      }
+    }
+    stream.write(`!${value}\n`);
+  }
+
+  await new Promise((resolve, reject) => {
+    stream.close();
+    stream.on("close", resolve);
+    stream.on("error", reject);
+  });
+
+  return path;
+}
 export async function writePathLists(options: {
   paths: NodeJS.ReadableStream | string[];
   packs?: {
