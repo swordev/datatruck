@@ -17,7 +17,7 @@ import {
 import { ok } from "assert";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { normalize } from "path";
+import { resolve } from "path";
 
 export type ResticRepositoryConfigType = {
   passwordFile: string;
@@ -79,7 +79,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   async buildEnv() {
     if (this.env) return this.env;
     return (this.env = {
-      RESTIC_PASSWORD_FILE: this.config.passwordFile,
+      RESTIC_PASSWORD_FILE: resolve(this.config.passwordFile),
       RESTIC_REPOSITORY: await ResticUtil.formatRepository(
         this.config.repository
       ),

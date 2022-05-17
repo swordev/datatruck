@@ -1,7 +1,7 @@
 import { exec, ExecSettingsInterface } from "./process-util";
 import { formatUri, UriType } from "./string-util";
 import { readFile } from "fs-extra";
-import { normalize } from "path";
+import { resolve } from "path";
 
 export type RepositoryType = {
   name?: string;
@@ -52,7 +52,7 @@ export class ResticUtil {
         throw new Error(
           `Invalid path at "${input.name}" repository: ${input.path}`
         );
-      return normalize(input.path);
+      return resolve(input.path);
     }
 
     if (input.passwordFile)
@@ -86,7 +86,7 @@ export class ResticUtil {
               stderr: true,
               colorize: true,
               allToStderr: true,
-              envNames: ["RESTIC_REPOSITORY"],
+              envNames: ["RESTIC_REPOSITORY", "RESTIC_PASSWORD_FILE"],
             }
           : {},
         ...(settings ?? {}),
