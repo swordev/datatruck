@@ -1,5 +1,17 @@
 # @datatruck/cli
 
+## 0.2.0
+
+### Minor Changes
+
+- [`120460c`](https://github.com/swordev/datatruck/commit/120460c8824cef4184e43f571a4cc0798b899b66) Thanks [@juanrgm](https://github.com/juanrgm)! - Enable `include` option in restic repository
+
+### Patch Changes
+
+- [`e30ede3`](https://github.com/swordev/datatruck/commit/e30ede371bc7ab3fc1cd47758fdac7a28e8e2705) Thanks [@juanrgm](https://github.com/juanrgm)! - Resolve `RESTIC_PASSWORD_FILE` path
+
+* [`8539d28`](https://github.com/swordev/datatruck/commit/8539d285b2c51d700aa811cd772d573fa0d613eb) Thanks [@juanrgm](https://github.com/juanrgm)! - Allow empty backup in restic repository
+
 ## 0.1.0
 
 ### Minor Changes
