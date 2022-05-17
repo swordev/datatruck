@@ -230,6 +230,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     await restic.backup({
       cwd: sourcePath,
       paths: ["."],
+      allowEmptySnapshot: true,
       parent: lastSnapshot?.id,
       // https://github.com/restic/restic/pull/3200
       ...((await restic.checkBackupSetPathSupport()) && {

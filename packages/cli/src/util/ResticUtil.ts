@@ -1,6 +1,8 @@
-import { exec, ExecSettingsInterface } from "./process-util";
+import { mkTmpDir } from "./fs-util";
+import { exec, ExecResultType, ExecSettingsInterface } from "./process-util";
 import { formatUri, UriType } from "./string-util";
 import { readFile } from "fs-extra";
+import { writeFile } from "fs/promises";
 import { resolve } from "path";
 
 export type RepositoryType = {
@@ -194,37 +196,62 @@ export class ResticUtil {
     exclude?: string[];
     excludeFile?: string[];
     parent?: string;
+    allowEmptySnapshot?: boolean;
     onStream?: (data: BackupStreamType) => Promise<void>;
-  }) {
-    return await this.exec(
-      [
-        "backup",
-        "--json",
-        ...(options.exclude?.flatMap((v) => ["-e", v]) ?? []),
+  }): Promise<ExecResultType> {
+    const exec = async () =>
+      await this.exec(
+        [
+          "backup",
+          "--json",
+          ...(options.exclude?.flatMap((v) => ["-e", v]) ?? []),
           ...(options.excludeFile?.flatMap((v) => ["--exclude-file", v]) ?? []),
-        ...(options.tags?.flatMap((v) => ["--tag", v]) ?? []),
-        ...(options.setPaths?.flatMap((v) => ["--set-path", v]) ?? []),
-        ...(options.parent ? ["--parent", options.parent] : []),
-        ...options.paths,
-      ],
-      {
-        stderr: {
-          toExitCode: true,
+          ...(options.tags?.flatMap((v) => ["--tag", v]) ?? []),
+          ...(options.setPaths?.flatMap((v) => ["--set-path", v]) ?? []),
+          ...(options.parent ? ["--parent", options.parent] : []),
+          ...options.paths,
+        ],
+        {
+          stderr: {
+            toExitCode: true,
+          },
+          stdout: {
+            ...(options.onStream && {
+              onData: async (data) => {
+                if (data.startsWith("{") && data.endsWith("}")) {
+                  await options.onStream?.(JSON.parse(data));
+                }
+              },
+            }),
+          },
         },
-        stdout: {
-          ...(options.onStream && {
-            onData: async (data) => {
-              if (data.startsWith("{") && data.endsWith("}")) {
-                await options.onStream?.(JSON.parse(data));
-              }
-            },
-          }),
-        },
-      },
-      {
-        cwd: options.cwd,
+        {
+          cwd: options.cwd,
+        }
+      );
+
+    try {
+      return await exec();
+    } catch (error) {
+      if (
+        options.allowEmptySnapshot &&
+        (error as NodeJS.ErrnoException).message.includes(
+          "unable to save snapshot: snapshot is empty"
+        )
+      ) {
+        const emptyPath = await mkTmpDir("empty");
+        await writeFile(`${emptyPath}/.empty`, "");
+        return await this.backup({
+          ...options,
+          cwd: emptyPath,
+          allowEmptySnapshot: false,
+          paths: ["."],
+          exclude: [],
+          excludeFile: [],
+        });
       }
-    );
+      throw error;
+    }
   }
 
   async restore(options: {
