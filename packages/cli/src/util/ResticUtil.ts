@@ -192,6 +192,7 @@ export class ResticUtil {
     paths: string[];
     setPaths?: string[];
     exclude?: string[];
+    excludeFile?: string[];
     parent?: string;
     onStream?: (data: BackupStreamType) => Promise<void>;
   }) {
@@ -200,6 +201,7 @@ export class ResticUtil {
         "backup",
         "--json",
         ...(options.exclude?.flatMap((v) => ["-e", v]) ?? []),
+          ...(options.excludeFile?.flatMap((v) => ["--exclude-file", v]) ?? []),
         ...(options.tags?.flatMap((v) => ["--tag", v]) ?? []),
         ...(options.setPaths?.flatMap((v) => ["--set-path", v]) ?? []),
         ...(options.parent ? ["--parent", options.parent] : []),
