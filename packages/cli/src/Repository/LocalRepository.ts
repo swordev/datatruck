@@ -285,6 +285,8 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       packs: compress?.packs,
     });
 
+    if (data.options.verbose) logExec(`Path lists: ${pathLists.path}`);
+
     let currentFiles = 0;
     if (compress?.packs) {
       let packIndex = 0;
