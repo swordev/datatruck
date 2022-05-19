@@ -92,6 +92,14 @@ export function resolvePackage(
     packageName: pkg.name,
     path: undefined,
   };
+  if (pkg.include)
+    pkg.include = pkg.include.map((v) =>
+      typeof v === "string" ? render(v, pkgParams) : v
+    );
+  if (pkg.exclude)
+    pkg.exclude = pkg.exclude.map((v) =>
+      typeof v === "string" ? render(v, pkgParams) : v
+    );
   if (pkg.path) pkg.path = resolvePackagePath(pkg.path, pkgParams);
   if (pkg.restorePath)
     pkg.restorePath = resolvePackagePath(pkg.restorePath, {
@@ -120,6 +128,9 @@ export const pkgPathParams: {
   temp: "{temp}",
 };
 
+export const pkgIncludeParams = pkgPathParams;
+export const pkgExcludeParams = pkgPathParams;
+
 export const pkgRestorePathParams: {
   [name in "temp" | keyof ResolvePackagePathParamsType]: string;
 } = {
@@ -144,5 +155,7 @@ export const dbNameParams: {
 export const params = {
   pkgPath: pkgPathParams,
   pkgRestorePath: pkgRestorePathParams,
+  pkgInclude: pkgIncludeParams,
+  pkgExclude: pkgExcludeParams,
   dbName: dbNameParams,
 };
