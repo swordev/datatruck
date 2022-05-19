@@ -94,6 +94,9 @@ describe("render", () => {
       })
     ).toThrowError();
   });
+  it("escapes special char", () => {
+    expect(render("{}var1{/}", {})).toBe("{var1}");
+  });
 });
 
 describe("serialize", () => {
