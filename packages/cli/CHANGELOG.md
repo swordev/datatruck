@@ -1,5 +1,19 @@
 # @datatruck/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- [`d63fd25`](https://github.com/swordev/datatruck/commit/d63fd25ffa8d2e539d2125dfd6a3f55020086804) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `snapshotDate` param
+
+* [`486ef4a`](https://github.com/swordev/datatruck/commit/486ef4add27ae1dbfd166b16c257522f43537ecd) Thanks [@juanrgm](https://github.com/juanrgm)! - Resolve params in `include` and `exclude`
+
+- [`617dae2`](https://github.com/swordev/datatruck/commit/617dae2c8ed90e6e65e8109f03cfad0e64bd7c02) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `script` task
+
+### Patch Changes
+
+- [`d1b3ea9`](https://github.com/swordev/datatruck/commit/d1b3ea9c9540d30898c00490963523a4fbc68193) Thanks [@juanrgm](https://github.com/juanrgm)! - Avoid use gitignore if is not necessary in restic repository
+
 ## 0.2.0
 
 ### Minor Changes
