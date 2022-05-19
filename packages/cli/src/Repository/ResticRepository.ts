@@ -202,31 +202,35 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     ok(sourcePath);
 
-    const include = await parsePaths(pkg.include ?? ["**"], {
-      cwd: sourcePath,
-      verbose: data.options.verbose,
-    });
+    let gitignorePath: string | undefined;
 
-    const exclude = pkg.exclude
-      ? await parsePaths(pkg.exclude, {
-          cwd: sourcePath,
-          verbose: data.options.verbose,
-        })
-      : undefined;
+    if (pkg.include || pkg.exclude) {
+      const include = await parsePaths(pkg.include ?? ["**"], {
+        cwd: sourcePath,
+        verbose: data.options.verbose,
+      });
 
-    const stream = FastGlob.stream(include, {
-      cwd: sourcePath,
-      ignore: exclude,
-      dot: true,
-      onlyFiles: true,
-      markDirectories: true,
-    });
+      const exclude = pkg.exclude
+        ? await parsePaths(pkg.exclude, {
+            cwd: sourcePath,
+            verbose: data.options.verbose,
+          })
+        : undefined;
 
-    if (data.options.verbose) logExec(`Writing paths lists`);
+      const stream = FastGlob.stream(include, {
+        cwd: sourcePath,
+        ignore: exclude,
+        dot: true,
+        onlyFiles: true,
+        markDirectories: true,
+      });
 
-    const gitignorePath = await writeGitIgnoreList({
-      paths: stream,
-    });
+      if (data.options.verbose) logExec(`Writing paths lists`);
+
+      gitignorePath = await writeGitIgnoreList({
+        paths: stream,
+      });
+    }
 
     if (
       data.options.tags?.some((tag) =>
@@ -252,7 +256,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       cwd: sourcePath,
       paths: ["."],
       allowEmptySnapshot: true,
-      excludeFile: [gitignorePath],
+      excludeFile: gitignorePath ? [gitignorePath] : undefined,
       parent: lastSnapshot?.id,
       // https://github.com/restic/restic/pull/3200
       ...((await restic.checkBackupSetPathSupport()) && {
