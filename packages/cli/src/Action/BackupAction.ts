@@ -52,6 +52,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
     packages = resolvePackages(packages, {
       snapshotId: snapshot.id,
+      snapshotDate: snapshot.date,
       action: "backup",
     });
 

@@ -283,6 +283,7 @@ export class RestoreAction<TRequired extends boolean = true> {
 
     packages = resolvePackages(packages, {
       snapshotId: this.options.snapshotId,
+      snapshotDate: snapshots[0].date,
       action: "restore",
     });
 

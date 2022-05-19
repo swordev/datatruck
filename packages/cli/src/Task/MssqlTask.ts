@@ -134,6 +134,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
           database: databaseName,
           packageName: data.package.name,
           snapshotId: data.options.snapshotId,
+          snapshotDate: data.snapshot.date,
         });
       const databasePath = join(restorePath, file);
       const exists = await this.fetchDatabaseNames(databaseName);

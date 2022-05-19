@@ -78,6 +78,7 @@ export function resolveDatabaseName(
 
 type ResolvePackageParamsType = {
   snapshotId: string;
+  snapshotDate: string;
   action: "backup" | "restore";
 };
 
@@ -115,6 +116,7 @@ export const pkgPathParams: {
   action: "{action}",
   packageName: "{packageName}",
   snapshotId: "{snapshotId}",
+  snapshotDate: "{snapshotDate}",
   temp: "{temp}",
 };
 
@@ -125,6 +127,7 @@ export const pkgRestorePathParams: {
   packageName: "{packageName}",
   path: "{path}",
   snapshotId: "{snapshotId}",
+  snapshotDate: "{snapshotDate}",
   temp: "{temp}",
 };
 
@@ -134,6 +137,7 @@ export const dbNameParams: {
   action: "{action}",
   packageName: "{packageName}",
   snapshotId: "{snapshotId}",
+  snapshotDate: "{snapshotDate}",
   database: "{database}",
 };
 
