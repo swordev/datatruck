@@ -8,6 +8,7 @@ import {
   PostgresqlDumpTask,
   postgresqlDumpTaskName,
 } from "../Task/PostgresqlDumpTask";
+import { ScriptTask, scriptTaskName } from "../Task/ScriptTask";
 import type { TaskAbstract } from "../Task/TaskAbstract";
 
 export function TaskFactory(task: TaskConfigType): TaskAbstract {
@@ -21,6 +22,8 @@ export function TaskFactory(task: TaskConfigType): TaskAbstract {
     return new PostgresqlDumpTask(task.config ?? {});
   } else if (task.name === mssqlTaskName) {
     return new MssqlTask(task.config ?? {});
+  } else if (task.name === scriptTaskName) {
+    return new ScriptTask(task.config ?? {});
   } else {
     throw new AppError(`Invalid task name: ${task["name"]}`);
   }

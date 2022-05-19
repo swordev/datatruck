@@ -11,6 +11,7 @@ export enum DefinitionEnum {
   gitRepository = "git-repository",
   gitPackageRepository = "git-package-repository",
   gitTask = "git-task",
+  scriptTask = "script-task",
   mariadbTask = "mariadb-task",
   mssqlTask = "mssql-task",
   mysqlDumpTask = "mysql-dump-task",
@@ -21,8 +22,8 @@ export enum DefinitionEnum {
   pathsObject = "paths-object",
 }
 
-export function makeRef(type: DefinitionEnum) {
+export function makeRef(type: DefinitionEnum, subType?: string) {
   return {
-    $ref: `#/definitions/${type}`,
+    $ref: `#/definitions/${type}` + (subType ? `_${subType}` : ""),
   };
 }

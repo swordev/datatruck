@@ -24,6 +24,7 @@ import { mariadbTaskDefinition } from "../Task/MariadbTask";
 import { mssqlTaskDefinition } from "../Task/MssqlTask";
 import { mysqlDumpTaskDefinition } from "../Task/MysqlDumpTask";
 import { postgresqlDumpTaskDefinition } from "../Task/PostgresqlDumpTask";
+import { scriptTaskDefinition } from "../Task/ScriptTask";
 import { sqlDumpTaskDefinition } from "../Task/SqlDumpTaskAbstract";
 import { DefinitionEnum, makeRef } from "./DefinitionEnum";
 import { JSONSchema7 } from "json-schema";
@@ -46,6 +47,7 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.resticRepository]: resticRepositoryDefinition,
   [DefinitionEnum.resticPackageRepository]: resticPackageRepositoryDefinition,
   [DefinitionEnum.gitTask]: gitTaskDefinition,
+  [DefinitionEnum.scriptTask]: scriptTaskDefinition,
   [DefinitionEnum.sqlDumpTask]: sqlDumpTaskDefinition,
   [DefinitionEnum.mariadbTask]: mariadbTaskDefinition,
   [DefinitionEnum.mssqlTask]: mssqlTaskDefinition,
@@ -55,6 +57,19 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.prunePolicy]: prunePolicyConfigDefinition,
   [DefinitionEnum.pathsObject]: pathsObjectDefinition,
 };
+
+for (const key in definitions) {
+  const schemaKey = key as keyof typeof definitions;
+  const schema = definitions[schemaKey];
+  for (const defName in schema.definitions || {}) {
+    (definitions as any)[`${schemaKey}_${defName}`] =
+      schema.definitions![defName];
+  }
+  definitions[schemaKey] = {
+    ...schema,
+  };
+  delete definitions[schemaKey].definitions;
+}
 
 export const schema: JSONSchema7 = {
   definitions: definitions,

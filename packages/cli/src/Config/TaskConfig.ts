@@ -10,6 +10,7 @@ import {
   PostgresqlDumpTaskConfigType,
   postgresqlDumpTaskName,
 } from "../Task/PostgresqlDumpTask";
+import { ScriptTaskConfigType, scriptTaskName } from "../Task/ScriptTask";
 import { JSONSchema7 } from "json-schema";
 
 const names: Record<string, DefinitionEnum> = {
@@ -18,6 +19,7 @@ const names: Record<string, DefinitionEnum> = {
   [mssqlTaskName]: DefinitionEnum.mssqlTask,
   [mysqlDumpTaskName]: DefinitionEnum.mysqlDumpTask,
   [postgresqlDumpTaskName]: DefinitionEnum.postgresqlDumpTask,
+  [scriptTaskName]: DefinitionEnum.scriptTask,
 };
 
 export const taskConfigDefinition: JSONSchema7 = {
@@ -67,4 +69,8 @@ export type TaskConfigType =
   | {
       name: typeof postgresqlDumpTaskName;
       config: PostgresqlDumpTaskConfigType;
+    }
+  | {
+      name: typeof scriptTaskName;
+      config: ScriptTaskConfigType;
     };
