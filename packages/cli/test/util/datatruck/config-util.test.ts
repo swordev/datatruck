@@ -158,6 +158,7 @@ describe("resolvePackage", () => {
         {
           action: "backup",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatchObject({
@@ -176,6 +177,7 @@ describe("resolvePackage", () => {
         {
           action: "backup",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatchObject({
@@ -196,6 +198,7 @@ describe("resolvePackage", () => {
         {
           action: "backup",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatchObject({
@@ -218,6 +221,7 @@ describe("resolvePackages", () => {
         {
           action: "backup",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatchObject([
@@ -240,6 +244,7 @@ describe("resolvePackages", () => {
         {
           action: "backup",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatchObject([
@@ -262,6 +267,7 @@ describe("resolvePackagePath", () => {
           packageName: "a",
           snapshotId: "1",
           path: "path",
+          snapshotDate: "2022-01-01 00:00:00",
         }
       )
     ).toMatch("backup-a-1-path");
@@ -272,12 +278,14 @@ describe("resolvePackagePath", () => {
       action: "backup",
       packageName: "a",
       snapshotId: "1",
+      snapshotDate: "2022-01-01 00:00:00",
       path: undefined,
     });
     const value2 = resolvePackagePath(`${params.pkgPath.temp}`, {
       action: "backup",
       packageName: "a",
       snapshotId: "1",
+      snapshotDate: "2022-01-01 00:00:00",
       path: undefined,
     });
     expect(value1 === value2).toBeFalsy();
@@ -289,6 +297,7 @@ describe("resolvePackagePath", () => {
         action: "backup",
         packageName: "a",
         snapshotId: "1",
+        snapshotDate: "2022-01-01 00:00:00",
         path: undefined,
       })
     ).toThrowError();
@@ -304,6 +313,7 @@ describe("resolveDatabaseName", () => {
           action: "backup",
           packageName: "a",
           snapshotId: "1",
+          snapshotDate: "2022-01-01 00:00:00",
           database: "db",
         }
       )
@@ -316,6 +326,7 @@ describe("resolveDatabaseName", () => {
         action: "backup",
         packageName: "a",
         snapshotId: "1",
+        snapshotDate: "2022-01-01 00:00:00",
         database: "a",
       })
     ).toThrowError();
