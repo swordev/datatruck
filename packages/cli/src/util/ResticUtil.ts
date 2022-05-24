@@ -218,6 +218,7 @@ export class ResticUtil {
           stdout: {
             ...(options.onStream && {
               onData: async (data) => {
+                data = data.trim();
                 if (data.startsWith("{") && data.endsWith("}")) {
                   await options.onStream?.(JSON.parse(data));
                 }
