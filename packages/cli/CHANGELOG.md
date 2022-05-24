@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.3.1
+
+### Patch Changes
+
+- [`c3bb4c6`](https://github.com/swordev/datatruck/commit/c3bb4c609887c5525cf35487ea237750addb6e75) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix restic stdout parser
+
 ## 0.3.0
 
 ### Minor Changes
