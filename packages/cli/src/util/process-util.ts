@@ -242,8 +242,8 @@ const eventNames: EventNameType[] = [
   `SIGTERM`,
 ];
 
-export function onExit(cb: (eventName: EventNameType) => void) {
+export function onExit(cb: (eventName: EventNameType, ...args: any[]) => void) {
   for (const eventName of eventNames) {
-    process.on(eventName, cb.bind(null, eventName));
+    process.on(eventName, (...args: any[]) => cb(eventName, ...args));
   }
 }

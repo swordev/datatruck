@@ -110,10 +110,11 @@ export function buildArgs<TCommand extends keyof OptionsMapType>(
 export function parseArgs(args: string[]) {
   program.parse(args);
   const verbose = getGlobalOptions().verbose;
-  onExit((eventName) => {
+  onExit((eventName, error) => {
     if (eventName !== "exit") {
       process.stdout.write(showCursorCommand);
-      console.log("\nClosing...");
+      console.log(`\nClosing... (reason: ${eventName})`);
+      if (error instanceof Error) console.error(red(error.stack));
     }
 
     if (!verbose)
