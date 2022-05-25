@@ -218,9 +218,15 @@ export class ResticUtil {
           stdout: {
             ...(options.onStream && {
               onData: async (data) => {
-                data = data.trim();
-                if (data.startsWith("{") && data.endsWith("}")) {
-                  await options.onStream?.(JSON.parse(data));
+                for (const rawLine of data.split("\n")) {
+                  const line = rawLine.trim();
+                  if (line.startsWith("{") && line.endsWith("}")) {
+                    let parsedLine: BackupStreamType | undefined;
+                    try {
+                      parsedLine = JSON.parse(line);
+                    } catch (error) {}
+                    if (parsedLine) await options.onStream?.(parsedLine);
+                  }
                 }
               },
             }),
