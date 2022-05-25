@@ -282,8 +282,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       onStream: async (streamData) => {
         if (streamData.message_type === "status") {
           await data.onProgress({
-            total: streamData.total_bytes,
-            current: streamData.bytes_done ?? 0,
+            total: Number((streamData.total_bytes / 1024 / 1024).toFixed(2)),
+            current: streamData.bytes_done
+              ? Number((streamData.bytes_done / 1024 / 1024).toFixed(2))
+              : 0,
             percent: Number((streamData.percent_done * 100).toFixed(2)),
             step: streamData.current_files?.join(", ") ?? "-",
           });
