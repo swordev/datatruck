@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.3.2
+
+### Patch Changes
+
+- [`8957c3b`](https://github.com/swordev/datatruck/commit/8957c3b5846606db8b825fef357445210f2a3ac3) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix restic progress parser
+
+* [`2989718`](https://github.com/swordev/datatruck/commit/29897185e3d6659359d51ab2212351005137f86c) Thanks [@juanrgm](https://github.com/juanrgm)! - Show closing reason
+
+- [`b9e0843`](https://github.com/swordev/datatruck/commit/b9e0843c7970944cfd30a7d2a543f515adfa60e4) Thanks [@juanrgm](https://github.com/juanrgm)! - Show restic progress in megabytes
+
 ## 0.3.1
 
 ### Patch Changes
