@@ -4,6 +4,7 @@ import { RepositoryConfigType } from "./RepositoryConfig";
 import type { JSONSchema7 } from "json-schema";
 
 export type ConfigType = {
+  tempDir?: string;
   repositories: RepositoryConfigType[];
   packages: PackageConfigType[];
 };
@@ -14,6 +15,7 @@ export const configDefinition: JSONSchema7 = {
   additionalProperties: false,
   properties: {
     $schema: { type: "string" },
+    tempDir: { type: "string" },
     repositories: {
       type: "array",
       items: makeRef(DefinitionEnum.repository),

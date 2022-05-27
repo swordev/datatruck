@@ -1,3 +1,4 @@
+import globalData from "../globalData";
 import { rootPath } from "./path-util";
 import { randomBytes } from "crypto";
 import { createReadStream } from "fs";
@@ -5,7 +6,6 @@ import { createWriteStream, WriteStream } from "fs";
 import { mkdir } from "fs-extra";
 import { readdir, readFile, stat, writeFile } from "fs/promises";
 import { isMatch } from "micromatch";
-import { tmpdir } from "os";
 import { dirname, join } from "path";
 import { isAbsolute } from "path";
 
@@ -106,8 +106,7 @@ export async function existsFile(path: string) {
 }
 
 export function parentTmpDir() {
-  const tmpDir = tmpdir();
-  return join(tmpDir, "datatruck");
+  return join(globalData.tempDir, "datatruck-temp");
 }
 
 export function sessionTmpDir() {

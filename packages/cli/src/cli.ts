@@ -1,12 +1,12 @@
 import { ConfigAction } from "./Action/ConfigAction";
 import { GlobalOptionsType } from "./Command/CommandAbstract";
-import { ConfigType } from "./Config/Config";
 import { AppError } from "./Error/AppError";
 import {
   CommandEnum,
   CommandFactory,
   OptionsMapType,
 } from "./Factory/CommandFactory";
+import globalData from "./globalData";
 import { FormatType } from "./util/DataFormat";
 import { OptionsType, showCursorCommand } from "./util/cli-util";
 import { sessionTmpDir, parsePackageFile } from "./util/fs-util";
@@ -15,7 +15,7 @@ import { snakeCase } from "./util/string-util";
 import { red } from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";
-import { sep } from "path";
+import { dirname, isAbsolute, join, sep } from "path";
 
 function getGlobalOptions() {
   return program.opts() as Omit<GlobalOptionsType<true>, "config"> & {
@@ -49,11 +49,22 @@ function makeCommandAction<T>(command: CommandEnum) {
     let exitCode = 1;
     const globalOptions = getGlobalOptions();
     try {
+      const configAction = new ConfigAction({
+        path: globalOptions.config,
+        verbose: !!globalOptions.verbose,
+      });
+      const config = await configAction.exec();
+
+      if (config.data.tempDir)
+        globalData.tempDir = isAbsolute(config.data.tempDir)
+          ? config.data.tempDir
+          : join(dirname(config.path), config.data.tempDir);
+
       exitCode = await CommandFactory(
         command,
         {
           ...globalOptions,
-          config: await ConfigAction.fromGlobalOptions(globalOptions),
+          config: config.data,
         },
         options as any
       ).onExec();
