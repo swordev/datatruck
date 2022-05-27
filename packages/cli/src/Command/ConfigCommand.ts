@@ -42,11 +42,7 @@ export class ConfigCommand extends CommandAbstract<
     });
   }
   override async onExec() {
-    const configAction = new ConfigAction({
-      path: this.globalOptions.config,
-      verbose: !!this.globalOptions.verbose,
-    });
-    const config = await configAction.exec();
+    const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
 
     const packages = filterPackages(config, {
       packageNames: this.options.package,

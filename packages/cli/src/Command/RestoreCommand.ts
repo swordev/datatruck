@@ -51,11 +51,7 @@ export class RestoreCommand extends CommandAbstract<
   }
   override async onExec() {
     const verbose = this.globalOptions.verbose ?? 0;
-    const configAction = new ConfigAction({
-      path: this.globalOptions.config,
-      verbose: verbose > 0,
-    });
-    const config = await configAction.exec();
+    const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const restore = new RestoreAction(config, {
       snapshotId: this.options.id,
       packageNames: this.options.package,

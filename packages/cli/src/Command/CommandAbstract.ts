@@ -1,9 +1,10 @@
+import { ConfigType } from "../Config/Config";
 import { FormatType } from "../util/DataFormat";
 import { OptionsType, parseOptions } from "../util/cli-util";
-import { If, SimilarObject } from "../util/ts-util";
+import { SimilarObject } from "../util/ts-util";
 
 export type GlobalOptionsType<TResolved = false> = {
-  config: string;
+  config: string | ConfigType;
   outputFormat?: FormatType;
   verbose?: number;
 };

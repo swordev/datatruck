@@ -46,11 +46,7 @@ export class BackupSessionsCommand extends CommandAbstract<
   }
   override async onExec() {
     const verbose = this.globalOptions.verbose ?? 0;
-    const configAction = new ConfigAction({
-      path: this.globalOptions.config,
-      verbose: verbose > 0,
-    });
-    const config = await configAction.exec();
+    const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const action = new BackupSessionsAction(config, {
       packageNames: this.options.package,
       repositoryNames: this.options.repository,

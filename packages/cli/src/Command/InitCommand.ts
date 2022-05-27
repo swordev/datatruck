@@ -35,11 +35,7 @@ export class InitCommand extends CommandAbstract<
   }
   override async onExec() {
     const verbose = this.globalOptions.verbose ?? 0;
-    const configAction = new ConfigAction({
-      path: this.globalOptions.config,
-      verbose: verbose > 0,
-    });
-    const config = await configAction.exec();
+    const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const init = new InitAction(config, {
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,

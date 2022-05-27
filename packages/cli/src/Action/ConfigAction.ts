@@ -1,3 +1,4 @@
+import { GlobalOptionsType } from "../Command/CommandAbstract";
 import type { ConfigType } from "../Config/Config";
 import { AppError } from "../Error/AppError";
 import { schema } from "../JsonSchema/JsonSchema";
@@ -62,6 +63,19 @@ export class ConfigAction<TRequired extends boolean = true> {
     return config;
   }
 
+  static async fromGlobalOptions(globalOptions: GlobalOptionsType<true>) {
+    if (typeof globalOptions.config === "string") {
+      const configAction = new ConfigAction({
+        path: globalOptions.config,
+        verbose: !!globalOptions.verbose && globalOptions.verbose > 0,
+      });
+      const result = await configAction.exec();
+      return result.data;
+    } else {
+      return globalOptions.config;
+    }
+  }
+
   async exec() {
     const path = await findFile(
       this.options.path,
@@ -72,6 +86,9 @@ export class ConfigAction<TRequired extends boolean = true> {
     const config: ConfigType = await parseFile(path, "config");
     ConfigAction.validate(config);
     ConfigAction.check(config);
-    return ConfigAction.normalize(config);
+    return {
+      path,
+      data: ConfigAction.normalize(config),
+    };
   }
 }

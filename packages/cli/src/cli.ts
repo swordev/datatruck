@@ -1,4 +1,6 @@
+import { ConfigAction } from "./Action/ConfigAction";
 import { GlobalOptionsType } from "./Command/CommandAbstract";
+import { ConfigType } from "./Config/Config";
 import { AppError } from "./Error/AppError";
 import {
   CommandEnum,
@@ -16,7 +18,9 @@ import { rmSync } from "fs";
 import { sep } from "path";
 
 function getGlobalOptions() {
-  return program.opts() as GlobalOptionsType<true>;
+  return program.opts() as Omit<GlobalOptionsType<true>, "config"> & {
+    config: string;
+  };
 }
 
 function makeCommand(command: CommandEnum) {
@@ -47,7 +51,10 @@ function makeCommandAction<T>(command: CommandEnum) {
     try {
       exitCode = await CommandFactory(
         command,
-        getGlobalOptions(),
+        {
+          ...globalOptions,
+          config: await ConfigAction.fromGlobalOptions(globalOptions),
+        },
         options as any
       ).onExec();
     } catch (e) {
