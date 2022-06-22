@@ -65,7 +65,7 @@ export class PruneAction<TRequired extends boolean = true> {
       this.config,
       this.options
     );
-    const snapshots = await snapshotsAction.exec();
+    const snapshots = await snapshotsAction.exec("prune");
     const snapshotsDeleted: PruneResultType["snapshots"] = [];
     const reasons: Record<number, string[]> = {};
     const inputFilter = {

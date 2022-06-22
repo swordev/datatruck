@@ -1,5 +1,9 @@
 import { ConfigType } from "../../Config/Config";
 import type { PackageConfigType } from "../../Config/PackageConfig";
+import {
+  RepositoryConfigEnabledActionType,
+  RepositoryConfigType,
+} from "../../Config/RepositoryConfig";
 import { AppError } from "../../Error/AppError";
 import { tmpDir } from "../fs-util";
 import { makePathPatterns, render } from "../string-util";
@@ -14,12 +18,23 @@ export function findRepositoryOrFail(
   return repo;
 }
 
+export function filterRepository(
+  repository: RepositoryConfigType,
+  action?: RepositoryConfigEnabledActionType
+) {
+  const enabled = repository.enabled ?? true;
+  if (typeof enabled === "boolean") return enabled;
+  const defaults = enabled["defaults"] ?? true;
+  return action ? enabled[action] ?? defaults : defaults;
+}
+
 export function filterPackages(
   config: ConfigType,
   options: {
     packageNames?: string[];
     repositoryNames?: string[];
     repositoryTypes?: string[];
+    sourceAction?: RepositoryConfigEnabledActionType;
   }
 ) {
   const packagePatterns = makePathPatterns(options.packageNames);
@@ -29,6 +44,7 @@ export function filterPackages(
       pkg = Object.assign({}, pkg);
       pkg.repositoryNames = (pkg.repositoryNames ?? []).filter((name) => {
         const repo = findRepositoryOrFail(config, name);
+        if (!filterRepository(repo, options?.sourceAction)) return false;
         return (
           (!options.repositoryNames ||
             options.repositoryNames.includes(name)) &&

@@ -26,6 +26,25 @@ export const repositoryConfigDefinition: JSONSchema7 = {
   properties: {
     type: { type: "string" },
     name: { type: "string" },
+    enabled: {
+      anyOf: [
+        {
+          type: "boolean",
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            defaults: { type: "boolean" },
+            backup: { type: "boolean" },
+            init: { type: "boolean" },
+            prune: { type: "boolean" },
+            restore: { type: "boolean" },
+            snapshots: { type: "boolean" },
+          },
+        },
+      ],
+    },
     config: {},
   },
   anyOf: Object.keys(types).map(
@@ -50,8 +69,20 @@ export const repositoryConfigDefinition: JSONSchema7 = {
 
 export type RepositoryConfigTypeType = RepositoryConfigType["type"];
 
+export type RepositoryConfigEnabledActionType =
+  | "backup"
+  | "init"
+  | "prune"
+  | "restore"
+  | "snapshots";
+
 export type RepositoryConfigType = {
   name: string;
+  enabled?:
+    | boolean
+    | {
+        [K in "defaults" | RepositoryConfigEnabledActionType]?: boolean;
+      };
 } & (
   | {
       type: typeof resticRepositoryName;

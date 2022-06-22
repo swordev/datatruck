@@ -1,5 +1,6 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
+import { filterRepository } from "../util/datatruck/config-util";
 import { IfRequireKeys } from "../util/ts-util";
 
 export type InitActionOptionsType = {
@@ -23,6 +24,7 @@ export class InitAction<TRequired extends boolean = true> {
     }[] = [];
 
     for (const repo of this.config.repositories) {
+      if (!filterRepository(repo, "init")) continue;
       if (
         this.options.repositoryNames &&
         !this.options.repositoryNames.includes(repo.name)

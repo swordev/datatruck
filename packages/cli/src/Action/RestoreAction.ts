@@ -279,7 +279,10 @@ export class RestoreAction<TRequired extends boolean = true> {
 
     if (!snapshots.length) throw new AppError("None snapshot found");
 
-    let packages = filterPackages(this.config, this.options);
+    let packages = filterPackages(this.config, {
+      ...this.options,
+      sourceAction: "restore",
+    });
 
     packages = resolvePackages(packages, {
       snapshotId: this.options.snapshotId,

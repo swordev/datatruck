@@ -1,6 +1,8 @@
 import type { ConfigType } from "../Config/Config";
+import { RepositoryConfigEnabledActionType } from "../Config/RepositoryConfig";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
 import { SnapshotResultType } from "../Repository/RepositoryAbstract";
+import { filterRepository } from "../util/datatruck/config-util";
 import { groupAndFilter } from "../util/datatruck/snapshot-util";
 import { IfRequireKeys } from "../util/ts-util";
 
@@ -37,9 +39,11 @@ export class SnapshotsAction<TRequired extends boolean = true> {
     readonly options: IfRequireKeys<TRequired, SnapshotsActionOptionsType>
   ) {}
 
-  async exec() {
+  async exec(sourceAction?: RepositoryConfigEnabledActionType) {
+    if (!sourceAction) sourceAction = "snapshots";
     let result: SnapshotExtendedType[] = [];
     for (const repo of this.config.repositories) {
+      if (!filterRepository(repo, sourceAction)) continue;
       if (
         this.options.repositoryNames &&
         !this.options.repositoryNames.includes(repo.name)

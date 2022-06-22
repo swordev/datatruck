@@ -48,6 +48,7 @@ export class BackupAction<TRequired extends boolean = true> {
       packageNames: this.options.packageNames,
       repositoryNames: this.options.repositoryNames,
       repositoryTypes: this.options.repositoryTypes,
+      sourceAction: "backup",
     });
 
     packages = resolvePackages(packages, {
