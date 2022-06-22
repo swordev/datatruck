@@ -53,7 +53,9 @@ export async function makeResticRepositoryConfig(name: string = "restic") {
         backend: "local",
         path: await mkTmpDir(`test-${name}`),
       },
-      passwordFile: passwordFile,
+      password: {
+        path: passwordFile,
+      },
     },
   } as RepositoryConfigType;
 }

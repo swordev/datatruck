@@ -26,7 +26,7 @@ import { isMatch } from "micromatch";
 import { resolve } from "path";
 
 export type ResticRepositoryConfigType = {
-  passwordFile: string;
+  password: string | { path: string };
   repository: RepositoryType;
 };
 
@@ -36,10 +36,22 @@ export const resticRepositoryName = "restic";
 
 export const resticRepositoryDefinition: JSONSchema7 = {
   type: "object",
-  required: ["passwordFile", "repository"],
+  required: ["password", "repository"],
   additionalProperties: false,
   properties: {
-    passwordFile: { type: "string" },
+    password: {
+      anyOf: [
+        { type: "string" },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["path"],
+          properties: {
+            path: { type: "string" },
+          },
+        },
+      ],
+    },
     repository: {
       type: "object",
       additionalProperties: false,
@@ -78,14 +90,17 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   static refPrefix = "dt-";
 
   protected env!: {
-    RESTIC_PASSWORD_FILE: string;
+    RESTIC_PASSWORD?: string;
+    RESTIC_PASSWORD_FILE?: string;
     RESTIC_REPOSITORY: string;
   };
 
   async buildEnv() {
     if (this.env) return this.env;
     return (this.env = {
-      RESTIC_PASSWORD_FILE: resolve(this.config.passwordFile),
+      ...(typeof this.config.password === "string"
+        ? { RESTIC_PASSWORD: this.config.password }
+        : { RESTIC_PASSWORD_FILE: resolve(this.config.password.path) }),
       RESTIC_REPOSITORY: await ResticUtil.formatRepository(
         this.config.repository
       ),
