@@ -32,7 +32,7 @@ describe("filterPackages", () => {
       {
         name: "main2",
         config: {
-          passwordFile: "/secret",
+          password: { path: "/secret" },
           repository: {
             backend: "local",
             path: "/tmp",
