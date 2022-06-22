@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.5.0
+
+### Minor Changes
+
+- [`5aeb2af`](https://github.com/swordev/datatruck/commit/5aeb2afb96692e00bdba501b58df9cc0e02dceaa) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `enabled` option to repository config
+
+* [`75de836`](https://github.com/swordev/datatruck/commit/75de8369356cf02ed3fd5c58b1f9bea66432cda8) Thanks [@juanrgm](https://github.com/juanrgm)! - Allow restic password without file
+
 ## 0.4.0
 
 ### Minor Changes
