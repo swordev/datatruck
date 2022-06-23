@@ -3,7 +3,7 @@
 .pnpm-store
 coverage
 lib
-backup
+backup*
 node_modules
 tsconfig.tsbuildinfo
 /datatruck*.ts
