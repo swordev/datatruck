@@ -277,6 +277,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     const nodePkg = parsePackageFile();
 
     let lastProgress: ProgressDataType | undefined;
+    let totalFilesChanges = 0;
+    const totalFilesChangesLimit = 10;
 
     await data.onProgress({
       step: "Executing backup action...",
@@ -311,11 +313,24 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       ],
       onStream: async (streamData) => {
         if (streamData.message_type === "status") {
+          let showProgressBar = false;
+          if (totalFilesChanges > totalFilesChangesLimit) {
+            showProgressBar = true;
+          } else if (lastProgress?.total !== streamData.total_files) {
+            totalFilesChanges = 0;
+          } else {
+            totalFilesChanges++;
+          }
           await data.onProgress(
             (lastProgress = {
-              total: streamData.total_files,
-              current: streamData.files_done ?? 0,
-              percent: Number((streamData.percent_done * 100).toFixed(2)),
+              total: Math.max(lastProgress?.total || 0, streamData.total_files),
+              current: Math.max(
+                lastProgress?.current || 0,
+                streamData.files_done ?? 0
+              ),
+              percent: showProgressBar
+                ? Number((streamData.percent_done * 100).toFixed(2))
+                : 0,
               step: streamData.current_files?.join(", ") ?? "-",
             })
           );
