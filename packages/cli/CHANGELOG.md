@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.6.1
+
+### Patch Changes
+
+- [`0ba6229`](https://github.com/swordev/datatruck/commit/0ba6229348c109a59783e72242ab7c0e61f25e36) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix progress bar in restic repository
+
 ## 0.6.0
 
 ### Minor Changes
