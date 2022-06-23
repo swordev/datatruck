@@ -23,8 +23,7 @@ import {
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import fg from "fast-glob";
-import { mkdir } from "fs-extra";
-import { copyFile, rm } from "fs/promises";
+import { copyFile, rm, mkdir } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, dirname } from "path";

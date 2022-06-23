@@ -7,8 +7,7 @@ import {
   makeJsonSource,
   makeRepositoryConfig,
 } from "./util";
-import { readJSON } from "fs-extra";
-import { readdir, rm } from "fs/promises";
+import { readdir, rm, readFile } from "fs/promises";
 
 jest.setTimeout(60000);
 
@@ -260,7 +259,9 @@ describe("datatruck", () => {
 
     const restorePath = `${sourcePath}-restore-${lastSnapshot.id}`;
     expect(await readdir(restorePath)).toMatchObject(["file1.json"]);
-    expect(await readJSON(`${restorePath}/file1.json`)).toMatchObject({
+    expect(
+      JSON.parse((await readFile(`${restorePath}/file1.json`)).toString())
+    ).toMatchObject({
       id: 2,
     });
 

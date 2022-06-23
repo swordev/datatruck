@@ -1,6 +1,6 @@
 import { checkDir, isLocalDir } from "./fs-util";
 import { exec, ExecSettingsInterface } from "./process-util";
-import { readdir } from "fs-extra";
+import { readdir } from "fs/promises";
 
 export class GitUtil {
   constructor(

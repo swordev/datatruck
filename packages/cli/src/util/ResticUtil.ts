@@ -1,8 +1,7 @@
 import { mkTmpDir } from "./fs-util";
 import { exec, ExecResultType, ExecSettingsInterface } from "./process-util";
 import { formatUri, UriType } from "./string-util";
-import { readFile } from "fs-extra";
-import { writeFile } from "fs/promises";
+import { writeFile, readFile } from "fs/promises";
 import { resolve } from "path";
 
 export type RepositoryType = {

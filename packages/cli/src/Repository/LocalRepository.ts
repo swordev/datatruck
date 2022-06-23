@@ -26,8 +26,7 @@ import {
 import { ok } from "assert";
 import fg from "fast-glob";
 import { createReadStream } from "fs";
-import { rm } from "fs-extra";
-import { mkdir, readdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readdir, readFile, writeFile, rm } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
