@@ -12,8 +12,10 @@ RUN apk add --no-cache \
 WORKDIR /var/lib/datatruck/
 COPY . /var/lib/datatruck
 
+ENV NODE_PATH=/usr/local/lib/node_modules
+
 RUN set -x \
-    && npm install -g pnpm@6 \
+    && npm install -g pnpm@7 \
     && pnpm install \
     && pnpm build \
     && pnpm patch \
@@ -23,5 +25,7 @@ RUN set -x \
     && echo "node /var/lib/datatruck/packages/cli/lib/bin.js \"\$@\"" >> $BIN_PATH \
     && cp $BIN_PATH $ALTBIN_PATH \
     && chmod +x $BIN_PATH $ALTBIN_PATH \
+    && mkdir -p "/usr/local/lib/node_modules/@datatruck" \
+    && ln -s "/var/lib/datatruck/packages/cli/lib" "/usr/local/lib/node_modules/@datatruck/cli" \
     && pnpm prune --production \
     && npm uninstall -g pnpm
