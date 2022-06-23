@@ -29,7 +29,7 @@ import { copy, rm } from "fs-extra";
 import { mkdir, copyFile, readdir, readFile, writeFile } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { join, relative, sep } from "path";
+import { join, relative, resolve, sep } from "path";
 import { dirname } from "path";
 import { createInterface } from "readline";
 
@@ -245,8 +245,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       snapshotDate: data.snapshot.date,
       packageName: data.package.name,
     });
-    const outPath = join(this.config.outPath, snapshotName);
-    const createdPaths: string[] = [];
+    const outPath = resolve(join(this.config.outPath, snapshotName));
     const pkg = data.package;
 
     await mkdir(outPath, {
@@ -405,9 +404,9 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
   override async onRestore(
     data: RestoreDataType<LocalPackageRepositoryConfigType>
   ) {
-    const restorePath = data.targetPath ?? data.package.restorePath;
-
-    ok(restorePath);
+    const relRestorePath = data.targetPath ?? data.package.restorePath;
+    ok(relRestorePath);
+    const restorePath = resolve(relRestorePath);
 
     const [snapshot] = await this.onSnapshots({
       options: {
