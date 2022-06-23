@@ -5,6 +5,7 @@ import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
+import { ChildProcess } from "child_process";
 import { readdir, readFile, rm } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { join } from "path";
@@ -108,22 +109,33 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       total++;
     });
 
-    const onData = async (lines: string) => {
-      const regex =
+    let childProcess: ChildProcess | undefined;
+
+    const onData = async (strLines: string) => {
+      const paths: string[] = [];
+      const pathRegex =
         /\[\d{1,}\] \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} Copying (.+) to/;
-      let path = lines
-        .split(/\r?\n/)
-        .reduce((result, line) => {
-          const matches = regex.exec(line);
+      const lines = strLines.split(/\r?\n/);
+      let fatalError = false;
+      for (const line of lines) {
+        if (
+          line.includes("[ERROR] InnoDB: Unsupported redo log format.") ||
+          line.includes("Error: cannot read redo log header")
+        ) {
+          fatalError = true;
+        } else {
+          const matches = pathRegex.exec(line);
           if (matches) {
             current++;
-            result.push(matches[1]);
+            paths.push(matches[1]);
           }
-          return result;
-        }, [] as string[])
-        .pop()!;
-      if (path) {
-        path = normalize(path);
+        }
+      }
+
+      if (fatalError) {
+        childProcess!.kill();
+      } else if (paths.length) {
+        const path = normalize(paths[0]);
         await data.onProgress({
           current,
           percent: progressPercent(total, current),
@@ -135,6 +147,9 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
 
     await exec(command, args, undefined, {
       log: this.verbose,
+      onSpawn: (p) => {
+        childProcess = p;
+      },
       stdout: {
         onData,
       },
