@@ -33,7 +33,7 @@ export interface ZipDataType {
   includeList?: string;
   excludeList?: string;
   verbose?: boolean;
-  onStream?: (data: ZipStreamDataType) => Promise<void>;
+  onStream?: (data: ZipStreamDataType) => void;
 }
 
 export interface UnzipDataType {
@@ -42,7 +42,7 @@ export interface UnzipDataType {
   files?: (ZipDataFilterType | string)[];
   output: string;
   verbose?: boolean;
-  onStream?: (data: UnzipStreamDataType) => Promise<void>;
+  onStream?: (data: UnzipStreamDataType) => void;
 }
 
 export type UnzipStreamDataType = {
@@ -85,13 +85,13 @@ export function buildArguments(filters: (ZipDataFilterType | string)[]) {
   return args;
 }
 
-async function parseZipStream(
+function parseZipStream(
   chunk: string,
   buffer: {
     lastPath?: string;
     currentPaths?: number;
   },
-  cb: (data: ZipStreamDataType) => Promise<void>
+  cb: (data: ZipStreamDataType) => void
 ) {
   const lines = chunk.trim().split(/\r?\n/g);
   for (const line of lines) {
@@ -102,14 +102,14 @@ async function parseZipStream(
       if (!buffer.currentPaths) buffer.currentPaths = 0;
       if (path !== buffer.lastPath) buffer.currentPaths++;
       buffer.lastPath = path;
-      await cb({
+      cb({
         type: "progress",
         data: { progress, path, files: buffer.currentPaths },
       });
     } else if (line.startsWith("Add new data to archive:")) {
       const [, folders] = /(\d+) folders?/i.exec(line) || [, 0];
       const [, files] = /(\d+) files?/i.exec(line) || [, 0];
-      await cb({
+      cb({
         type: "summary",
         data: {
           folders: Number(folders),
@@ -147,9 +147,9 @@ export async function zip(data: ZipDataType) {
         toExitCode: true,
       },
       stdout: {
-        onData: async (chunk) => {
-          parseZipStream(chunk, buffer, async (stream) => {
-            await data.onStream?.(stream);
+        onData: (chunk) => {
+          parseZipStream(chunk, buffer, (stream) => {
+            data.onStream?.(stream);
             if (stream.type === "summary") result = stream.data;
           });
         },
@@ -159,9 +159,9 @@ export async function zip(data: ZipDataType) {
   return result;
 }
 
-async function parseUnzipStream(
+function parseUnzipStream(
   chunk: string,
-  cb: (data: UnzipStreamDataType) => Promise<void>
+  cb: (data: UnzipStreamDataType) => void
 ) {
   const lines = chunk.trim().split(/\r?\n/g);
   for (const line of lines) {
@@ -170,7 +170,7 @@ async function parseUnzipStream(
       const progress = Number(matches[1]);
       const files = Number(matches[2]);
       const path = line.slice(line.indexOf("-") + 1).trim();
-      await cb({
+      cb({
         type: "progress",
         data: { progress, path, files },
       });
@@ -196,7 +196,7 @@ export async function unzip(data: UnzipDataType) {
       stderr: { toExitCode: true },
       stdout: {
         ...(data.onStream && {
-          onData: async (chunk) => {
+          onData: (chunk) => {
             if (data.onStream) parseUnzipStream(chunk, data.onStream);
           },
         }),

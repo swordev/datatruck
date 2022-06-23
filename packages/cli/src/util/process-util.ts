@@ -27,10 +27,10 @@ export interface ExecSettingsInterface {
   };
   log?: ExecLogSettingsType | boolean;
   onSpawn?: (p: ChildProcess) => void;
-  stdout?: { save?: boolean; onData?: (data: string) => Promise<void> };
+  stdout?: { save?: boolean; onData?: (data: string) => void };
   stderr?: {
     save?: boolean;
-    onData?: (data: string) => Promise<void>;
+    onData?: (data: string) => void;
     toExitCode?: boolean;
   };
   onExitCodeError?: (data: ExecResultType, error: Error) => Error | false;
@@ -188,7 +188,7 @@ export async function exec(
 
     if (log.stdout || settings.stdout) {
       if (!p.stdout) throw new Error(`stdout is not defined`);
-      p.stdout.on("data", async (data: Buffer) => {
+      p.stdout.on("data", (data: Buffer) => {
         if (log.stdout)
           logExecStdout({
             data: data.toString(),
@@ -196,14 +196,13 @@ export async function exec(
             colorize: log.colorize,
           });
         if (settings.stdout?.save) spawnData.stdout += data.toString();
-        if (settings.stdout?.onData)
-          await settings.stdout.onData(data.toString());
+        if (settings.stdout?.onData) settings.stdout.onData(data.toString());
       });
     }
 
     if (log.stderr || settings.stderr) {
       if (!p.stderr) throw new Error(`stderr is not defined`);
-      p.stderr.on("data", async (data: Buffer) => {
+      p.stderr.on("data", (data: Buffer) => {
         if (log.stderr)
           logExecStdout({
             data: data.toString(),
@@ -212,8 +211,7 @@ export async function exec(
           });
         if (settings.stderr?.save || settings.stderr?.toExitCode)
           spawnData.stderr += data.toString();
-        if (settings.stderr?.onData)
-          await settings.stderr.onData(data.toString());
+        if (settings.stderr?.onData) settings.stderr.onData(data.toString());
       });
     }
 

@@ -196,7 +196,7 @@ export class ResticUtil {
     excludeFile?: string[];
     parent?: string;
     allowEmptySnapshot?: boolean;
-    onStream?: (data: BackupStreamType) => Promise<void>;
+    onStream?: (data: BackupStreamType) => void;
   }): Promise<ExecResultType> {
     const exec = async () =>
       await this.exec(
@@ -216,7 +216,7 @@ export class ResticUtil {
           },
           stdout: {
             ...(options.onStream && {
-              onData: async (data) => {
+              onData: (data) => {
                 for (const rawLine of data.split("\n")) {
                   const line = rawLine.trim();
                   if (line.startsWith("{") && line.endsWith("}")) {
@@ -224,7 +224,7 @@ export class ResticUtil {
                     try {
                       parsedLine = JSON.parse(line);
                     } catch (error) {}
-                    if (parsedLine) await options.onStream?.(parsedLine);
+                    if (parsedLine) options.onStream?.(parsedLine);
                   }
                 }
               },

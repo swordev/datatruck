@@ -164,7 +164,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       undefined,
       {
         log: this.verbose,
-        stderr: { onData: async () => {} },
+        stderr: { onData: () => {} },
       }
     );
   }
