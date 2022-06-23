@@ -44,6 +44,10 @@ export type MetaDataType = {
 export type LocalRepositoryConfigType = {
   outPath: string;
   compress?: boolean;
+  /**
+   * @default 1
+   */
+  fileCopyConcurrency?: number;
 };
 
 type CompressObjectType = {
@@ -99,6 +103,10 @@ export const localPackageRepositoryDefinition: JSONSchema7 = {
           },
         },
       ],
+    },
+    fileCopyConcurrency: {
+      type: "integer",
+      minimum: 1,
     },
   },
 };
@@ -363,6 +371,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
         basePath: sourcePath,
       },
       targetPath: outPath,
+      concurrency: this.config.fileCopyConcurrency,
       async onPath({ isDir, entryPath }) {
         if (isDir) return;
         currentFiles++;
@@ -430,6 +439,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
         sourcePath,
       },
       targetPath: restorePath,
+      concurrency: this.config.fileCopyConcurrency,
       onPath: async ({ entryPath, entrySourcePath }) => {
         const isRootFile = basename(entryPath) === entryPath;
         const isZipFile =

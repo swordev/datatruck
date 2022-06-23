@@ -38,6 +38,10 @@ export type GitTaskConfigType = {
    * @default true
    */
   includeConfig?: boolean;
+  /**
+   * @default 1
+   */
+  fileCopyConcurrency?: number;
 };
 
 export const gitTaskName = "git";
@@ -75,6 +79,10 @@ export const gitTaskDefinition: JSONSchema7 = {
     },
     includeConfig: {
       type: "boolean",
+    },
+    fileCopyConcurrency: {
+      type: "integer",
+      minimum: 1,
     },
   },
 };
@@ -223,6 +231,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
           basePath: path,
         },
         targetPath: outPath,
+        concurrency: this.config.fileCopyConcurrency,
         onPath: async ({ entryPath }) => {
           currentFiles++;
           await data.onProgress({
@@ -312,6 +321,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
             sourcePath,
           },
           targetPath: restorePath,
+          concurrency: this.config.fileCopyConcurrency,
           onPath: async ({ entryPath }) => {
             await incrementProgress(entryPath);
           },
