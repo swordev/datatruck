@@ -5,6 +5,7 @@ import { parsePaths } from "../util/datatruck/paths-util";
 import {
   checkDir,
   checkFile,
+  cpy,
   forEachFile,
   mkdirIfNotExists,
   parsePackageFile,
@@ -25,12 +26,11 @@ import {
 import { ok } from "assert";
 import fg from "fast-glob";
 import { createReadStream } from "fs";
-import { copy, rm } from "fs-extra";
-import { mkdir, copyFile, readdir, readFile, writeFile } from "fs/promises";
+import { rm } from "fs-extra";
+import { mkdir, readdir, readFile, writeFile } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { join, relative, resolve, sep } from "path";
-import { dirname } from "path";
+import { basename, join, resolve } from "path";
 import { createInterface } from "readline";
 
 export type MetaDataType = {
@@ -356,37 +356,24 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
 
     if (data.options.verbose) logExec(`Copying files to ${outPath}`);
 
-    const reader = createInterface({
-      input: createReadStream(pathLists.path),
-    });
-    for await (const entry of reader) {
-      const source = join(sourcePath, entry);
-      const target = join(outPath, entry);
-
-      if (entry.endsWith("/")) {
-        await mkdir(target, {
-          recursive: true,
-        });
-      } else {
+    await cpy({
+      input: {
+        type: "pathList",
+        path: pathLists.path,
+        basePath: sourcePath,
+      },
+      targetPath: outPath,
+      async onPath({ isDir, entryPath }) {
+        if (isDir) return;
         currentFiles++;
-
         await data.onProgress({
           total: pathLists.total.all,
           current: currentFiles,
           percent: progressPercent(pathLists.total.all, currentFiles),
-          step: entry,
+          step: entryPath,
         });
-
-        const dir = dirname(target);
-        if (!createdPaths.includes(dir)) {
-          await mkdir(dir, {
-            recursive: true,
-          });
-          createdPaths.push(dir);
-        }
-        await copyFile(source, target);
-      }
-    }
+      },
+    });
 
     const metaPath = `${outPath}.json`;
     const nodePkg = parsePackageFile();
@@ -436,21 +423,30 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
     );
 
     if (data.options.verbose) logExec(`Copying files to ${restorePath}`);
-    await copy(sourcePath, restorePath, {
-      filter: async (path) => {
-        const [firstFolder] = relative(sourcePath, path).split(sep);
+
+    await cpy({
+      input: {
+        type: "glob",
+        sourcePath,
+      },
+      targetPath: restorePath,
+      onPath: async ({ entryPath, entrySourcePath }) => {
+        const isRootFile = basename(entryPath) === entryPath;
         const isZipFile =
-          firstFolder.startsWith(".") && firstFolder.endsWith(".dd.zip");
+          isRootFile &&
+          entryPath.startsWith(".") &&
+          entryPath.endsWith(".dd.zip");
 
         await data.onProgress({
           total: totalFiles,
           current: Math.max(currentFiles, 0),
           percent: progressPercent(totalFiles, Math.max(currentFiles, 0)),
-          step: relative(sourcePath, path),
+          step: entryPath,
         });
+
         if (isZipFile) {
           await unzip({
-            input: path,
+            input: entrySourcePath,
             output: restorePath,
             verbose: data.options.verbose,
             onStream: async (stream) =>

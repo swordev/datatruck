@@ -3,6 +3,7 @@ import { logExec } from "../util/cli-util";
 import {
   checkDir,
   checkFile,
+  cpy,
   ensureEmptyDir,
   forEachFile,
   mkdirIfNotExists,
@@ -12,13 +13,12 @@ import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
-import { createReadStream, createWriteStream } from "fs";
-import { copy } from "fs-extra";
-import { copyFile, mkdir, rm } from "fs/promises";
+import { createWriteStream } from "fs";
+import { copyFile, rm } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { dirname, join, relative } from "path";
-import { createInterface, Interface } from "readline";
+import { join } from "path";
+import { createInterface } from "readline";
 
 export type GitTaskConfigType = {
   command?: string;
@@ -209,7 +209,6 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     for (const option of lsFilesConfig) {
       if (!option.include) continue;
 
-      const createdPaths: string[] = [];
       const outPath = join(targetPath, `repo.${option.name}`);
 
       await mkdirIfNotExists(outPath);
@@ -217,38 +216,23 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
       if (data.options.verbose)
         logExec(`Copying ${option.name} files to ${outPath}`);
 
-      const reader = createInterface({
-        input: createReadStream(option.pathsPath!),
-      });
-
-      for await (const entry of reader) {
-        const source = join(path, entry);
-        const target = join(outPath, entry);
-
-        if (entry.endsWith("/")) {
-          await mkdir(target, {
-            recursive: true,
-          });
-        } else {
+      await cpy({
+        input: {
+          type: "pathList",
+          path: option.pathsPath!,
+          basePath: path,
+        },
+        targetPath: outPath,
+        onPath: async ({ entryPath }) => {
           currentFiles++;
-
           await data.onProgress({
             total,
             current: currentFiles,
             percent: progressPercent(total, currentFiles),
-            step: entry,
+            step: entryPath,
           });
-
-          const dir = dirname(target);
-          if (!createdPaths.includes(dir)) {
-            await mkdir(dir, {
-              recursive: true,
-            });
-            createdPaths.push(dir);
-          }
-          await copyFile(source, target);
-        }
-      }
+        },
+      });
 
       await rm(option.pathsPath!);
     }
@@ -322,10 +306,14 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
       if (await checkDir(sourcePath)) {
         if (data.options.verbose)
           logExec(`Copying ${name} files to ${restorePath}`);
-        await copy(sourcePath, restorePath, {
-          filter: async (path) => {
-            await incrementProgress(relative(sourcePath, path));
-            return true;
+        await cpy({
+          input: {
+            type: "glob",
+            sourcePath,
+          },
+          targetPath: restorePath,
+          onPath: async ({ entryPath }) => {
+            await incrementProgress(entryPath);
           },
         });
       }

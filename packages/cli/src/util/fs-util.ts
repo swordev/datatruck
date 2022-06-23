@@ -1,13 +1,16 @@
 import globalData from "../globalData";
 import { rootPath } from "./path-util";
+import { eachLimit } from "async";
 import { randomBytes } from "crypto";
+import FastGlob from "fast-glob";
 import { createReadStream } from "fs";
 import { createWriteStream, WriteStream } from "fs";
 import { mkdir } from "fs-extra";
-import { readdir, readFile, stat, writeFile } from "fs/promises";
+import { cp, readdir, readFile, stat, writeFile } from "fs/promises";
 import { isMatch } from "micromatch";
-import { dirname, join } from "path";
+import { dirname, join, normalize, resolve } from "path";
 import { isAbsolute } from "path";
+import { createInterface, Interface } from "readline";
 
 export function isLocalDir(path: string) {
   return /^[\/\.]|([A-Z]:)/i.test(path);
@@ -321,4 +324,109 @@ export async function writePathLists(options: {
       multipleStats,
     },
   };
+}
+
+export async function cpy(options: {
+  input:
+    | {
+        type: "glob";
+        sourcePath: string;
+        include?: string[];
+        exclude?: string[];
+      }
+    | {
+        type: "stream";
+        basePath: string;
+        value: Interface;
+      }
+    | {
+        type: "pathList";
+        path: string;
+        basePath: string;
+      };
+  targetPath: string;
+  /**
+   * @default 1
+   */
+  concurrency?: number;
+  onPath?: (data: {
+    isDir: boolean;
+    entryPath: string;
+    entrySourcePath: string;
+    entryTargetPath: string;
+    stats: { paths: number; files: number; dirs: number };
+  }) => Promise<boolean | void>;
+}) {
+  const stats = { paths: 0, files: 0, dirs: 0 };
+  const dirs = new Set<string>();
+
+  const makeRecursiveDir = async (path: string) => {
+    if (!dirs.has(path)) {
+      stats.paths++;
+      stats.dirs++;
+      await mkdir(path, {
+        recursive: true,
+      });
+      dirs.add(path);
+    }
+  };
+
+  const task = async (rawEntryPath: string, basePath: string) => {
+    const isDir = rawEntryPath.endsWith("/");
+    const entryPath = normalize(rawEntryPath);
+    const entrySourcePath = resolve(join(basePath, rawEntryPath));
+    const entryTargetPath = resolve(join(options.targetPath, rawEntryPath));
+    const onPathResult = await options?.onPath?.({
+      isDir,
+      entryPath,
+      entrySourcePath,
+      entryTargetPath,
+      stats,
+    });
+    if (onPathResult === false) {
+      return;
+    } else if (isDir) {
+      await makeRecursiveDir(entryTargetPath);
+    } else {
+      const dir = dirname(entryTargetPath);
+      await makeRecursiveDir(dir);
+      stats.files++;
+      await cp(entrySourcePath, entryTargetPath);
+    }
+  };
+
+  const { input } = options;
+
+  if (input.type === "glob") {
+    const stream = await FastGlob(input.include || ["**"], {
+      cwd: input.sourcePath,
+      ignore: input.exclude,
+      dot: true,
+      onlyFiles: false,
+      markDirectories: true,
+    });
+    await eachLimit(
+      stream,
+      options.concurrency ?? 1,
+      async (entryPath) => await task(entryPath, input.sourcePath)
+    );
+  } else if (input.type === "stream") {
+    await eachLimit(
+      input.value as any as string[],
+      options.concurrency ?? 1,
+      async (entryPath) => await task(entryPath, input.basePath)
+    );
+  } else if (input.type === "pathList") {
+    const stream = createInterface({
+      input: createReadStream(input.path),
+    });
+    await cpy({
+      ...options,
+      input: {
+        type: "stream",
+        value: stream,
+        basePath: input.basePath,
+      },
+    });
+  }
 }
