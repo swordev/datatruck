@@ -20,10 +20,10 @@ export type SnapshotResultType = SnapshotType & {
 };
 
 export type ProgressDataType = {
-  total: number;
-  current: number;
-  percent: number;
-  step: string;
+  total?: number;
+  current?: number;
+  percent?: number;
+  step?: string;
   stepPercent?: number | null;
 };
 

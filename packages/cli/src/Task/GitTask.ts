@@ -103,6 +103,10 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     const bundlePath = join(targetPath, "repo.bundle");
 
+    await data.onProgress({
+      step: "Creating bundle...",
+    });
+
     await exec(
       this.command,
       ["bundle", "create", bundlePath, "--all"],

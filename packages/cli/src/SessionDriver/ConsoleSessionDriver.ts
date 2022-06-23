@@ -128,20 +128,31 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
     const parts = [
       `${padding}${message.textPrefix} [${grey(sessionId)}] ${message.text}`,
       badges,
-      ...(haveProgressBar
-        ? [
-            cyan(renderProgressBar(message.progressPercent ?? 0, 10)),
-            `${message.progressPercent?.toFixed(2)}%`,
-            `${message.progressCurrent}/${message.progressTotal}`,
-            message.progressStep,
-            `${
-              message.progressStepPercent
-                ? cyan(renderProgressBar(message.progressStepPercent ?? 0, 10))
-                : ""
-            }`,
-          ].filter((v) => !!v?.length)
-        : []),
     ];
+
+    if (typeof message.progressPercent === "number") {
+      parts.push(
+        cyan(renderProgressBar(message.progressPercent ?? 0, 10)),
+        `${message.progressPercent?.toFixed(2)}%`
+      );
+    }
+
+    if (
+      typeof message.progressCurrent === "number" ||
+      typeof message.progressTotal === "number"
+    ) {
+      parts.push(
+        `${message.progressCurrent ?? "?"}/${message.progressTotal ?? "?"}`
+      );
+    }
+
+    if (typeof message.progressStep === "string")
+      parts.push(message.progressStep);
+
+    if (typeof message.progressStepPercent === "number") {
+      parts.push(cyan(renderProgressBar(message.progressStepPercent ?? 0, 10)));
+    }
+
     return parts.join(` ${sep} `);
   }
 

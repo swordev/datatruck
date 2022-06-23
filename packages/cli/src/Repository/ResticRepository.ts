@@ -18,6 +18,7 @@ import {
   SnapshotTagObjectType,
   SnapshotTagEnum,
   PruneDataType,
+  ProgressDataType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import FastGlob from "fast-glob";
@@ -242,6 +243,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       if (data.options.verbose) logExec(`Writing paths lists`);
 
+      await data.onProgress({
+        step: "Writing excluded paths list...",
+      });
+
       gitignorePath = await writeGitIgnoreList({
         paths: stream,
       });
@@ -259,6 +264,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       data.package.name
     );
 
+    await data.onProgress({
+      step: "Fetching last snapshot...",
+    });
+
     const [lastSnapshot] = await restic.snapshots({
       json: true,
       tags: [packageTag],
@@ -266,6 +275,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
 
     const nodePkg = parsePackageFile();
+
+    let lastProgress: ProgressDataType | undefined;
+
+    await data.onProgress({
+      step: "Executing backup action...",
+    });
 
     await restic.backup({
       cwd: sourcePath,
@@ -296,23 +311,22 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       ],
       onStream: async (streamData) => {
         if (streamData.message_type === "status") {
-          await data.onProgress({
-            total: Number((streamData.total_bytes / 1024 / 1024).toFixed(2)),
-            current: streamData.bytes_done
-              ? Number((streamData.bytes_done / 1024 / 1024).toFixed(2))
-              : 0,
-            percent: Number((streamData.percent_done * 100).toFixed(2)),
-            step: streamData.current_files?.join(", ") ?? "-",
-          });
+          await data.onProgress(
+            (lastProgress = {
+              total: streamData.total_files,
+              current: streamData.files_done ?? 0,
+              percent: Number((streamData.percent_done * 100).toFixed(2)),
+              step: streamData.current_files?.join(", ") ?? "-",
+            })
+          );
         }
       },
     });
 
     await data.onProgress({
-      current: 100,
+      total: lastProgress?.total || 0,
+      current: lastProgress?.total || 0,
       percent: 100,
-      step: "",
-      total: 100,
     });
   }
 
