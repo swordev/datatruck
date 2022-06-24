@@ -32,12 +32,14 @@ export function filterPackages(
   config: ConfigType,
   options: {
     packageNames?: string[];
+    packageTaskNames?: string[];
     repositoryNames?: string[];
     repositoryTypes?: string[];
     sourceAction?: RepositoryConfigEnabledActionType;
   }
 ) {
   const packagePatterns = makePathPatterns(options.packageNames);
+  const taskNamePatterns = makePathPatterns(options.packageTaskNames);
 
   return config.packages
     .map((pkg) => {
@@ -55,6 +57,8 @@ export function filterPackages(
       return pkg;
     })
     .filter((pkg) => {
+      if (taskNamePatterns && !isMatch(pkg.task?.name ?? "", taskNamePatterns))
+        return false;
       return (
         (typeof pkg.enabled !== "boolean" || pkg.enabled) &&
         !!pkg.repositoryNames?.length &&

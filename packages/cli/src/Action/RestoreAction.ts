@@ -24,6 +24,7 @@ export type RestoreActionOptionsType = {
   snapshotId: string;
   tags?: string[];
   packageNames?: string[];
+  packageTaskNames?: string[];
   repositoryNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;

@@ -19,6 +19,7 @@ export type BackupActionOptionsType = {
   repositoryNames?: string[];
   repositoryTypes?: string[];
   packageNames?: string[];
+  packageTaskNames?: string[];
   tags?: string[];
   dryRun?: boolean;
   verbose?: boolean;
@@ -46,6 +47,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
     let packages = filterPackages(this.config, {
       packageNames: this.options.packageNames,
+      packageTaskNames: this.options.packageTaskNames,
       repositoryNames: this.options.repositoryNames,
       repositoryTypes: this.options.repositoryTypes,
       sourceAction: "backup",

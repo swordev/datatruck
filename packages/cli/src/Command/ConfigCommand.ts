@@ -8,6 +8,7 @@ import { CommandAbstract } from "./CommandAbstract";
 
 export type ConfigCommandOptionsType<TResolved = false> = {
   package?: If<TResolved, string[]>;
+  packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
 };
@@ -29,6 +30,11 @@ export class ConfigCommand extends CommandAbstract<
         option: "-p,--package <values>",
         parser: parseStringList,
       },
+      packageTask: {
+        description: "Package task names",
+        option: "-pt,--package-task <values>",
+        parser: parseStringList,
+      },
       repository: {
         description: "Repository names",
         option: "-r,--repository <values>",
@@ -46,6 +52,7 @@ export class ConfigCommand extends CommandAbstract<
 
     const packages = filterPackages(config, {
       packageNames: this.options.package,
+      packageTaskNames: this.options.packageTask,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
     });

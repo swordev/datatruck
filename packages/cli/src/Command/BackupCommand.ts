@@ -11,6 +11,7 @@ import { CommandAbstract } from "./CommandAbstract";
 
 export type BackupCommandOptionsType<TResolved = false> = {
   package?: If<TResolved, string[]>;
+  packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   tag?: If<TResolved, string[]>;
@@ -31,6 +32,11 @@ export class BackupCommand extends CommandAbstract<
       package: {
         description: "Package names",
         option: "-p,--package <values>",
+        parser: parseStringList,
+      },
+      packageTask: {
+        description: "Package task names",
+        option: "-pt,--package-task <values>",
         parser: parseStringList,
       },
       repository: {
@@ -59,6 +65,7 @@ export class BackupCommand extends CommandAbstract<
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const backup = new BackupAction(config, {
       packageNames: this.options.package,
+      packageTaskNames: this.options.packageTask,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
       tags: this.options.tag,
