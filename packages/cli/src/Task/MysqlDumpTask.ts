@@ -73,14 +73,14 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
     );
   }
 
-  override async onFetchTableNames() {
+  override async onFetchTableNames(database: string) {
     return await this.fetchValues(`
       SELECT
         table_name 
       FROM
         information_schema.tables
       WHERE
-        table_schema = '${this.config.database}'
+        table_schema = '${database}'
 	`);
   }
 
@@ -97,6 +97,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
         [
           ...(await this.buildConnectionArgs()),
           "--lock-tables=false",
+          "--skip-add-drop-table=false",
           ...tableNames,
         ],
         null,

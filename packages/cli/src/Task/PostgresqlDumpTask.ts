@@ -79,14 +79,14 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
     );
   }
 
-  override async onFetchTableNames() {
+  override async onFetchTableNames(database: string) {
     return await this.fetchValues(`
       SELECT
         CONCAT(table_schema, '.', table_name)
       FROM
         information_schema.tables
       WHERE
-        table_catalog = '${this.config.database}' AND
+        table_catalog = '${database}' AND
         table_schema NOT IN ('pg_catalog', 'information_schema')
 	  `);
   }
@@ -103,8 +103,6 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
         "pg_dump",
         [
           ...(await this.buildConnectionArgs()),
-          "--clean",
-          "--if-exists",
           ...(tableNames?.flatMap((v) => ["-t", v]) ?? []),
         ],
         null,

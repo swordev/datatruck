@@ -68,6 +68,40 @@ export const sqlDumpTaskDefinition: JSONSchema7 = {
   },
 };
 
+type SqlFile = {
+  fileName: string;
+  database?: string;
+  table?: string;
+};
+
+function serializeSqlFile(input: Omit<SqlFile, "fileName">) {
+  if (input.database && input.table) {
+    return `${input.database}.${input.table}.table.sql`;
+  } else if (input.database && !input.table) {
+    return `${input.database}.database.sql`;
+  } else if (!input.database && input.table) {
+    return `${input.table}.table.sql`;
+  } else {
+    throw new AppError(`Invalid sql file input: ${JSON.stringify(input)}`);
+  }
+}
+
+function parseSqlFile(fileName: string): SqlFile | undefined {
+  if (!fileName.endsWith(".sql")) return;
+  const regex = /^(.+)\.(table|database)\.sql$/;
+  const matches = regex.exec(fileName);
+  if (!matches) return { fileName };
+  const [, name, type] = matches;
+  const lastName = name.split(".").pop()!;
+  if (type === "table") {
+    return { fileName, table: lastName };
+  } else if (type === "database") {
+    return { fileName, database: lastName };
+  } else {
+    throw new Error(`Invalid sql file type: ${type}`);
+  }
+}
+
 export abstract class SqlDumpTaskAbstract<
   TConfig extends SqlDumpTaskConfigType
 > extends TaskAbstract<TConfig> {
@@ -90,27 +124,23 @@ export abstract class SqlDumpTaskAbstract<
 
   abstract onCreateDatabase(database: TargetDatabaseType): Promise<void>;
   abstract onDatabaseIsEmpty(databaseName: string): Promise<boolean>;
-  abstract onFetchTableNames(): Promise<string[]>;
+  abstract onFetchTableNames(database: string): Promise<string[]>;
   abstract onExecQuery(query: string): ReturnType<typeof exec>;
   abstract onExport(tableNames: string[], output: string): Promise<void>;
   abstract onImport(path: string, database: string): Promise<void>;
 
-  async fetchTableNames() {
-    const tableNames = await this.onFetchTableNames();
+  override async onBackup(data: BackupDataType): Promise<void> {
+    this.verbose = data.options.verbose;
     const config = this.config;
-    return tableNames.filter((tableName) => {
+    const outputPath = data.package.path;
+    const allTableNames = await this.onFetchTableNames(this.config.database);
+    const tableNames = allTableNames.filter((tableName) => {
       if (config.includeTables && !isMatch(tableName, config.includeTables))
         return false;
       if (config.excludeTables && isMatch(tableName, config.excludeTables))
         return false;
       return true;
     });
-  }
-
-  override async onBackup(data: BackupDataType): Promise<void> {
-    this.verbose = data.options.verbose;
-    const outputPath = data.package.path;
-    const tableNames = await this.fetchTableNames();
 
     ok(typeof outputPath === "string");
 
@@ -118,7 +148,10 @@ export abstract class SqlDumpTaskAbstract<
       await mkdir(outputPath, { recursive: true });
 
     if (!this.config.oneFileByTable) {
-      const outPath = join(outputPath, this.config.database) + ".database.sql";
+      const outPath = join(
+        outputPath,
+        serializeSqlFile({ database: this.config.database })
+      );
       await this.onExport(tableNames, outPath);
     } else {
       let current = 0;
@@ -130,7 +163,10 @@ export abstract class SqlDumpTaskAbstract<
           step: tableName,
         });
         current++;
-        const outPath = join(outputPath, tableName) + ".table.sql";
+        const outPath = join(
+          outputPath,
+          serializeSqlFile({ table: tableName })
+        );
         await this.onExport([tableName], outPath);
       }
     }
@@ -162,24 +198,44 @@ export abstract class SqlDumpTaskAbstract<
       });
     }
 
-    if (!(await this.onDatabaseIsEmpty(database.name)))
+    const items = (await readdir(restorePath))
+      .map(parseSqlFile)
+      .filter((v) => !!v) as SqlFile[];
+
+    // Database check
+
+    const databaseItems = items.filter((v) => v.database);
+
+    if (databaseItems.length && !(await this.onDatabaseIsEmpty(database.name)))
       throw new AppError(`Target database is not empty: ${database.name}`);
+
+    // Table check
+
+    const restoreTables = items
+      .filter((v) => v.table)
+      .map((v) => v.table) as string[];
+
+    const serverTables = await this.onFetchTableNames(database.name);
+    const errorTables = restoreTables.filter((v) => serverTables.includes(v));
+
+    if (errorTables.length) {
+      throw new AppError(
+        `Target table already exists: ${errorTables.join(", ")}`
+      );
+    }
 
     await this.onCreateDatabase(database);
 
     if (this.verbose) logExec("readdir", [restorePath]);
 
-    const files = (await readdir(restorePath)).filter((name) =>
-      /\.sql$/i.test(name)
-    );
     let current = 0;
-    for (const file of files) {
-      const path = join(restorePath, file);
+    for (const item of items) {
+      const path = join(restorePath, item.fileName);
       data.onProgress({
-        total: files.length,
+        total: items.length,
         current: current,
-        percent: progressPercent(files.length, current),
-        step: file,
+        percent: progressPercent(items.length, current),
+        step: item.fileName,
       });
       current++;
       await this.onImport(path, database.name);
