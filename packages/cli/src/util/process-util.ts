@@ -121,11 +121,11 @@ export async function exec(
       exitCode: 0,
     };
 
-    let finishListens = pipe ? 2 : 1;
+    let finishListeners = pipe?.stream instanceof WriteStream ? 2 : 1;
     let streamError: Error | undefined;
 
     const tryFinish = () => {
-      if (!--finishListens) finish();
+      if (!--finishListeners) finish();
     };
 
     const finish = () => {
