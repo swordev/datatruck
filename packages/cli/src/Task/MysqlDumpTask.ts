@@ -24,6 +24,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
     const password = await this.fetchPassword();
     return [
       `--host=${this.config.hostname}`,
+      ...(this.config.port ? [`--port=${this.config.port}`] : []),
       `--user=${this.config.username}`,
       `--password=${password ?? ""}`,
       ...(database && this.config.database ? [this.config.database] : []),
