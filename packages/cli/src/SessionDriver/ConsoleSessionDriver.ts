@@ -2,11 +2,13 @@ import { AppError } from "../Error/AppError";
 import {
   clearCommand,
   hideCursorCommand,
+  logVars,
   renderProgressBar,
   renderSpinner,
   showCursorCommand,
   truncate,
 } from "../util/cli-util";
+import { createChron } from "../util/date-util";
 import {
   ActionEnum,
   WriteDataType,
@@ -52,33 +54,22 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
   protected rendering?: boolean;
   protected lastColumns?: number;
   protected startTime!: number;
+  protected chron = createChron();
 
   override async onInit() {
-    this.startTime = Date.now();
+    this.chron.start();
     this.renderInterval = setInterval(() => {
       if (this.lastMessage) this.printMessage(this.lastMessage);
     }, 100);
   }
 
-  override async onEnd() {
+  override async onEnd(data?: Record<string, any>) {
     clearInterval(this.renderInterval);
     if (!this.options.verbose) process.stdout.write(showCursorCommand);
-    const ellapsed = (Date.now() - this.startTime) / 1000;
-    let ellapsedUnit: string;
-    let ellapsedValue: number;
-    if (ellapsed > 60 * 60) {
-      ellapsedValue = ellapsed / 60 / 60;
-      ellapsedUnit = `hour`;
-    } else if (ellapsed > 60) {
-      ellapsedValue = ellapsed / 60;
-      ellapsedUnit = `minute`;
-    } else {
-      ellapsedValue = ellapsed;
-      ellapsedUnit = `second`;
-    }
-    if (ellapsedValue !== 1) ellapsedUnit += `s`;
-    const message = `Completed in ${ellapsedValue.toFixed(2)} ${ellapsedUnit}`;
-    console.info(`\n${grey(message)}`);
+    logVars({
+      ...data,
+      elapsed: this.chron.elapsed(true),
+    });
   }
 
   override async onRead(): Promise<ReadResultType[]> {

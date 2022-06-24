@@ -1,3 +1,4 @@
+import { formatSeconds } from "./string-util";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -84,4 +85,17 @@ export function filterByLast<TItem extends { date: string }>(
       return success;
     });
   return items.filter((item) => validItems.includes(item));
+}
+
+export function createChron() {
+  let startTime: number | undefined;
+  return {
+    start: () => (startTime = Date.now()),
+    elapsed: (formatted?: boolean) => {
+      if (!startTime) throw new Error(`Chron was not started`);
+      const seconds = (Date.now() - startTime) / 1000;
+      if (formatted) return formatSeconds(seconds);
+      return seconds;
+    },
+  };
 }

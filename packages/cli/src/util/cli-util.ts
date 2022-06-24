@@ -25,6 +25,20 @@ export function renderProgressBar(progress: number, size = 10) {
   return completeChar.repeat(completedSize) + incompleteChar.repeat(restSize);
 }
 
+export function logVars(data: Record<string, any>) {
+  let first = true;
+  for (const key in data) {
+    if (first) {
+      console.log();
+      first = false;
+    }
+    const value = data[key];
+    console.log(
+      `${chalk.cyan(key)}${chalk.grey(":")} ${chalk.white(value ?? "")}`
+    );
+  }
+}
+
 export function logExec(
   command: string,
   argv: string[] = [],

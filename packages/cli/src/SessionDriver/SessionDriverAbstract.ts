@@ -84,7 +84,7 @@ export abstract class SessionDriverAbstract {
   ) {}
   async onInit() {}
   abstract onWrite(data: WriteDataType): Promise<void>;
-  async onEnd() {}
+  async onEnd(data?: Record<string, any>) {}
   abstract onRead(
     data: ReadDataType,
     entity: EntityEnum

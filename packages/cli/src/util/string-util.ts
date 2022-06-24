@@ -72,6 +72,23 @@ export function formatUri(input: UriType, hidePassword?: boolean) {
   return uri;
 }
 
+export function formatSeconds(seconds: number) {
+  let unit: string;
+  let value: number;
+  if (seconds > 60 * 60) {
+    value = seconds / 60 / 60;
+    unit = `hour`;
+  } else if (seconds > 60) {
+    value = seconds / 60;
+    unit = `minute`;
+  } else {
+    value = seconds;
+    unit = `second`;
+  }
+  if (value !== 1) unit += `s`;
+  return `${value.toFixed(2)} ${unit}`;
+}
+
 export function makePathPatterns(values: string[] | undefined) {
   return values?.flatMap((v) => [v, `${v}/**`]);
 }

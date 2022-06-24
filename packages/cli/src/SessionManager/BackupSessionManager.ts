@@ -44,10 +44,10 @@ export class BackupSessionManager {
     }
   }
 
-  async endDrivers() {
+  async endDrivers(data?: Record<string, any>) {
     const drivers = [this.options.driver, ...(this.options.altDrivers ?? [])];
     for (const driver of drivers) {
-      await driver.onEnd();
+      await driver.onEnd(data);
     }
   }
 
