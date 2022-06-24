@@ -28,7 +28,7 @@ export class InitCommand extends CommandAbstract<
       },
       repositoryType: {
         description: "Repository types",
-        option: "-t,--repository-type <values>",
+        option: "-rt,--repository-type <values>",
         parser: (v) => parseStringList(v) as any,
       },
     });

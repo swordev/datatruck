@@ -107,7 +107,7 @@ export class PruneCommand extends CommandAbstract<
       },
       repositoryType: {
         description: "Repository types",
-        option: "-t,--repositoryType <values>",
+        option: "-rt,--repository-type <values>",
         parser: (v) => parseStringList(v) as any,
       },
       tag: {
