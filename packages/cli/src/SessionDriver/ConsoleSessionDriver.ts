@@ -59,7 +59,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
   override async onInit() {
     this.chron.start();
     this.renderInterval = setInterval(() => {
-      if (this.lastMessage) this.printMessage(this.lastMessage);
+      if (this.lastMessage) this.printMessage(this.lastMessage, false);
     }, 100);
   }
 
@@ -76,7 +76,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
     throw new AppError("Method not implemented");
   }
 
-  protected printMessage(message: MessageType) {
+  protected printMessage(message: MessageType, endMessage: boolean) {
     const text = this.renderMessage(message);
     if (this.options.verbose && this.lastMessageText === text) {
       return;
@@ -86,9 +86,11 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
     } else {
       const columns = process.stdout.columns;
       const line = this.renderSpinner(text);
-      const [truncatedLine, truncted] = truncate(line, columns);
+      const [truncatedLine, truncated] = endMessage
+        ? [line, false]
+        : truncate(line, columns);
 
-      if (this.lastColumns && columns !== this.lastColumns && truncted)
+      if (this.lastColumns && columns !== this.lastColumns && truncated)
         process.stdout.write(`${clearCommand}\n`);
       process.stdout.write(
         `${clearCommand}${truncatedLine}${hideCursorCommand}`
@@ -230,10 +232,12 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
       return;
     }
 
-    this.printMessage(message);
+    const endMessage =
+      !this.options.verbose &&
+      (!hasProgress || data.action === ActionEnum.End || isHeader);
 
-    if (!this.options.verbose)
-      if (!hasProgress || data.action === ActionEnum.End || isHeader)
-        process.stdout.write("\n");
+    this.printMessage(message, endMessage);
+
+    if (endMessage) process.stdout.write("\n");
   }
 }
