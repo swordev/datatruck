@@ -33,7 +33,7 @@ export class BackupSessionsCommand extends CommandAbstract<
       },
       tag: {
         description: "Tags",
-        option: "--tag <values>",
+        option: "-t,--tag <values>",
         parser: parseStringList,
       },
       limit: {

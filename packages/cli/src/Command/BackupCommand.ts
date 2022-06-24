@@ -45,7 +45,7 @@ export class BackupCommand extends CommandAbstract<
       },
       tag: {
         description: "Tags",
-        option: "--tag <values>",
+        option: "-t,--tag <values>",
         parser: parseStringList,
       },
       date: {
