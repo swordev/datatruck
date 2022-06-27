@@ -14,6 +14,7 @@ export type SnapshotsActionOptionsType = {
   ids?: string[];
   repositoryNames?: string[];
   packageNames?: string[];
+  packageTaskNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;
   tags?: string[];

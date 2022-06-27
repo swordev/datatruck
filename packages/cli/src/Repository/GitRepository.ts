@@ -156,6 +156,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     });
 
     const pkgPatterns = makePathPatterns(data.options.packageNames);
+    const pkgTaskPatterns = makePathPatterns(data.options.packageTaskNames);
 
     await git.clone({ repo: this.config.repo });
 
@@ -174,6 +175,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
         if (pkgPatterns && !isMatch(parsedTag.package, pkgPatterns))
           return result;
 
+        if (pkgTaskPatterns && !isMatch(parsedTag.task || "", pkgTaskPatterns))
+          return result;
+
         if (
           data.options.tags &&
           !parsedTag.tags.some((value) => data.options.tags?.includes(value))
@@ -184,6 +188,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
           id: parsedTag.id,
           date: parsedTag.date,
           packageName: parsedTag.package,
+          packageTaskName: parsedTag.task,
           tags: parsedTag.tags,
         });
         return result;
@@ -273,6 +278,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       tags: data.options.tags ?? [],
       date: data.snapshot.date,
       package: data.package.name,
+      task: data.package.task?.name,
       version: nodePkg.version,
     });
 

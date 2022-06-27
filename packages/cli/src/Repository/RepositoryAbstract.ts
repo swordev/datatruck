@@ -16,6 +16,7 @@ export type SnapshotType = {
 export type SnapshotResultType = SnapshotType & {
   originalId: string;
   packageName: string;
+  packageTaskName: string | undefined;
   tags: string[];
 };
 
@@ -34,7 +35,7 @@ export type InitDataType = {
 export type SnapshotsDataType = {
   options: Pick<
     SnapshotsActionOptionsType,
-    "ids" | "packageNames" | "verbose" | "tags"
+    "ids" | "packageNames" | "packageTaskNames" | "verbose" | "tags"
   >;
 };
 
@@ -66,6 +67,7 @@ export enum SnapshotTagEnum {
   SHORT_ID = "shortId",
   DATE = "date",
   PACKAGE = "package",
+  TASK = "task",
   TAGS = "tags",
   VERSION = "version",
 }
@@ -75,6 +77,7 @@ export type SnapshotTagObjectType = {
   [SnapshotTagEnum.SHORT_ID]: string;
   [SnapshotTagEnum.DATE]: string;
   [SnapshotTagEnum.PACKAGE]: string;
+  [SnapshotTagEnum.TASK]: string | undefined;
   [SnapshotTagEnum.TAGS]: string[];
   [SnapshotTagEnum.VERSION]: string;
 };

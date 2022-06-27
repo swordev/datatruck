@@ -126,11 +126,11 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   static parseSnapshotTags(tags: string[]) {
-    const result: Partial<SnapshotTagObjectType> & {
+    const result: SnapshotTagObjectType & {
       tags: string[];
     } = {
       tags: [],
-    };
+    } as any;
     for (const tag of tags) {
       const tagItem = ResticRepository.parseSnapshotTag(tag);
       if (tagItem && tagItem.name !== "tags") {
@@ -139,7 +139,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         result.tags.push(tag);
       }
     }
-    return result as Required<typeof result>;
+    return result as typeof result;
   }
 
   override onGetSource() {
@@ -164,6 +164,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       log: data.options.verbose,
     });
     const packagePatterns = makePathPatterns(data.options.packageNames);
+    const taskNamePatterns = makePathPatterns(data.options.packageTaskNames);
     const result = await restic.snapshots({
       json: true,
       tags: [
@@ -180,12 +181,15 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       if (!tag.id) return items;
       if (packagePatterns && !isMatch(tag.package, packagePatterns))
         return items;
+      if (taskNamePatterns && !isMatch(tag.task || "", taskNamePatterns))
+        return items;
       const itemTags = tag.tags ?? [];
       if (data.options.tags && !itemTags.some((t) => itemTags.includes(t)))
         return items;
       items.push({
         originalId: item.id,
         packageName: tag.package,
+        packageTaskName: tag.task,
         date: tag.date,
         id: tag.id,
         tags: itemTags,
@@ -309,6 +313,14 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           nodePkg.version
         ),
         packageTag,
+        ...(data.package.task?.name
+          ? [
+              ResticRepository.buildSnapshotTag(
+                SnapshotTagEnum.TASK,
+                data.package.task?.name
+              ),
+            ]
+          : []),
         ...(data.options.tags ?? []),
       ],
       onStream: async (streamData) => {

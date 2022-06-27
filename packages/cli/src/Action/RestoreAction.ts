@@ -107,6 +107,7 @@ export class RestoreAction<TRequired extends boolean = true> {
       const snapshots = await repoInstance.onSnapshots({
         options: {
           packageNames: this.options.packageNames,
+          packageTaskNames: this.options.packageTaskNames,
           ids: [this.options.snapshotId],
           tags: this.options.tags,
         },

@@ -9,6 +9,7 @@ import { CommandAbstract } from "./CommandAbstract";
 export type SnapshotsCommandOptionsType<TResolved = false> = {
   id?: If<TResolved, string[]>;
   package?: If<TResolved, string[]>;
+  packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   longId?: boolean;
@@ -86,6 +87,11 @@ export class SnapshotsCommand extends CommandAbstract<
         description: "Package names",
         parser: parseStringList,
       },
+      packageTask: {
+        description: "Package task names",
+        option: "-pt,--package-task <values>",
+        parser: parseStringList,
+      },
       repository: {
         option: "-r,--repository <names>",
         description: "Repository names",
@@ -109,6 +115,7 @@ export class SnapshotsCommand extends CommandAbstract<
     const snapshots = new SnapshotsAction(config, {
       ids: this.options.id,
       packageNames: this.options.package,
+      packageTaskNames: this.options.packageTask,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
       last: this.options.last,
@@ -125,11 +132,19 @@ export class SnapshotsCommand extends CommandAbstract<
     const dataFormat = new DataFormat({
       items: await snapshots.exec(),
       table: {
-        labels: ["Id.", "Date", "Package", "Repository", "Repository type"],
+        labels: [
+          "Id.",
+          "Date",
+          "Package",
+          "Task",
+          "Repository",
+          "Repository type",
+        ],
         handler: (item) => [
           this.options.longId ? item.id : item.id.slice(0, 8),
           item.date.replace("T", " ").replace("Z", ""),
           item.packageName,
+          item.packageTaskName || "",
           item.repositoryName,
           item.repositoryType,
         ],

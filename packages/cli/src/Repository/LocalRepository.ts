@@ -36,6 +36,7 @@ export type MetaDataType = {
   id: string;
   date: string;
   package: string;
+  task: string | undefined;
   tags: string[];
   version: string;
 };
@@ -182,6 +183,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
     const snapshotNames = await readdir(this.config.outPath);
     const snapshots: SnapshotResultType[] = [];
     const packagePatterns = makePathPatterns(data.options.packageNames);
+    const taskPatterns = makePathPatterns(data.options.packageTaskNames);
 
     for (const snapshotName of snapshotNames) {
       const snapshotNameData = LocalRepository.parseSnapshotName(snapshotName);
@@ -203,6 +205,8 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       const metaPath = join(this.config.outPath, snapshotName);
       const meta = await LocalRepository.parseMetaData(metaPath);
 
+      if (taskPatterns && !isMatch(meta.task || "", taskPatterns)) continue;
+
       if (
         data.options.ids &&
         !data.options.ids.some((id) => meta.id.startsWith(id))
@@ -219,6 +223,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
         id: meta.id,
         date: meta.date,
         packageName: meta.package,
+        packageTaskName: meta.task,
         tags: meta.tags,
       });
     }
@@ -390,6 +395,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       date: data.snapshot.date,
       tags: data.options.tags ?? [],
       package: data.package.name,
+      task: data.package.task?.name,
       version: nodePkg.version,
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
