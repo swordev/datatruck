@@ -1,4 +1,7 @@
 # gitignore
+backup*
+**/.git
+**/.dockerignore
 **/.history
 **/.wireit
 **/.pnpm-store
