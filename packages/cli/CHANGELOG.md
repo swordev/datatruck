@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.8.0
+
+### Minor Changes
+
+- [`8c421ab`](https://github.com/swordev/datatruck/commit/8c421ab0adb6f2d5bc81e91fa387c5daa848f411) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `--package-task` option to snapshot command
+
 ## 0.7.0
 
 ### Minor Changes
