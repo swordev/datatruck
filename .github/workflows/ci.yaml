@@ -42,8 +42,8 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
-      - name: Patch
-        run: pnpm patch
+      - name: Compose
+        run: pnpm compose
       - name: Create release pull request or publish to npm
         id: changesets
         uses: changesets/action@v1
