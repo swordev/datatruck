@@ -24,6 +24,7 @@ export type SqlDumpTaskConfigType = {
   port?: number;
   database: string;
   username: string;
+  storedPrograms?: boolean;
   targetDatabase?: TargetDatabaseType;
   includeTables?: string[];
   excludeTables?: string[];
@@ -62,6 +63,7 @@ export const sqlDumpTaskDefinition: JSONSchema7 = {
         collate: { type: "string" },
       },
     },
+    storedPrograms: { type: "boolean" },
     includeTables: makeRef(DefinitionEnum.stringListUtil),
     excludeTables: makeRef(DefinitionEnum.stringListUtil),
     oneFileByTable: { type: "boolean" },
@@ -126,7 +128,8 @@ export abstract class SqlDumpTaskAbstract<
   abstract onDatabaseIsEmpty(databaseName: string): Promise<boolean>;
   abstract onFetchTableNames(database: string): Promise<string[]>;
   abstract onExecQuery(query: string): ReturnType<typeof exec>;
-  abstract onExport(tableNames: string[], output: string): Promise<void>;
+  abstract onExportTables(tableNames: string[], output: string): Promise<void>;
+  abstract onExportStoredPrograms(output: string): Promise<void>;
   abstract onImport(path: string, database: string): Promise<void>;
 
   override async onBackup(data: BackupDataType): Promise<void> {
@@ -152,7 +155,7 @@ export abstract class SqlDumpTaskAbstract<
         outputPath,
         serializeSqlFile({ database: this.config.database })
       );
-      await this.onExport(tableNames, outPath);
+      await this.onExportTables(tableNames, outPath);
     } else {
       let current = 0;
       for (const tableName of tableNames) {
@@ -167,8 +170,13 @@ export abstract class SqlDumpTaskAbstract<
           outputPath,
           serializeSqlFile({ table: tableName })
         );
-        await this.onExport([tableName], outPath);
+        await this.onExportTables([tableName], outPath);
       }
+    }
+
+    if (this.config.storedPrograms) {
+      const outPath = join(outputPath, "stored-programs.sql");
+      await this.onExportStoredPrograms(outPath);
     }
   }
 

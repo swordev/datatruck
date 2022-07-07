@@ -84,7 +84,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
 	`);
   }
 
-  override async onExport(tableNames: string[], output: string) {
+  override async onExportTables(tableNames: string[], output: string) {
     const stream = createWriteStream(output);
 
     await Promise.all([
@@ -136,6 +136,42 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
 
     if (!successFooter)
       throw new AppError("No end line found (incomplete backup)");
+  }
+
+  override async onExportStoredPrograms(output: string) {
+    const stream = createWriteStream(output);
+    await Promise.all([
+      new Promise<void>((resolve, reject) => {
+        stream.on("close", resolve);
+        stream.on("error", reject);
+      }),
+      await exec(
+        "mysqldump",
+        [
+          ...(await this.buildConnectionArgs()),
+          "--lock-tables=false",
+          "--routines",
+          "--events",
+          "--skip-triggers",
+          "--no-create-info",
+          "--no-data",
+          "--no-create-db",
+          "--skip-opt",
+        ],
+        null,
+        {
+          pipe: { stream: stream },
+          log: {
+            exec: this.verbose,
+            stderr: this.verbose,
+            allToStderr: true,
+          },
+          stderr: {
+            toExitCode: true,
+          },
+        }
+      ),
+    ]);
   }
 
   override async onImport(path: string, database: string) {

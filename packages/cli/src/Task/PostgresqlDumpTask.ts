@@ -91,7 +91,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
 	  `);
   }
 
-  override async onExport(tableNames: string[], output: string) {
+  override async onExportTables(tableNames: string[], output: string) {
     const stream = createWriteStream(output);
 
     await Promise.all([
@@ -115,6 +115,10 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
         }
       ),
     ]);
+  }
+
+  override async onExportStoredPrograms() {
+    throw new Error(`Method not implemented: onExportStoredPrograms`);
   }
 
   override async onImport(path: string, database: string) {
