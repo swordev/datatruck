@@ -4,8 +4,10 @@ import {
   RepositoryConfigTypeType,
 } from "../src/Config/RepositoryConfig";
 import { mkTmpDir, writeJSONFile } from "../src/util/fs-util";
-import { writeFile } from "fs/promises";
-import { join } from "path";
+import "./toEqualMessage";
+import FastGlob from "fast-glob";
+import { mkdir, readFile, rm, writeFile } from "fs/promises";
+import { dirname, join } from "path";
 
 export async function makeRepositoryConfig(
   type: RepositoryConfigTypeType,
@@ -67,12 +69,99 @@ export async function makeConfig(config: ConfigType) {
   return path;
 }
 
-export async function makeJsonSource(json: unknown) {
-  const dir = await mkTmpDir("test-source");
-  await writeJSONFile(`${dir}/file1.json`, json);
-  return dir;
+export type FileChangesAction = false | string | Buffer;
+export type FileChanges = { [name: string]: FileChanges | FileChangesAction };
+export type FileMap = Record<string, Buffer | string | null>;
+export type FileChangerResult = {
+  path: string;
+  update: (changes: FileChanges) => Promise<FileMap>;
+};
+
+export async function applyFileChanges(
+  dir: string,
+  changes: FileChanges,
+  returnFiles = true
+) {
+  for (const name in changes) {
+    const change = changes[name];
+    const path = join(dir, name);
+    if (typeof change === "string" || Buffer.isBuffer(change)) {
+      await mkdir(dirname(path), {
+        recursive: true,
+      });
+      await writeFile(path, change);
+    } else if (change === false) {
+      await rm(path, {
+        recursive: true,
+      });
+    } else {
+      await applyFileChanges(path, change, false);
+    }
+  }
+  if (!returnFiles) return {};
+  return await readFiles(dir);
 }
 
-export async function alterJsonSource(sourceDir: string, json: unknown) {
-  await writeJSONFile(`${sourceDir}/file1.json`, json);
+export function sortObjectKeys<T extends Record<string, any>>(object: T) {
+  const keys = Object.keys(object).sort();
+  const sorted: T = {} as any;
+  for (const name of keys) {
+    sorted[name as keyof T] = object[name];
+  }
+  return sorted;
+}
+
+export async function createFileChanger(changes?: FileChanges) {
+  const path = await mkTmpDir("test-source");
+  const update = (changes: FileChanges) => applyFileChanges(path, changes);
+  if (changes) await update(changes);
+  return {
+    path,
+    update,
+  };
+}
+
+export async function readFiles(dir: string) {
+  const files = await FastGlob("**", {
+    cwd: dir,
+    dot: true,
+    onlyFiles: false,
+    stats: true,
+  });
+  const result: FileMap = {};
+
+  for (const file of files) {
+    if (file.stats!.isDirectory()) {
+      result[file.name] = null;
+    } else {
+      const path = join(dir, file.path);
+      const contents = await readFile(path);
+      result[file.name] = file.name.endsWith(".bin")
+        ? contents
+        : contents.toString();
+    }
+  }
+
+  return sortObjectKeys(result);
+}
+
+export async function expectSameFiles(
+  files1: FileMap,
+  files2: FileMap,
+  errorMessage: string
+) {
+  expect(Object.keys(files1).sort().join("\n")).toEqualMessage(
+    Object.keys(files2).sort().join("\n"),
+    errorMessage
+  );
+
+  for (const name1 in files1) {
+    const file1 = files1[name1];
+    const file2 = files2[name1];
+    if (Buffer.isBuffer(file1) && Buffer.isBuffer(file2)) {
+      expect(Buffer.compare(file1, file2)).toEqualMessage(0, errorMessage);
+    } else {
+      expect(file1).toEqualMessage(file2, errorMessage);
+    }
+  }
 }

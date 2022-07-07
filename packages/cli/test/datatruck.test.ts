@@ -1,15 +1,16 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
 import { parentTmpDir } from "../src/util/fs-util";
+import { expectSuccessBackup, expectSuccessRestore } from "./expect";
 import {
-  alterJsonSource,
   makeConfig,
-  makeJsonSource,
   makeRepositoryConfig,
+  createFileChanger,
+  FileChanges,
 } from "./util";
-import { readdir, rm, readFile } from "fs/promises";
+import { rm } from "fs/promises";
 
-jest.setTimeout(60000);
+jest.setTimeout(120_000);
 
 const repositoryTypes = [
   "local",
@@ -111,15 +112,21 @@ describe("datatruck", () => {
   });
 
   it.each(repositoryTypes)("backup, restore, prune %p", async (type) => {
-    const sourcePath = await makeJsonSource({ id: 1 });
+    const fileChanges: FileChanges[] = [
+      {
+        "file1.json": JSON.stringify({ id: 2 }),
+      },
+    ];
+
+    const fileChanger = await createFileChanger();
     const configPath = await makeConfig({
       repositories: [await makeRepositoryConfig(type)],
       packages: [
         {
           name: "main/files",
-          path: sourcePath,
+          path: fileChanger.path,
           repositoryNames: [type],
-          restorePath: `${sourcePath}-restore-{snapshotId}`,
+          restorePath: `${fileChanger.path}-restore-{snapshotId}`,
         },
       ],
     });
@@ -135,135 +142,34 @@ describe("datatruck", () => {
       )
     ).toBe(0);
 
-    const parseSnapshotsLog1 = makeParseLog(CommandEnum.snapshots);
-
-    expect(
-      await exec(
-        CommandEnum.snapshots,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    expect(parseSnapshotsLog1()).toMatchObject([]);
-
-    expect(
-      await exec(
-        CommandEnum.backup,
-        {
-          config: configPath,
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const parseSnapshotsLog2 = makeParseLog(CommandEnum.snapshots);
-
-    expect(
-      await exec(
-        CommandEnum.snapshots,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const snapshots2 = parseSnapshotsLog2();
-
-    expect(snapshots2.length).toBe(1);
-    expect(snapshots2[0].id.length).toBe(40);
-    expect(snapshots2[0].packageName).toBe("main/files");
-
-    expect(
-      await exec(
-        CommandEnum.backup,
-        {
-          config: configPath,
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const endConsoleLog3 = makeParseLog(CommandEnum.snapshots);
-
-    expect(
-      await exec(
-        CommandEnum.snapshots,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const snapshots3 = endConsoleLog3();
-
-    expect(snapshots3.length).toBe(2);
-
-    await alterJsonSource(sourcePath, { id: 2 });
-
-    expect(
-      await exec(
-        CommandEnum.backup,
-        {
-          config: configPath,
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const endConsoleLog4 = makeParseLog(CommandEnum.snapshots);
-
-    expect(
-      await exec(
-        CommandEnum.snapshots,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    const snapshots4 = endConsoleLog4();
-
-    expect(snapshots4.length).toBe(3);
-    const [lastSnapshot] = snapshots4;
-
-    expect(
-      await exec(
-        CommandEnum.restore,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {
-          id: lastSnapshot.id,
-        }
-      )
-    ).toBe(0);
-
-    const restorePath = `${sourcePath}-restore-${lastSnapshot.id}`;
-    expect(await readdir(restorePath)).toMatchObject(["file1.json"]);
-    expect(
-      JSON.parse((await readFile(`${restorePath}/file1.json`)).toString())
-    ).toMatchObject({
-      id: 2,
+    await fileChanger.update({
+      "file1.json": JSON.stringify({ id: 1 }),
     });
+
+    const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] = [];
+
+    let backupIndex = 0;
+    for (const changes of fileChanges) {
+      backupResults.push(
+        await expectSuccessBackup({
+          configPath,
+          fileChanger,
+          changes,
+          backupIndex: ++backupIndex,
+        })
+      );
+    }
+
+    let restoreIndex = 0;
+    for (const backupResult of backupResults) {
+      await expectSuccessRestore({
+        configPath,
+        fileChanger,
+        restoreIndex: restoreIndex++,
+        snapshotId: backupResult.snapshotId,
+        files: backupResult.files,
+      });
+    }
 
     if (type === "git") return;
     expect(
@@ -281,7 +187,7 @@ describe("datatruck", () => {
       )
     ).toBe(0);
 
-    const endConsoleLog5 = makeParseLog(CommandEnum.snapshots);
+    const parseSnapshotsLog = makeParseLog(CommandEnum.snapshots);
 
     expect(
       await exec(
@@ -295,79 +201,9 @@ describe("datatruck", () => {
       )
     ).toBe(0);
 
-    const snapshots5 = endConsoleLog5();
-
-    expect(snapshots5.length).toBe(1);
-    expect(snapshots5[0].id).toBe(snapshots4[0].id);
-  });
-
-  it.each(repositoryTypes)("prune policy config %p", async (type) => {
-    const sourcePath = await makeJsonSource({ id: 1 });
-    const configPath = await makeConfig({
-      repositories: [await makeRepositoryConfig(type)],
-      packages: [
-        {
-          name: "main/files",
-          path: sourcePath,
-          repositoryNames: [type],
-          prunePolicy: {
-            keepLast: 2,
-          },
-        },
-      ],
-    });
-
-    expect(
-      await exec(
-        CommandEnum.init,
-        {
-          config: configPath,
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    for (let x = 1; x <= 3; ++x)
-      expect(
-        await exec(
-          CommandEnum.backup,
-          {
-            config: configPath,
-            verbose: 1,
-          },
-          {}
-        )
-      ).toBe(0);
-
-    if (type === "git") return;
-
-    expect(
-      await exec(
-        CommandEnum.prune,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        { showAll: true, confirm: true }
-      )
-    ).toBe(0);
-
-    const parseSnapshotsLog1 = makeParseLog(CommandEnum.snapshots);
-
-    expect(
-      await exec(
-        CommandEnum.snapshots,
-        {
-          config: configPath,
-          outputFormat: "json",
-          verbose: 1,
-        },
-        {}
-      )
-    ).toBe(0);
-
-    expect(parseSnapshotsLog1().length).toBe(2);
+    const snapshots = parseSnapshotsLog();
+    const lastBackup = backupResults[backupResults.length - 1];
+    expect(snapshots.length).toBe(1);
+    expect(snapshots[0].id).toBe(lastBackup.snapshotId);
   });
 });
