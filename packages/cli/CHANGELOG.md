@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.9.0
+
+### Minor Changes
+
+- [`05de947`](https://github.com/swordev/datatruck/commit/05de947264727cddb79293eca6cb0b43382eab6b) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `storedPrograms` config option in `mysql-dump` task
+
+### Patch Changes
+
+- [`ef99bdf`](https://github.com/swordev/datatruck/commit/ef99bdf0301b5bbdf965c1fa1d00e78edce1c931) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
 ## 0.8.0
 
 ### Minor Changes
