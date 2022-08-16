@@ -194,6 +194,56 @@ export class BackupAction<TRequired extends boolean = true> {
     return error ? false : true;
   }
 
+  protected async execCopyRepository(
+    session: BackupSessionManager,
+    pkg: PackageConfigType,
+    repo: RepositoryConfigType,
+    mirrorRepo: RepositoryConfigType,
+    snapshot: SnapshotType
+  ) {
+    const repositoryId = session.findRepositoryId({
+      packageName: pkg.name,
+      repositoryName: mirrorRepo.name,
+    });
+
+    await session.startRepository({
+      id: repositoryId,
+    });
+
+    let error: Error | undefined;
+    if (this.taskErrors[pkg.name]?.length) {
+      error = new AppError("Task failed");
+    } else {
+      try {
+        const repoInstance = RepositoryFactory(repo);
+        await repoInstance.onCopyBackup({
+          options: this.options,
+          package: pkg,
+          snapshot,
+          mirrorRepositoryConfig: mirrorRepo.config,
+          onProgress: async (data) => {
+            await session.progressRepository({
+              id: repositoryId,
+              progressCurrent: data.current,
+              progressPercent: data.percent,
+              progressStep: data.step,
+              progressStepPercent: data.stepPercent,
+              progressTotal: data.total,
+            });
+          },
+        });
+      } catch (_) {
+        if (!this.repoErrors[pkg.name]) this.repoErrors[pkg.name] = [];
+        this.repoErrors[pkg.name].push((error = _ as Error));
+      }
+    }
+    await session.endRepository({
+      id: repositoryId,
+      error: error?.stack,
+    });
+    return error ? false : true;
+  }
+
   protected getError(pkg: PackageConfigType) {
     const taskErrors = this.taskErrors[pkg.name]?.length;
     const repoErrors = this.repoErrors[pkg.name]?.length;
@@ -241,9 +291,45 @@ export class BackupAction<TRequired extends boolean = true> {
         );
       }
 
-      for (const repoName of pkg.repositoryNames ?? []) {
+      const mirrorRepoMap: Record<string, string[]> = {};
+      const allMirrorRepoNames: string[] = [];
+      const repoNames = pkg.repositoryNames ?? [];
+
+      for (const repoName of repoNames) {
+        const repo = findRepositoryOrFail(this.config, repoName);
+        if (repo.mirrorRepoNames)
+          mirrorRepoMap[repoName] = repo.mirrorRepoNames.filter(
+            (mirrorRepoName) => {
+              allMirrorRepoNames.push(mirrorRepoName);
+              return repoNames.includes(mirrorRepoName);
+            }
+          );
+      }
+
+      for (const repoName of repoNames) {
+        if (allMirrorRepoNames.includes(repoName)) continue;
         const repo = findRepositoryOrFail(this.config, repoName);
         await this.execRepository(session, pkg, repo, snapshot, targetPath);
+      }
+
+      for (const repoName of repoNames) {
+        const repo = findRepositoryOrFail(this.config, repoName);
+        const mirrorRepoNames = mirrorRepoMap[repoName];
+        if (mirrorRepoNames) {
+          for (const mirrorRepoName of mirrorRepoNames) {
+            const mirrorRepo = findRepositoryOrFail(
+              this.config,
+              mirrorRepoName
+            );
+            await this.execCopyRepository(
+              session,
+              pkg,
+              repo,
+              mirrorRepo,
+              snapshot
+            );
+          }
+        }
       }
 
       const error = this.getError(pkg);

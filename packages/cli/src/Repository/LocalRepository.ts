@@ -23,11 +23,12 @@ import {
   SnapshotsDataType,
   SnapshotResultType,
   PruneDataType,
+  CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import fg from "fast-glob";
 import { createReadStream } from "fs";
-import { mkdir, readFile, writeFile, rm } from "fs/promises";
+import { mkdir, readFile, writeFile, rm, copyFile } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
@@ -401,6 +402,36 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
     await writeFile(metaPath, LocalRepository.stringifyMetaData(meta));
+  }
+
+  override async onCopyBackup(
+    data: CopyBackupType<LocalRepositoryConfigType>
+  ): Promise<void> {
+    const snapshotName = LocalRepository.buildSnapshotName({
+      snapshotId: data.snapshot.id,
+      snapshotDate: data.snapshot.date,
+      packageName: data.package.name,
+    });
+    const sourcePath = resolve(join(this.config.outPath, snapshotName));
+    const targetPath = resolve(
+      join(data.mirrorRepositoryConfig.outPath, snapshotName)
+    );
+    const sourceMetaPath = `${sourcePath}.json`;
+    const targetMetaPath = `${targetPath}.json`;
+
+    if (data.options.verbose) logExec(`Copying files to ${targetPath}`);
+
+    await mkdir(targetPath);
+
+    await cpy({
+      input: {
+        type: "glob",
+        sourcePath,
+      },
+      targetPath,
+    });
+
+    await copyFile(sourceMetaPath, targetMetaPath);
   }
 
   override async onRestore(

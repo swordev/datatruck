@@ -20,6 +20,7 @@ import {
   SnapshotTagEnum,
   SnapshotTagObjectType,
   PruneDataType,
+  CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import fg from "fast-glob";
@@ -195,7 +196,6 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       }, [] as SnapshotResultType[])
       .sort((a, b) => a.date.localeCompare(b.date));
   }
-
   override async onBackup(
     data: BackupDataType<GitPackageRepositoryConfigType>
   ) {
@@ -290,7 +290,11 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       recursive: true,
     });
   }
-
+  override onCopyBackup(
+    data: CopyBackupType<GitRepositoryConfigType>
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
   override async onRestore(
     data: RestoreDataType<GitPackageRepositoryConfigType>
   ) {

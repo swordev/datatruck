@@ -260,6 +260,26 @@ export class ResticUtil {
     }
   }
 
+  async copy(options: {
+    id: string;
+    onStream?: (data: BackupStreamType) => Promise<void>;
+  }) {
+    return await this.exec(["copy", "--json", options.id], {
+      stderr: {
+        toExitCode: true,
+      },
+      stdout: {
+        ...(options.onStream && {
+          onData: async (data) => {
+            if (data.startsWith("{") && data.endsWith("}")) {
+              await options.onStream?.(JSON.parse(data));
+            }
+          },
+        }),
+      },
+    });
+  }
+
   async restore(options: {
     id: string;
     target: string;

@@ -26,6 +26,7 @@ export const repositoryConfigDefinition: JSONSchema7 = {
   properties: {
     type: { type: "string" },
     name: { type: "string" },
+    mirrorRepoNames: makeRef(DefinitionEnum.stringListUtil),
     enabled: {
       anyOf: [
         {
@@ -78,6 +79,7 @@ export type RepositoryConfigEnabledActionType =
 
 export type RepositoryConfigType = {
   name: string;
+  mirrorRepoNames?: string[];
   enabled?:
     | boolean
     | {

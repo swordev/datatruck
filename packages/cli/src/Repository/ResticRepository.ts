@@ -19,6 +19,7 @@ import {
   SnapshotTagEnum,
   PruneDataType,
   ProgressDataType,
+  CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import FastGlob from "fast-glob";
@@ -354,6 +355,37 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       total: lastProgress?.total || 0,
       current: lastProgress?.total || 0,
       percent: 100,
+    });
+  }
+
+  override async onCopyBackup(
+    data: CopyBackupType<ResticRepositoryConfigType>
+  ): Promise<void> {
+    const config = data.mirrorRepositoryConfig;
+
+    const [snapshot] = await this.onSnapshots({
+      options: {
+        ids: [data.snapshot.id],
+        packageNames: [data.package.name],
+      },
+    });
+
+    if (!snapshot) throw new AppError(`Snapshot not found`);
+
+    const restic = new ResticUtil({
+      env: {
+        ...(await this.buildEnv()),
+        ...(typeof config.password === "string"
+          ? { RESTIC_PASSWORD2: config.password }
+          : { RESTIC_PASSWORD_FILE2: resolve(config.password.path) }),
+        RESTIC_REPOSITORY2: await ResticUtil.formatRepository(
+          config.repository
+        ),
+      },
+      log: data.options.verbose,
+    });
+    await restic.copy({
+      id: snapshot.originalId,
     });
   }
 

@@ -39,6 +39,14 @@ export type SnapshotsDataType = {
   >;
 };
 
+export type CopyBackupType<TRepositoryConfig> = {
+  options: BackupActionOptionsType;
+  snapshot: SnapshotType;
+  package: PackageConfigType;
+  mirrorRepositoryConfig: TRepositoryConfig;
+  onProgress: (data: ProgressDataType) => Promise<void>;
+};
+
 export type BackupDataType<TPackageConfig> = {
   options: BackupActionOptionsType;
   snapshot: SnapshotType;
@@ -91,6 +99,7 @@ export abstract class RepositoryAbstract<TConfig> {
   abstract onInit(data: InitDataType): Promise<void>;
   abstract onPrune(data: PruneDataType): Promise<void>;
   abstract onSnapshots(data: SnapshotsDataType): Promise<SnapshotResultType[]>;
+  abstract onCopyBackup(data: CopyBackupType<TConfig>): Promise<void>;
   abstract onBackup(data: BackupDataType<unknown>): Promise<void>;
   abstract onRestore(data: RestoreDataType<unknown>): Promise<void>;
 }

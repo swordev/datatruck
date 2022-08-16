@@ -251,4 +251,82 @@ describe("datatruck", () => {
     expect(snapshots.length).toBe(1);
     expect(snapshots[0].id).toBe(lastBackup.snapshotId);
   });
+
+  it.each(repositoryTypes.filter((v) => v !== "git"))(
+    "backup into %p mirror repository",
+    async (type) => {
+      const fileChanger = await createFileChanger();
+      const configPath = await makeConfig({
+        repositories: [
+          {
+            ...(await makeRepositoryConfig(type)),
+            mirrorRepoNames: [`${type}-mirror`],
+          },
+          await makeRepositoryConfig(type, `${type}-mirror`),
+        ],
+        packages: [
+          {
+            name: "main/files",
+            path: fileChanger.path,
+            repositoryNames: [type, `${type}-mirror`],
+            restorePath: `${fileChanger.path}-restore-{snapshotId}`,
+          },
+        ],
+      });
+
+      expect(
+        await exec(
+          CommandEnum.init,
+          {
+            config: configPath,
+            verbose: 1,
+          },
+          {}
+        )
+      ).toBe(0);
+
+      const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
+        [];
+
+      let backupIndex = 0;
+      for (const changes of fileChanges(type)) {
+        backupResults.push(
+          await expectSuccessBackup({
+            configPath,
+            fileChanger,
+            changes,
+            backupIndex: ++backupIndex,
+          })
+        );
+      }
+
+      let restoreIndex = 0;
+      for (const backupResult of backupResults) {
+        await expectSuccessRestore({
+          configPath,
+          fileChanger,
+          restoreIndex: restoreIndex++,
+          files: backupResult.files,
+          cleanRestorePath: true,
+          restoreOptions: {
+            id: backupResult.snapshotId,
+            repository: type,
+          },
+        });
+      }
+
+      for (const backupResult of backupResults) {
+        await expectSuccessRestore({
+          configPath,
+          fileChanger,
+          restoreIndex: restoreIndex++,
+          files: backupResult.files,
+          restoreOptions: {
+            id: backupResult.snapshotId,
+            repository: `${type}-mirror`,
+          },
+        });
+      }
+    }
+  );
 });

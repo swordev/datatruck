@@ -1,5 +1,6 @@
 import { GlobalOptionsType } from "../Command/CommandAbstract";
 import type { ConfigType } from "../Config/Config";
+import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
 import { schema } from "../JsonSchema/JsonSchema";
 import { findRepositoryOrFail } from "../util/datatruck/config-util";
@@ -29,10 +30,31 @@ export class ConfigAction<TRequired extends boolean = true> {
 
   static check(config: ConfigType) {
     const repositoryNames: string[] = [];
+    const mirrorRepoNames: string[] = [];
+    const repos: Record<string, RepositoryConfigType> = {};
     for (const repo of config.repositories) {
+      repos[repo.name] = repo;
       if (repositoryNames.includes(repo.name))
         throw new AppError(`Duplicated repository name: ${repo.name}`);
       repositoryNames.push(repo.name);
+    }
+
+    for (const repo of config.repositories) {
+      if (repo.mirrorRepoNames) {
+        for (const mirrorRepoName of repo.mirrorRepoNames) {
+          if (!repos[mirrorRepoName])
+            throw new AppError(
+              `Mirror repository name not found: ${mirrorRepoName}`
+            );
+          if (repos[mirrorRepoName].type !== repo.type)
+            throw new AppError(
+              `Mirror repository type is incompatible: ${mirrorRepoName}`
+            );
+          if (mirrorRepoNames.includes(mirrorRepoName))
+            throw new AppError(`Mirror repository is already used`);
+          mirrorRepoNames.push(mirrorRepoName);
+        }
+      }
     }
 
     const packageNames: string[] = [];
