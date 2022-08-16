@@ -87,11 +87,11 @@ export function makeParseLog<TCommand extends keyof LogMapType>(
 ) {
   const data: unknown[] = [];
   const consoleLog = console.log;
-  console.log = (...items: unknown[]) => {
+  console.log = console.info = (...items: unknown[]) => {
     data.push(...items);
   };
   return function parseLog() {
-    console.log = consoleLog;
+    console.log = console.info = consoleLog;
     return JSON.parse(data.flat().join("\n")) as LogMapType[TCommand];
   };
 }

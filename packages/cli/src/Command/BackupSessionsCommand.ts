@@ -89,7 +89,7 @@ export class BackupSessionsCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.log(dataFormat.format(this.globalOptions.outputFormat));
+      console.info(dataFormat.format(this.globalOptions.outputFormat));
 
     return 0;
   }

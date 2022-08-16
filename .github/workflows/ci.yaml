@@ -68,7 +68,7 @@ jobs:
               const vars = { version, published: true };
               Object.keys(vars).forEach(n => output[`${name}:${n}`] = vars[n]);
             });
-            console.log(output);
+            console.info(output);
             Object.keys(output).forEach(k => core.setOutput(k, output[k]));
       - id: image_meta
         name: Build image metadata

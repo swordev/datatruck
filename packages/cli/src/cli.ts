@@ -131,7 +131,7 @@ export function parseArgs(args: string[]) {
   onExit((eventName, error) => {
     if (eventName !== "exit") {
       process.stdout.write(showCursorCommand);
-      console.log(`\nClosing... (reason: ${eventName})`);
+      console.info(`\nClosing... (reason: ${eventName})`);
       if (error instanceof Error) console.error(red(error.stack));
     }
 

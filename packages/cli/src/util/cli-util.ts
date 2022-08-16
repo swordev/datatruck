@@ -29,11 +29,11 @@ export function logVars(data: Record<string, any>) {
   let first = true;
   for (const key in data) {
     if (first) {
-      console.log();
+      console.info();
       first = false;
     }
     const value = data[key];
-    console.log(
+    console.info(
       `${chalk.cyan(key)}${chalk.grey(":")} ${chalk.white(value ?? "")}`
     );
   }
