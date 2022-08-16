@@ -11,7 +11,7 @@ import { dirname, join } from "path";
 
 export async function makeRepositoryConfig(
   type: RepositoryConfigTypeType,
-  name = type
+  name: string = type
 ) {
   if (type === "local") {
     return makeLocalRepositoryConfig(name);

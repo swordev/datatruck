@@ -1,3 +1,4 @@
+import { RestoreCommandOptionsType } from "../src/Command/RestoreCommand";
 import { CommandEnum, exec, makeParseLog } from "../src/Factory/CommandFactory";
 import "./toEqualMessage";
 import {
@@ -7,6 +8,7 @@ import {
   FileMap,
   readFiles,
 } from "./util";
+import { rm } from "fs/promises";
 
 export async function expectSuccessBackup(data: {
   configPath: string;
@@ -52,9 +54,10 @@ export async function expectSuccessBackup(data: {
 export async function expectSuccessRestore(data: {
   configPath: string;
   fileChanger: FileChangerResult;
-  snapshotId: string;
   files: FileMap;
   restoreIndex: number;
+  restoreOptions: RestoreCommandOptionsType;
+  cleanRestorePath?: boolean;
 }) {
   const messageError = `Invalid snapshot (${data.restoreIndex})`;
   expect(
@@ -65,14 +68,17 @@ export async function expectSuccessRestore(data: {
         outputFormat: "json",
         verbose: 1,
       },
-      {
-        id: data.snapshotId,
-      }
+      data.restoreOptions
     )
   ).toEqualMessage(0, messageError);
 
-  const restorePath = `${data.fileChanger.path}-restore-${data.snapshotId}`;
+  const restorePath = `${data.fileChanger.path}-restore-${data.restoreOptions.id}`;
   const restoreFiles = await readFiles(restorePath);
 
   await expectSameFiles(data.files, restoreFiles, messageError);
+
+  if (data.cleanRestorePath)
+    await rm(restorePath, {
+      recursive: true,
+    });
 }
