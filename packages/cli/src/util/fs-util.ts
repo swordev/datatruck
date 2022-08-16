@@ -16,7 +16,7 @@ export function isLocalDir(path: string) {
 }
 
 export async function isDirEmpty(path: string) {
-  const files = await readdir(path);
+  const files = await readDir(path);
   return !files.length;
 }
 
@@ -47,7 +47,7 @@ export async function writeJSONFile<T = any>(path: string, json: T) {
 }
 export async function readdirIfExists(path: string) {
   if (!(await existsDir(path))) return [];
-  return await readdir(path);
+  return await readDir(path);
 }
 
 export const parseFileExtensions = ["json", "js", "ts", "yaml", "yml"];
@@ -172,12 +172,28 @@ export async function checkDir(path: string) {
   }
 }
 
+export async function readDir(path: string) {
+  try {
+    return await readdir(path);
+  } catch (anyError) {
+    const nodeError = anyError as NodeJS.ErrnoException;
+    if (nodeError.code === "ENOENT") {
+      const error: NodeJS.ErrnoException = new Error(nodeError.message);
+      error.code = nodeError.code;
+      error.errno = nodeError.errno;
+      error.path = nodeError.path;
+      throw error;
+    }
+    throw anyError;
+  }
+}
+
 export async function forEachFile(
   dirPath: string,
   cb: (path: string, dir: boolean) => void,
   includeDir?: boolean
 ) {
-  const files = await readdir(dirPath);
+  const files = await readDir(dirPath);
   for (const file of files) {
     const filePath = join(dirPath, file);
     if ((await stat(filePath)).isDirectory()) {

@@ -1,11 +1,11 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { resolveDatabaseName } from "../util/datatruck/config-util";
-import { mkdirIfNotExists } from "../util/fs-util";
+import { mkdirIfNotExists, readDir } from "../util/fs-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
-import { readFile, readdir } from "fs/promises";
+import { readFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
@@ -122,7 +122,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
 
     await mkdirIfNotExists(restorePath);
 
-    const files = await readdir(restorePath);
+    const files = await readDir(restorePath);
 
     for (const file of files) {
       if (!file.endsWith(MssqlTask.SUFFIX)) continue;

@@ -9,6 +9,7 @@ import {
   forEachFile,
   mkdirIfNotExists,
   parsePackageFile,
+  readDir,
   writePathLists,
 } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
@@ -26,7 +27,7 @@ import {
 import { ok } from "assert";
 import fg from "fast-glob";
 import { createReadStream } from "fs";
-import { mkdir, readdir, readFile, writeFile, rm } from "fs/promises";
+import { mkdir, readFile, writeFile, rm } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
@@ -180,7 +181,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       throw new Error(
         `Repository (${this.repository.name}) out path does not exist: ${this.config.outPath}`
       );
-    const snapshotNames = await readdir(this.config.outPath);
+    const snapshotNames = await readDir(this.config.outPath);
     const snapshots: SnapshotResultType[] = [];
     const packagePatterns = makePathPatterns(data.options.packageNames);
     const taskPatterns = makePathPatterns(data.options.packageTaskNames);

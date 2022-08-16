@@ -2,12 +2,12 @@ import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../util/cli-util";
 import { resolveDatabaseName } from "../util/datatruck/config-util";
-import { checkDir } from "../util/fs-util";
+import { checkDir, readDir } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
-import { mkdir, readdir, readFile } from "fs/promises";
+import { mkdir, readFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
@@ -206,7 +206,7 @@ export abstract class SqlDumpTaskAbstract<
       });
     }
 
-    const items = (await readdir(restorePath))
+    const items = (await readDir(restorePath))
       .map(parseSqlFile)
       .filter((v) => !!v) as SqlFile[];
 

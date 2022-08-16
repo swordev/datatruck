@@ -1,12 +1,17 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../util/cli-util";
-import { forEachFile, mkdirIfNotExists, mkTmpDir } from "../util/fs-util";
+import {
+  forEachFile,
+  mkdirIfNotExists,
+  mkTmpDir,
+  readDir,
+} from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { ChildProcess } from "child_process";
-import { readdir, readFile, rm } from "fs/promises";
+import { readFile, rm } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { join } from "path";
 import { normalize } from "path/posix";
@@ -177,7 +182,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
 
     await mkdirIfNotExists(restorePath);
 
-    const files = await readdir(restorePath);
+    const files = await readDir(restorePath);
 
     for (const file of files) {
       if (file.startsWith("ib_logfile")) {

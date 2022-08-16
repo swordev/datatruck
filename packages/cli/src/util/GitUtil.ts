@@ -1,6 +1,5 @@
-import { checkDir, isLocalDir } from "./fs-util";
+import { checkDir, isLocalDir, readDir } from "./fs-util";
 import { exec, ExecSettingsInterface } from "./process-util";
-import { readdir } from "fs/promises";
 
 export class GitUtil {
   constructor(
@@ -25,7 +24,7 @@ export class GitUtil {
   async canBeInit(repo: string) {
     return (
       isLocalDir(repo) &&
-      (!(await checkDir(repo)) || !(await readdir(repo)).length)
+      (!(await checkDir(repo)) || !(await readDir(repo)).length)
     );
   }
 
