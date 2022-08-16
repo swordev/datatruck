@@ -1,5 +1,17 @@
 # @datatruck/cli
 
+## 0.10.0
+
+### Minor Changes
+
+- [`bc9a0dd`](https://github.com/swordev/datatruck/commit/bc9a0ddf2bfb9353545c28d9cbd12e592328024e) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `mirrorRepoNames` config option
+
+### Patch Changes
+
+- [`795936c`](https://github.com/swordev/datatruck/commit/795936c1d2add7819ff5f40679313e1e594aeb7e) Thanks [@juanrgm](https://github.com/juanrgm)! - Show error stack trace if directory does not exist
+
+* [`d0d77b6`](https://github.com/swordev/datatruck/commit/d0d77b6c3d4eb0461c176981b165e20b49826082) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
 ## 0.9.0
 
 ### Minor Changes
