@@ -61,8 +61,9 @@ export class RestoreSessionsCommand extends CommandAbstract<
       }),
     });
 
+    const items = await action.exec(manager);
     const dataFormat = new DataFormat({
-      items: await action.exec(manager),
+      items,
       table: {
         labels: [
           "   ",
@@ -88,7 +89,15 @@ export class RestoreSessionsCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      console.info(
+        dataFormat.format(this.globalOptions.outputFormat, {
+          tpl: {
+            sids: () => items.map((i) => i.snapshotId).join(),
+            ssids: () => items.map((i) => i.snapshotId.slice(0, 8)).join(),
+            pkgNames: () => items.map((i) => i.packageName).join(),
+          },
+        })
+      );
 
     return 0;
   }

@@ -129,8 +129,9 @@ export class SnapshotsCommand extends CommandAbstract<
       verbose: verbose > 0,
       tags: this.options.tag,
     });
+    const items = await snapshots.exec();
     const dataFormat = new DataFormat({
-      items: await snapshots.exec(),
+      items,
       table: {
         labels: [
           "Id.",
@@ -152,7 +153,15 @@ export class SnapshotsCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      console.info(
+        dataFormat.format(this.globalOptions.outputFormat, {
+          tpl: {
+            sids: () => items.map((i) => i.id).join(),
+            ssids: () => items.map((i) => i.shortId).join(),
+            pkgNames: () => items.map((i) => i.packageName).join(),
+          },
+        })
+      );
 
     return 0;
   }

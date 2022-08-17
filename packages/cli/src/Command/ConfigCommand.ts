@@ -14,7 +14,7 @@ export type ConfigCommandOptionsType<TResolved = false> = {
 };
 
 export type ConfigCommandLogType = {
-  package: string;
+  packageName: string;
   repositoryNames: string[];
   taskName: string | undefined;
 }[];
@@ -58,7 +58,7 @@ export class ConfigCommand extends CommandAbstract<
     });
 
     const summaryConfig: ConfigCommandLogType = packages.flatMap((pkg) => ({
-      package: pkg.name,
+      packageName: pkg.name,
       repositoryNames: pkg.repositoryNames ?? [],
       taskName: pkg.task?.name,
     }));
@@ -68,7 +68,7 @@ export class ConfigCommand extends CommandAbstract<
       table: {
         labels: ["Package", "Repository", "Task"],
         handler: (item) => [
-          item.package,
+          item.packageName,
           item.repositoryNames.join(", "),
           item.taskName ?? "",
         ],
@@ -76,7 +76,13 @@ export class ConfigCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      console.info(
+        dataFormat.format(this.globalOptions.outputFormat, {
+          tpl: {
+            pkgNames: () => summaryConfig.map((i) => i.packageName).join(),
+          },
+        })
+      );
 
     return 0;
   }
