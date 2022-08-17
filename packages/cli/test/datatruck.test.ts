@@ -129,7 +129,7 @@ describe("datatruck", () => {
 
     expect(parseConfigLog()).toMatchObject([
       {
-        package: "main/files",
+        packageName: "main/files",
         repositoryNames: ["local"],
       },
     ] as ReturnType<typeof parseConfigLog>);
