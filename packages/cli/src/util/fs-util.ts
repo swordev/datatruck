@@ -3,13 +3,26 @@ import { rootPath } from "./path-util";
 import { eachLimit } from "async";
 import { randomBytes } from "crypto";
 import FastGlob from "fast-glob";
-import { createReadStream } from "fs";
+import { createReadStream, Stats } from "fs";
 import { createWriteStream, WriteStream } from "fs";
-import { cp, readdir, readFile, stat, writeFile, mkdir } from "fs/promises";
+import {
+  cp,
+  readdir,
+  readFile,
+  stat,
+  writeFile,
+  mkdir,
+  utimes,
+  chmod,
+  chown,
+} from "fs/promises";
 import { isMatch } from "micromatch";
+import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
 import { isAbsolute } from "path";
 import { createInterface, Interface } from "readline";
+
+export const isWSLSystem = release().includes("microsoft-standard-WSL");
 
 export function isLocalDir(path: string) {
   return /^[\/\.]|([A-Z]:)/i.test(path);
@@ -241,6 +254,7 @@ export async function writeGitIgnoreList(options: {
 
   return path;
 }
+
 export async function writePathLists(options: {
   paths: NodeJS.ReadableStream | string[];
   packs?: {
@@ -341,6 +355,29 @@ export async function writePathLists(options: {
   };
 }
 
+export async function copyFileWithStreams(source: string, target: string) {
+  const r = createReadStream(source);
+  const w = createWriteStream(target);
+  try {
+    return await new Promise((resolve, reject) => {
+      r.on("error", reject);
+      w.on("error", reject);
+      w.on("finish", resolve);
+      r.pipe(w);
+    });
+  } catch (error) {
+    r.destroy();
+    w.end();
+    throw error;
+  }
+}
+
+export async function updateFileStats(path: string, fileInfo: Stats) {
+  await utimes(path, fileInfo.atime, fileInfo.mtime);
+  await chmod(path, fileInfo.mode);
+  await chown(path, fileInfo.uid, fileInfo.gid);
+}
+
 export async function cpy(options: {
   input:
     | {
@@ -405,8 +442,23 @@ export async function cpy(options: {
     } else {
       const dir = dirname(entryTargetPath);
       await makeRecursiveDir(dir);
+
       stats.files++;
-      await cp(entrySourcePath, entryTargetPath);
+
+      // https://github.com/nodejs/node/issues/44261
+      if (isWSLSystem) {
+        const fileInfo = await stat(entryTargetPath);
+        const isWritable = (fileInfo.mode & 0o200) === 0o200;
+        if (!isWritable) {
+          await copyFileWithStreams(entrySourcePath, entryTargetPath);
+          await updateFileStats(entryTargetPath, fileInfo);
+          return;
+        }
+      }
+
+      await cp(entrySourcePath, entryTargetPath, {
+        preserveTimestamps: true,
+      });
     }
   };
 
