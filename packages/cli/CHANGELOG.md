@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.11.0
+
+### Minor Changes
+
+- [`8aa3c1a`](https://github.com/swordev/datatruck/commit/8aa3c1a1334870cc11b610b3b0a9bf10b0a97126) Thanks [@juanrgm](https://github.com/juanrgm)! - Add predefined output templates
+
+### Patch Changes
+
+- [`763a724`](https://github.com/swordev/datatruck/commit/763a72473505232884e1b3871f2f4d1c55bb74d6) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix file copy in WSL system
+
 ## 0.10.0
 
 ### Minor Changes
