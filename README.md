@@ -17,5 +17,5 @@ npx datatruck -h
 ```
 
 ```
-docker run --rm -it ghcr.io/swordev/datatruck dtt -h
+docker run --rm -it ghcr.io/swordev/datatruck -h
 ```
