@@ -93,7 +93,7 @@ function parseZipStream(
   },
   cb: (data: ZipStreamDataType) => void
 ) {
-  const lines = chunk.trim().split(/\r?\n/g);
+  const lines = chunk.replaceAll("\b", "").trim().split(/\r?\n/);
   for (const line of lines) {
     let matches: RegExpExecArray | null = null;
     if ((matches = /^(\d+)% (\d+ )?\+/.exec(line))) {
