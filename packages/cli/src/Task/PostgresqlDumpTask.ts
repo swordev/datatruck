@@ -88,6 +88,8 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
       WHERE
         table_catalog = '${database}' AND
         table_schema NOT IN ('pg_catalog', 'information_schema')
+      ORDER BY
+        CONCAT(table_schema, '.', table_name)
 	  `);
   }
 
