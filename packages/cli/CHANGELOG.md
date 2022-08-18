@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.11.2
+
+### Patch Changes
+
+- [`9432df5`](https://github.com/swordev/datatruck/commit/9432df56f6c6444a59d98e79cf4b7db9f4d35854) Thanks [@juanrgm](https://github.com/juanrgm)! - Show zip progress
+
+* [`c16daa2`](https://github.com/swordev/datatruck/commit/c16daa22d922bd610a161f37911fdb6f52666d38) Thanks [@juanrgm](https://github.com/juanrgm)! - Sort table names in the SQL dump tasks
+
 ## 0.11.1
 
 ### Patch Changes
