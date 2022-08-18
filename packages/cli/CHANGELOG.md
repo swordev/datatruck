@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.11.1
+
+### Patch Changes
+
+- [`c65035c`](https://github.com/swordev/datatruck/commit/c65035cb6e9b8f5082f7b6d2ad59078ea1bd6abb) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix WSL system patch
+
 ## 0.11.0
 
 ### Minor Changes
