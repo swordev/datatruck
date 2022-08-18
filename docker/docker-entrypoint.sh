@@ -1,5 +1,7 @@
 #!/bin/sh
-if 
+if [ "$1" == "" ]; then
+    datatruck -h
+elif 
     [ "$1" == "config" ] || [ "$1" == "c" ] || 
     [ "$1" == "init" ] || [ "$1" == "i" ] || 
     [ "$1" == "snapshots" ] || [ "$1" == "s" ] || 
