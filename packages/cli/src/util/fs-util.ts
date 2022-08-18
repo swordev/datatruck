@@ -447,7 +447,7 @@ export async function cpy(options: {
 
       // https://github.com/nodejs/node/issues/44261
       if (isWSLSystem) {
-        const fileInfo = await stat(entryTargetPath);
+        const fileInfo = await stat(entrySourcePath);
         const isWritable = (fileInfo.mode & 0o200) === 0o200;
         if (!isWritable) {
           await copyFileWithStreams(entrySourcePath, entryTargetPath);
