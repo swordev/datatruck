@@ -92,6 +92,8 @@ const cwd = process.cwd();
 program.name(subname);
 program.version(version);
 program.description(description);
+program.usage("dtt");
+
 program.option("-v,--verbose", "Verbose", (_, previous) => previous + 1, 0);
 program.option(
   "-c,--config <path>",
