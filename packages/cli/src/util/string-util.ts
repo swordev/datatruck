@@ -1,4 +1,5 @@
 import { AppError } from "../Error/AppError";
+import { isMatch } from "micromatch";
 
 export function serialize(message: string, data?: Object) {
   if (data) return `${message} (${JSON.stringify(data, null, 2)})`;
@@ -90,7 +91,18 @@ export function formatSeconds(seconds: number) {
 }
 
 export function makePathPatterns(values: string[] | undefined) {
-  return values?.flatMap((v) => [v, `${v}/**`]);
+  return values?.flatMap((v) => {
+    if (v === "*" || v === "**" || v === "<empty>" || v === "!<empty>") {
+      return [v];
+    } else {
+      return [v, `${v}/**`];
+    }
+  });
+}
+
+export function checkMatch(subject: string | undefined, patterns: string[]) {
+  if (!subject?.length) subject = "<empty>";
+  return isMatch(subject, patterns);
 }
 
 export function formatDateTime(datetime: string) {

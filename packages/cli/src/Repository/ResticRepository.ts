@@ -7,7 +7,7 @@ import {
   parsePackageFile,
   writeGitIgnoreList,
 } from "../util/fs-util";
-import { formatUri, makePathPatterns } from "../util/string-util";
+import { checkMatch, formatUri, makePathPatterns } from "../util/string-util";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -182,7 +182,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       if (!tag.id) return items;
       if (packagePatterns && !isMatch(tag.package, packagePatterns))
         return items;
-      if (taskNamePatterns && !isMatch(tag.task || "", taskNamePatterns))
+      if (taskNamePatterns && !checkMatch(tag.task, taskNamePatterns))
         return items;
       const itemTags = tag.tags ?? [];
       if (data.options.tags && !itemTags.some((t) => itemTags.includes(t)))

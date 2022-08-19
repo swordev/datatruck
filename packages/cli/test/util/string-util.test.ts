@@ -1,4 +1,5 @@
 import {
+  checkMatch,
   formatDateTime,
   formatUri,
   lcfirst,
@@ -9,6 +10,21 @@ import {
   snakeCase,
   ucfirst,
 } from "../../src/util/string-util";
+
+describe("checkMatch", () => {
+  const subjects = ["", "a", "b", "c/d"];
+  const t = (patterns: string[]) =>
+    subjects.filter((s) => checkMatch(s, makePathPatterns(patterns)!)).join();
+  it("includes empty", () => {
+    expect(t(["*"])).toBe(["", "a", "b"].join());
+    expect(t(["**"])).toBe(["", "a", "b", "c/d"].join());
+    expect(t(["!a"])).toBe(["", "b", "c/d"].join());
+    expect(t(["<empty>"])).toBe([""].join());
+  });
+  it("does not include empty", () => {
+    expect(t(["!<empty>"])).toBe(["a", "b", "c/d"].join());
+  });
+});
 
 describe("formatDateTime", () => {
   it("returns valid date", () => {

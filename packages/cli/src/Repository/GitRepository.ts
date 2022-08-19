@@ -9,7 +9,7 @@ import {
   parsePackageFile,
   tmpDir,
 } from "../util/fs-util";
-import { makePathPatterns } from "../util/string-util";
+import { checkMatch, makePathPatterns } from "../util/string-util";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -176,7 +176,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
         if (pkgPatterns && !isMatch(parsedTag.package, pkgPatterns))
           return result;
 
-        if (pkgTaskPatterns && !isMatch(parsedTag.task || "", pkgTaskPatterns))
+        if (pkgTaskPatterns && !checkMatch(parsedTag.task, pkgTaskPatterns))
           return result;
 
         if (

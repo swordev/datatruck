@@ -13,7 +13,7 @@ import {
   writePathLists,
 } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
-import { makePathPatterns } from "../util/string-util";
+import { checkMatch, makePathPatterns } from "../util/string-util";
 import { unzip, zip } from "../util/zip-util";
 import {
   RepositoryAbstract,
@@ -207,7 +207,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       const metaPath = join(this.config.outPath, snapshotName);
       const meta = await LocalRepository.parseMetaData(metaPath);
 
-      if (taskPatterns && !isMatch(meta.task || "", taskPatterns)) continue;
+      if (taskPatterns && !checkMatch(meta.task, taskPatterns)) continue;
 
       if (
         data.options.ids &&
