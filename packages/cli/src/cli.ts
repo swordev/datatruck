@@ -85,11 +85,10 @@ function makeCommandAction<T>(command: CommandEnum) {
 }
 
 const program = new Command();
-const { name, version, description } = parsePackageFile();
-const [, subname] = name.split("/");
+const { version, description } = parsePackageFile();
 const cwd = process.cwd();
 
-program.name(subname);
+program.name("datatruck");
 program.version(version);
 program.description(description);
 program.usage("dtt");
