@@ -3,7 +3,9 @@ import { RepositoryType, ResticUtil } from "../util/ResticUtil";
 import { logExec } from "../util/cli-util";
 import { parsePaths } from "../util/datatruck/paths-util";
 import {
+  fastglobToGitIgnore,
   mkdirIfNotExists,
+  mkTmpDir,
   parsePackageFile,
   writeGitIgnoreList,
 } from "../util/fs-util";
@@ -23,9 +25,10 @@ import {
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import FastGlob from "fast-glob";
+import { writeFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { resolve } from "path";
+import { join, resolve } from "path";
 
 export type ResticRepositoryConfigType = {
   password: string | { path: string };
@@ -225,7 +228,22 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     let gitignorePath: string | undefined;
 
-    if (pkg.include || pkg.exclude) {
+    if (!pkg.include && pkg.exclude) {
+      const exclude = await parsePaths(pkg.exclude, {
+        cwd: sourcePath,
+        verbose: data.options.verbose,
+      });
+
+      await data.onProgress({
+        step: "Writing excluded paths list...",
+      });
+
+      const tmpDir = await mkTmpDir("restic-exclude");
+      const ignoredContents = fastglobToGitIgnore(exclude).join("\n");
+      gitignorePath = join(tmpDir, "ignored.txt");
+
+      await writeFile(gitignorePath, ignoredContents);
+    } else if (pkg.include || pkg.exclude) {
       const include = await parsePaths(pkg.include ?? ["**"], {
         cwd: sourcePath,
         verbose: data.options.verbose,

@@ -218,6 +218,16 @@ export async function forEachFile(
   }
 }
 
+/**
+ * @experimental
+ */
+
+export function fastglobToGitIgnore(patterns: string[]) {
+  // https://github.com/mrmlnc/fast-glob#readme
+  // https://git-scm.com/docs/gitignore
+  return patterns.map((p) => (p.startsWith("/") ? p : `/${p}`));
+}
+
 export async function writeGitIgnoreList(options: {
   paths: NodeJS.ReadableStream | string[];
 }) {
