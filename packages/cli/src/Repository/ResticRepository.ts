@@ -239,7 +239,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       });
 
       const tmpDir = await mkTmpDir("restic-exclude");
-      const ignoredContents = fastglobToGitIgnore(exclude).join("\n");
+      const ignoredContents = fastglobToGitIgnore(exclude, sourcePath).join(
+        "\n"
+      );
       gitignorePath = join(tmpDir, "ignored.txt");
 
       await writeFile(gitignorePath, ignoredContents);
