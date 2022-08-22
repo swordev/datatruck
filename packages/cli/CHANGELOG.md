@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.11.5
+
+### Patch Changes
+
+- [`cee6fee`](https://github.com/swordev/datatruck/commit/cee6fee924a8ae637a8f3bfece03890d6ad34ddf) Thanks [@juanrgm](https://github.com/juanrgm)! - Avoid scan all excluded files
+
 ## 0.11.4
 
 ### Patch Changes
