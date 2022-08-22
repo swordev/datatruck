@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.11.4
+
+### Patch Changes
+
+- [`6328aec`](https://github.com/swordev/datatruck/commit/6328aece04027d76d2092bd916671d49c91cdc6d) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix task name filter
+
 ## 0.11.3
 
 ### Patch Changes
