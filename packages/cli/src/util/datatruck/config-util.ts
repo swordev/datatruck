@@ -6,7 +6,7 @@ import {
 } from "../../Config/RepositoryConfig";
 import { AppError } from "../../Error/AppError";
 import { tmpDir } from "../fs-util";
-import { makePathPatterns, render } from "../string-util";
+import { checkMatch, makePathPatterns, render } from "../string-util";
 import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(
@@ -57,7 +57,7 @@ export function filterPackages(
       return pkg;
     })
     .filter((pkg) => {
-      if (taskNamePatterns && !isMatch(pkg.task?.name ?? "", taskNamePatterns))
+      if (taskNamePatterns && !checkMatch(pkg.task?.name, taskNamePatterns))
         return false;
       return (
         (typeof pkg.enabled !== "boolean" || pkg.enabled) &&
