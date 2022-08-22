@@ -10,6 +10,10 @@
 npm install -g datatruck
 ```
 
+# Config
+
+https://unpkg.com/@datatruck/cli/config.schema.json
+
 # Usage
 
 ```sh
