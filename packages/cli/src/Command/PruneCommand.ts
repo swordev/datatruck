@@ -52,7 +52,7 @@ export class PruneCommand extends CommandAbstract<
           ]) as any,
       },
       id: {
-        description: "Snapshot id.",
+        description: "Filter by snapshot id",
         option: "-i,--id",
         parser: parseStringList,
       },
@@ -96,22 +96,22 @@ export class PruneCommand extends CommandAbstract<
         option: "--longId",
       },
       package: {
-        description: "Package names",
+        description: "Filter by package names",
         option: "-p,--package <values>",
         parser: parseStringList,
       },
       repository: {
-        description: "Repository names",
+        description: "Filter by repository names",
         option: "-r,--repository <values>",
         parser: parseStringList,
       },
       repositoryType: {
-        description: "Repository types",
+        description: "Filter by repository types",
         option: "-rt,--repository-type <values>",
         parser: (v) => parseStringList(v) as any,
       },
       tag: {
-        description: "Tags",
+        description: "Filter by tags",
         option: "-t,--tag <values>",
         parser: parseStringList,
       },

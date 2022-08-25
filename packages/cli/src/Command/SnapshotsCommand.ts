@@ -38,72 +38,72 @@ export class SnapshotsCommand extends CommandAbstract<
         description: `Group by values (${groupByValues.join(", ")})`,
         parser: (v) => parseStringList(v, groupByValues) as any,
       },
-      id: {
-        option: "-i,--id <ids>",
-        description: "Snapshot identifiers",
-        parser: parseStringList,
-      },
-      last: {
-        option: "-l,--last <number>",
-        description: "Last snapshots",
-        parser: Number,
-      },
-      lastMinutely: {
-        option: "--lastMinutely <number>",
-        description: "Last minutely snapshots",
-        parser: Number,
-      },
-      lastDaily: {
-        option: "--lastDaily <number>",
-        description: "Last daily snapshots",
-        parser: Number,
-      },
-      lastHourly: {
-        option: "--lastHourly <number>",
-        description: "Last hourly snapshots",
-        parser: Number,
-      },
-      lastMonthly: {
-        option: "--lastMonthly <number>",
-        description: "Last monthly snapshots",
-        parser: Number,
-      },
-      lastWeekly: {
-        option: "--lastWeekly <number>",
-        description: "Last weekly snapshots",
-        parser: Number,
-      },
-      lastYearly: {
-        option: "--lastYearly <number>",
-        description: "Last yearly snapshots",
-        parser: Number,
-      },
       longId: {
         option: "--longId",
         description: "Show long id",
       },
+      id: {
+        option: "-i,--id <ids>",
+        description: "Filter by identifiers",
+        parser: parseStringList,
+      },
+      last: {
+        option: "-l,--last <number>",
+        description: "Filter by last snapshots",
+        parser: Number,
+      },
+      lastMinutely: {
+        option: "--lastMinutely <number>",
+        description: "Filter by last minutely",
+        parser: Number,
+      },
+      lastDaily: {
+        option: "--lastDaily <number>",
+        description: "Filter by last daily",
+        parser: Number,
+      },
+      lastHourly: {
+        option: "--lastHourly <number>",
+        description: "Filter by last hourly",
+        parser: Number,
+      },
+      lastMonthly: {
+        option: "--lastMonthly <number>",
+        description: "Filter by last monthly",
+        parser: Number,
+      },
+      lastWeekly: {
+        option: "--lastWeekly <number>",
+        description: "Filter by last weekly",
+        parser: Number,
+      },
+      lastYearly: {
+        option: "--lastYearly <number>",
+        description: "Filter by last yearly",
+        parser: Number,
+      },
       package: {
         option: "-p,--package <names>",
-        description: "Package names",
+        description: "Filter by package names",
         parser: parseStringList,
       },
       packageTask: {
-        description: "Package task names",
         option: "-pt,--package-task <values>",
+        description: "Filter by task names",
         parser: parseStringList,
       },
       repository: {
         option: "-r,--repository <names>",
-        description: "Repository names",
+        description: "Filter by repository names",
         parser: parseStringList,
       },
       repositoryType: {
-        option: "-t,--repositoryType <names>",
-        description: "Repository types",
+        option: "-rt,--repository-type <names>",
+        description: "Filter by repository types",
         parser: (v) => parseStringList(v) as any,
       },
       tag: {
-        description: "Tags",
+        description: "Filter by tags",
         option: "-t,--tag <values>",
         parser: parseStringList,
       },

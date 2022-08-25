@@ -22,17 +22,17 @@ export class RestoreSessionsCommand extends CommandAbstract<
   override onOptions() {
     return this.returnsOptions({
       package: {
-        description: "Package names",
+        description: "Filter by package names",
         option: "-p,--package <values>",
         parser: parseStringList,
       },
       repository: {
-        description: "Repository names",
+        description: "Filter by repository names",
         option: "-r,--repository <values>",
         parser: parseStringList,
       },
       tag: {
-        description: "Tags",
+        description: "Filter by tags",
         option: "-t,--tag <values>",
         parser: parseStringList,
       },

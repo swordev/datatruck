@@ -22,12 +22,12 @@ export class InitCommand extends CommandAbstract<
   override onOptions() {
     return this.returnsOptions({
       repository: {
-        description: "Repository names",
+        description: "Filter by repository names",
         option: "-r,--repository <values>",
         parser: parseStringList,
       },
       repositoryType: {
-        description: "Repository types",
+        description: "Filter by repository types",
         option: "-rt,--repository-type <values>",
         parser: (v) => parseStringList(v) as any,
       },

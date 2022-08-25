@@ -26,22 +26,22 @@ export class ConfigCommand extends CommandAbstract<
   override onOptions() {
     return this.returnsOptions({
       package: {
-        description: "Package names",
+        description: "Filter by package names",
         option: "-p,--package <values>",
         parser: parseStringList,
       },
       packageTask: {
-        description: "Package task names",
+        description: "Filter by package task names",
         option: "-pt,--package-task <values>",
         parser: parseStringList,
       },
       repository: {
-        description: "Repository names",
+        description: "Filter by repository names",
         option: "-r,--repository <values>",
         parser: parseStringList,
       },
       repositoryType: {
-        description: "Repository types",
+        description: "Filter by repository types",
         option: "-rt,--repository-type <values>",
         parser: (v) => parseStringList(v) as any,
       },
