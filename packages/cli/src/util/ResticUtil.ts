@@ -7,9 +7,9 @@ import { resolve } from "path";
 export type RepositoryType = {
   name?: string;
   env?: Record<string, string>;
-  passwordFile?: string;
+  password?: string | { path: string };
   backend: "local" | "rest" | "sftp" | "s3" | "azure" | "gs" | "rclone";
-} & UriType;
+} & Omit<UriType, "password">;
 
 export type BackupStreamType =
   | {
@@ -56,13 +56,20 @@ export class ResticUtil {
       return resolve(input.path);
     }
 
-    if (input.passwordFile)
+    if (input.password) {
       input = {
         ...input,
-        password: (await readFile(input.passwordFile)).toString(),
+        password:
+          typeof input.password === "string"
+            ? input.password
+            : (await readFile(input.password.path)).toString(),
       };
+    }
 
-    return `${input.backend}:${formatUri(input, hidePassword)}`;
+    return `${input.backend}:${formatUri(
+      { ...input, password: input.password as string },
+      hidePassword
+    )}`;
   }
 
   async exec(

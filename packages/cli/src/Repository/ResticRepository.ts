@@ -77,7 +77,19 @@ export const resticRepositoryDefinition: JSONSchema7 = {
         },
         host: { type: "string" },
         username: { type: "string" },
-        passwordFile: { type: "string" },
+        password: {
+          anyOf: [
+            { type: "string" },
+            {
+              type: "object",
+              additionalProperties: false,
+              required: ["path"],
+              properties: {
+                path: { type: "string" },
+              },
+            },
+          ],
+        },
         port: { type: "integer" },
         path: { type: "string" },
       },
