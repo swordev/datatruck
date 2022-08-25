@@ -63,8 +63,10 @@ export class RestoreAction<TRequired extends boolean = true> {
   ) {
     await session.initDrivers();
 
-    for (const [, pkg] of snapshots) {
-      ok(pkg);
+    for (const [snapshot, pkg] of snapshots) {
+      if (!pkg)
+        throw new AppError(`Package config not found: ${snapshot.packageName}`);
+
       const sessionId = await session.init({
         snapshotId: snapshotId,
         packageName: pkg.name,
