@@ -17,6 +17,7 @@ import { isDirEmpty, mkdirIfNotExists } from "../util/fs-util";
 import { push } from "../util/object-util";
 import { exec } from "../util/process-util";
 import { IfRequireKeys } from "../util/ts-util";
+import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
 import { platform } from "os";
 
@@ -105,20 +106,29 @@ export class RestoreAction<TRequired extends boolean = true> {
       )
         continue;
 
-      const repoInstance = RepositoryFactory(repository);
-      const snapshots = await repoInstance.onSnapshots({
-        options: {
-          packageNames: this.options.packageNames,
-          packageTaskNames: this.options.packageTaskNames,
-          ids: [this.options.snapshotId],
-          tags: this.options.tags,
+      const snapshotsAction = new SnapshotsAction<false>(this.config, {
+        repositoryNames: [repository.name],
+        ids: [this.options.snapshotId],
+        packageNames: this.options.packageNames,
+        packageTaskNames: this.options.packageTaskNames,
+        tags: this.options.tags,
         },
       });
+      const snapshots = await snapshotsAction.exec("restore");
+
       result.push(
-        ...snapshots.map((snapshot) => ({
-          ...snapshot,
-          repositoryName: repository.name,
-        }))
+        ...snapshots.map(
+          (ss) =>
+            ({
+              date: ss.date,
+              id: ss.id,
+              originalId: ss.originalId,
+              packageName: ss.packageName,
+              packageTaskName: ss.packageTaskName,
+              tags: ss.tags,
+              repositoryName: repository.name,
+            } as SnapshotType)
+        )
       );
     }
 
