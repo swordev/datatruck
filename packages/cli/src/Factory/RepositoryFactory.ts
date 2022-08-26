@@ -1,10 +1,10 @@
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
-import { GitRepository, gitRepositoryName } from "../Repository/GitRepository";
 import {
-  LocalRepository,
-  localRepositoryName,
-} from "../Repository/LocalRepository";
+  DatatruckRepository,
+  datatruckRepositoryName,
+} from "../Repository/DatatruckRepository";
+import { GitRepository, gitRepositoryName } from "../Repository/GitRepository";
 import type { RepositoryAbstract } from "../Repository/RepositoryAbstract";
 import {
   ResticRepository,
@@ -19,8 +19,8 @@ export function RepositoryFactory(
     return new GitRepository(repository);
   } else if (type === resticRepositoryName) {
     return new ResticRepository(repository);
-  } else if (type === localRepositoryName) {
-    return new LocalRepository(repository);
+  } else if (type === datatruckRepositoryName) {
+    return new DatatruckRepository(repository);
   } else {
     throw new AppError(`Invalid repository type: ${type}`);
   }

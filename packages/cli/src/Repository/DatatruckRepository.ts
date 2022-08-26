@@ -43,7 +43,7 @@ export type MetaDataType = {
   version: string;
 };
 
-export type LocalRepositoryConfigType = {
+export type DatatruckRepositoryConfigType = {
   outPath: string;
   compress?: boolean;
   /**
@@ -60,13 +60,13 @@ type CompressObjectType = {
   }[];
 };
 
-export type LocalPackageRepositoryConfigType = {
+export type DatatruckPackageRepositoryConfigType = {
   compress?: CompressObjectType | boolean;
 };
 
-export const localRepositoryName = "local";
+export const datatruckRepositoryName = "datatruck";
 
-export const localRepositoryDefinition: JSONSchema7 = {
+export const datatruckRepositoryDefinition: JSONSchema7 = {
   type: "object",
   required: ["outPath"],
   additionalProperties: false,
@@ -76,7 +76,7 @@ export const localRepositoryDefinition: JSONSchema7 = {
   },
 };
 
-export const localPackageRepositoryDefinition: JSONSchema7 = {
+export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
   type: "object",
   additionalProperties: false,
   properties: {
@@ -113,7 +113,7 @@ export const localPackageRepositoryDefinition: JSONSchema7 = {
   },
 };
 
-export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigType> {
+export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfigType> {
   static zipBasenameTpl = `.*.dd.zip`;
 
   static buildSnapshotName(data: {
@@ -161,7 +161,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
   }
 
   override async onPrune(data: PruneDataType) {
-    const snapshotName = LocalRepository.buildSnapshotName({
+    const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
       snapshotDate: data.snapshot.date,
       packageName: data.snapshot.packageName,
@@ -188,7 +188,8 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
     const taskPatterns = makePathPatterns(data.options.packageTaskNames);
 
     for (const snapshotName of snapshotNames) {
-      const snapshotNameData = LocalRepository.parseSnapshotName(snapshotName);
+      const snapshotNameData =
+        DatatruckRepository.parseSnapshotName(snapshotName);
       if (!snapshotNameData) continue;
       if (
         packagePatterns &&
@@ -205,7 +206,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
         continue;
 
       const metaPath = join(this.config.outPath, snapshotName);
-      const meta = await LocalRepository.parseMetaData(metaPath);
+      const meta = await DatatruckRepository.parseMetaData(metaPath);
 
       if (taskPatterns && !checkMatch(meta.task, taskPatterns)) continue;
 
@@ -234,7 +235,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
   }
 
   private normalizeCompressConfig(
-    packageConfig: LocalPackageRepositoryConfigType | undefined
+    packageConfig: DatatruckPackageRepositoryConfigType | undefined
   ): CompressObjectType | undefined {
     let compress = packageConfig?.compress ?? this.config.compress;
     if (compress === true) {
@@ -252,9 +253,9 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
   }
 
   override async onBackup(
-    data: BackupDataType<LocalPackageRepositoryConfigType>
+    data: BackupDataType<DatatruckPackageRepositoryConfigType>
   ) {
-    const snapshotName = LocalRepository.buildSnapshotName({
+    const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
       snapshotDate: data.snapshot.date,
       packageName: data.package.name,
@@ -401,13 +402,13 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
       version: nodePkg.version,
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
-    await writeFile(metaPath, LocalRepository.stringifyMetaData(meta));
+    await writeFile(metaPath, DatatruckRepository.stringifyMetaData(meta));
   }
 
   override async onCopyBackup(
-    data: CopyBackupType<LocalRepositoryConfigType>
+    data: CopyBackupType<DatatruckRepositoryConfigType>
   ): Promise<void> {
-    const snapshotName = LocalRepository.buildSnapshotName({
+    const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
       snapshotDate: data.snapshot.date,
       packageName: data.package.name,
@@ -435,7 +436,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
   }
 
   override async onRestore(
-    data: RestoreDataType<LocalPackageRepositoryConfigType>
+    data: RestoreDataType<DatatruckPackageRepositoryConfigType>
   ) {
     const relRestorePath = data.targetPath ?? data.package.restorePath;
     ok(relRestorePath);
@@ -449,7 +450,7 @@ export class LocalRepository extends RepositoryAbstract<LocalRepositoryConfigTyp
 
     if (!snapshot) throw new AppError("Snapshot not found");
 
-    const snapshotName = LocalRepository.buildSnapshotName({
+    const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
       snapshotDate: data.snapshot.date,
       packageName: data.package.name,

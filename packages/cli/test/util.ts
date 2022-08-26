@@ -13,8 +13,8 @@ export async function makeRepositoryConfig(
   type: RepositoryConfigTypeType,
   name: string = type
 ) {
-  if (type === "local") {
-    return makeLocalRepositoryConfig(name);
+  if (type === "datatruck") {
+    return makeDatatruckRepositoryConfig(name);
   } else if (type === "git") {
     return makeGitRepositoryConfig(name);
   } else if (type === "restic") {
@@ -23,9 +23,11 @@ export async function makeRepositoryConfig(
     throw new Error(`Invalid type: ${type}`);
   }
 }
-export async function makeLocalRepositoryConfig(name: string = "local") {
+export async function makeDatatruckRepositoryConfig(
+  name: string = "datatruck"
+) {
   return {
-    type: "local",
+    type: "datatruck",
     name: name,
     config: {
       outPath: await mkTmpDir(`test-${name}`),

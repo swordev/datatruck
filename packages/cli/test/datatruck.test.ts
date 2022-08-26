@@ -10,10 +10,10 @@ import {
 } from "./util";
 import { rm } from "fs/promises";
 
-jest.setTimeout(120_000);
+jest.setTimeout(300_000);
 
 const repositoryTypes = [
-  "local",
+  "datatruck",
   "git",
   "restic",
 ] as RepositoryConfigTypeType[];
@@ -72,9 +72,13 @@ const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
   ] as FileChanges[];
 
 afterAll(async () => {
-  await rm(parentTmpDir(), {
-    recursive: true,
-  });
+  try {
+    await rm(parentTmpDir(), {
+      recursive: true,
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
 });
 
 describe("datatruck", () => {
@@ -89,8 +93,8 @@ describe("datatruck", () => {
           },
         },
         {
-          name: "local",
-          type: "local",
+          name: "datatruck",
+          type: "datatruck",
           config: {
             outPath: "/",
           },
@@ -100,7 +104,7 @@ describe("datatruck", () => {
         {
           name: "main/files",
           path: "/source",
-          repositoryNames: ["local"],
+          repositoryNames: ["datatruck"],
           include: [
             "path1",
             {
@@ -130,7 +134,7 @@ describe("datatruck", () => {
     expect(parseConfigLog()).toMatchObject([
       {
         packageName: "main/files",
-        repositoryNames: ["local"],
+        repositoryNames: ["datatruck"],
       },
     ] as ReturnType<typeof parseConfigLog>);
   });
@@ -252,81 +256,78 @@ describe("datatruck", () => {
     expect(snapshots[0].id).toBe(lastBackup.snapshotId);
   });
 
-  it.each(repositoryTypes.filter((v) => v !== "git"))(
-    "backup into %p mirror repository",
-    async (type) => {
-      const fileChanger = await createFileChanger();
-      const configPath = await makeConfig({
-        repositories: [
-          {
-            ...(await makeRepositoryConfig(type)),
-            mirrorRepoNames: [`${type}-mirror`],
-          },
-          await makeRepositoryConfig(type, `${type}-mirror`),
-        ],
-        packages: [
-          {
-            name: "main/files",
-            path: fileChanger.path,
-            repositoryNames: [type, `${type}-mirror`],
-            restorePath: `${fileChanger.path}-restore-{snapshotId}`,
-          },
-        ],
-      });
+  it.each(repositoryTypes)("backup into %p mirror repository", async (type) => {
+    if (type === "git") return expect(true).toBeTruthy();
+    const fileChanger = await createFileChanger();
+    const configPath = await makeConfig({
+      repositories: [
+        {
+          ...(await makeRepositoryConfig(type)),
+          mirrorRepoNames: [`${type}-mirror`],
+        },
+        await makeRepositoryConfig(type, `${type}-mirror`),
+      ],
+      packages: [
+        {
+          name: "main/files",
+          path: fileChanger.path,
+          repositoryNames: [type, `${type}-mirror`],
+          restorePath: `${fileChanger.path}-restore-{snapshotId}`,
+        },
+      ],
+    });
 
-      expect(
-        await exec(
-          CommandEnum.init,
-          {
-            config: configPath,
-            verbose: 1,
-          },
-          {}
-        )
-      ).toBe(0);
+    expect(
+      await exec(
+        CommandEnum.init,
+        {
+          config: configPath,
+          verbose: 1,
+        },
+        {}
+      )
+    ).toBe(0);
 
-      const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
-        [];
+    const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] = [];
 
-      let backupIndex = 0;
-      for (const changes of fileChanges(type)) {
-        backupResults.push(
-          await expectSuccessBackup({
-            configPath,
-            fileChanger,
-            changes,
-            backupIndex: ++backupIndex,
-          })
-        );
-      }
-
-      let restoreIndex = 0;
-      for (const backupResult of backupResults) {
-        await expectSuccessRestore({
+    let backupIndex = 0;
+    for (const changes of fileChanges(type)) {
+      backupResults.push(
+        await expectSuccessBackup({
           configPath,
           fileChanger,
-          restoreIndex: restoreIndex++,
-          files: backupResult.files,
-          cleanRestorePath: true,
-          restoreOptions: {
-            id: backupResult.snapshotId,
-            repository: type,
-          },
-        });
-      }
-
-      for (const backupResult of backupResults) {
-        await expectSuccessRestore({
-          configPath,
-          fileChanger,
-          restoreIndex: restoreIndex++,
-          files: backupResult.files,
-          restoreOptions: {
-            id: backupResult.snapshotId,
-            repository: `${type}-mirror`,
-          },
-        });
-      }
+          changes,
+          backupIndex: ++backupIndex,
+        })
+      );
     }
-  );
+
+    let restoreIndex = 0;
+    for (const backupResult of backupResults) {
+      await expectSuccessRestore({
+        configPath,
+        fileChanger,
+        restoreIndex: restoreIndex++,
+        files: backupResult.files,
+        cleanRestorePath: true,
+        restoreOptions: {
+          id: backupResult.snapshotId,
+          repository: type,
+        },
+      });
+    }
+
+    for (const backupResult of backupResults) {
+      await expectSuccessRestore({
+        configPath,
+        fileChanger,
+        restoreIndex: restoreIndex++,
+        files: backupResult.files,
+        restoreOptions: {
+          id: backupResult.snapshotId,
+          repository: `${type}-mirror`,
+        },
+      });
+    }
+  });
 });

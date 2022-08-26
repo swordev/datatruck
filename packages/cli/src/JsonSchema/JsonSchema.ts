@@ -8,13 +8,13 @@ import { prunePolicyConfigDefinition } from "../Config/PrunePolicyConfig";
 import { repositoryConfigDefinition } from "../Config/RepositoryConfig";
 import { taskConfigDefinition } from "../Config/TaskConfig";
 import {
+  datatruckPackageRepositoryDefinition,
+  datatruckRepositoryDefinition,
+} from "../Repository/DatatruckRepository";
+import {
   gitPackageRepositoryDefinition,
   gitRepositoryDefinition,
 } from "../Repository/GitRepository";
-import {
-  localPackageRepositoryDefinition,
-  localRepositoryDefinition,
-} from "../Repository/LocalRepository";
 import {
   resticPackageRepositoryDefinition,
   resticRepositoryDefinition,
@@ -42,8 +42,9 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.task]: taskConfigDefinition,
   [DefinitionEnum.gitRepository]: gitRepositoryDefinition,
   [DefinitionEnum.gitPackageRepository]: gitPackageRepositoryDefinition,
-  [DefinitionEnum.localRepository]: localRepositoryDefinition,
-  [DefinitionEnum.localPackageRepository]: localPackageRepositoryDefinition,
+  [DefinitionEnum.datatruckRepository]: datatruckRepositoryDefinition,
+  [DefinitionEnum.datatruckPackageRepository]:
+    datatruckPackageRepositoryDefinition,
   [DefinitionEnum.resticRepository]: resticRepositoryDefinition,
   [DefinitionEnum.resticPackageRepository]: resticPackageRepositoryDefinition,
   [DefinitionEnum.gitTask]: gitTaskDefinition,

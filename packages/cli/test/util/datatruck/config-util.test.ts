@@ -27,7 +27,7 @@ describe("filterPackages", () => {
         config: {
           outPath: "/tmp",
         },
-        type: "local",
+        type: "datatruck",
       },
       {
         name: "main2",
@@ -132,7 +132,7 @@ describe("findRepositoryOrFail", () => {
         config: {
           outPath: "/tmp",
         },
-        type: "local",
+        type: "datatruck",
       },
     ],
   };

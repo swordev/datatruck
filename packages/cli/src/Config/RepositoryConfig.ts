@@ -1,12 +1,12 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import {
+  DatatruckRepositoryConfigType,
+  datatruckRepositoryName,
+} from "../Repository/DatatruckRepository";
+import {
   GitRepositoryConfigType,
   gitRepositoryName,
 } from "../Repository/GitRepository";
-import {
-  LocalRepositoryConfigType,
-  localRepositoryName,
-} from "../Repository/LocalRepository";
 import {
   ResticRepositoryConfigType,
   resticRepositoryName,
@@ -15,7 +15,7 @@ import type { JSONSchema7 } from "json-schema";
 
 const types: Record<string, DefinitionEnum> = {
   [resticRepositoryName]: DefinitionEnum.resticRepository,
-  [localRepositoryName]: DefinitionEnum.localRepository,
+  [datatruckRepositoryName]: DefinitionEnum.datatruckRepository,
   [gitRepositoryName]: DefinitionEnum.gitRepository,
 };
 
@@ -91,8 +91,8 @@ export type RepositoryConfigType = {
       config: ResticRepositoryConfigType;
     }
   | {
-      type: typeof localRepositoryName;
-      config: LocalRepositoryConfigType;
+      type: typeof datatruckRepositoryName;
+      config: DatatruckRepositoryConfigType;
     }
   | {
       type: typeof gitRepositoryName;
