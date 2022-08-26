@@ -15,6 +15,7 @@ import {
   EntityEnum,
   ReadResultType,
   SessionDriverAbstract,
+  SessionDriverOptions,
 } from "./SessionDriverAbstract";
 import { cyan, white, red, grey, green } from "chalk";
 
@@ -46,17 +47,29 @@ const renderBadge = (badge: BadgeType) =>
 const renderBadges = (badges: BadgeType[]) =>
   badges.map(renderBadge).join(` ${sep} `);
 
-export class ConsoleSessionDriver extends SessionDriverAbstract {
+type ConsoleSessionDriverOptions = SessionDriverOptions & {
+  progress?: "auto" | "tty" | "plain";
+  progressInterval?: number;
+};
+
+export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDriverOptions> {
   protected lastMessage: MessageType | undefined;
   protected lastMessageText: string | undefined;
+  protected lastProgressDate: number | undefined;
   protected prints = 0;
   protected renderInterval!: NodeJS.Timeout;
   protected rendering?: boolean;
   protected lastColumns?: number;
   protected startTime!: number;
   protected chron = createChron();
+  protected tty!: boolean;
 
   override async onInit() {
+    this.tty = this.options.verbose
+      ? false
+      : this.options.progress === "auto"
+      ? process.stdout.isTTY
+      : this.options.progress === "tty";
     this.chron.start();
     this.renderInterval = setInterval(() => {
       if (this.lastMessage) this.printMessage(this.lastMessage, false);
@@ -65,7 +78,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
 
   override async onEnd(data?: Record<string, any>) {
     clearInterval(this.renderInterval);
-    if (!this.options.verbose) process.stdout.write(showCursorCommand);
+    if (this.tty) process.stdout.write(showCursorCommand);
     logVars({
       ...data,
       elapsed: this.chron.elapsed(true),
@@ -78,10 +91,10 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
 
   protected printMessage(message: MessageType, endMessage: boolean) {
     const text = this.renderMessage(message);
-    if (this.options.verbose && this.lastMessageText === text) {
+    if (!this.tty && this.lastMessageText === text) {
       return;
     }
-    if (this.options.verbose) {
+    if (!this.tty) {
       process.stdout.write(`${this.renderSpinner(text)}\n`);
     } else {
       const columns = process.stdout.columns;
@@ -105,7 +118,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
   protected renderSpinner(text: string) {
     return text.replace(
       "{spinner}",
-      grey(this.options.verbose ? "?" : renderSpinner(this.prints))
+      grey(this.tty ? renderSpinner(this.prints) : "?")
     );
   }
 
@@ -116,7 +129,6 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
     ]);
 
     const padding = "   ".repeat(message.level ?? 0);
-    const haveProgressBar = typeof message.progressPercent === "number";
     const sessionId = message.sessionId.toString().padStart(2, "0");
     const parts = [
       `${padding}${message.textPrefix} [${grey(sessionId)}] ${message.text}`,
@@ -152,6 +164,14 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
   override async onWrite(data: WriteDataType) {
     if (data.action === ActionEnum.Init) return;
 
+    if (data.action === ActionEnum.Progress && this.options.progressInterval) {
+      const skip =
+        this.lastProgressDate &&
+        Date.now() - this.lastProgressDate < this.options.progressInterval;
+      if (skip) return;
+      this.lastProgressDate = Date.now();
+    }
+
     const message: MessageType = {
       sessionId: "sessionId" in data.data ? data.data.sessionId : data.data.id,
       badges: [],
@@ -179,9 +199,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
       if (data.data.error)
         message.errorBadge = {
           name: "error",
-          value: this.options.verbose
-            ? data.data.error
-            : data.data.error.split("\n")[0],
+          value: this.tty ? data.data.error.split("\n")[0] : data.data.error,
           color: red,
         };
     } else if (data.action === ActionEnum.Progress) {
@@ -233,8 +251,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract {
     }
 
     const endMessage =
-      !this.options.verbose &&
-      (!hasProgress || data.action === ActionEnum.End || isHeader);
+      this.tty && (!hasProgress || data.action === ActionEnum.End || isHeader);
 
     this.printMessage(message, endMessage);
 

@@ -76,12 +76,14 @@ export type ReadResultType = {
   error: string | null;
 };
 
-export abstract class SessionDriverAbstract {
-  constructor(
-    readonly options: {
-      verbose?: boolean;
-    }
-  ) {}
+export type SessionDriverOptions = {
+  verbose?: boolean;
+};
+
+export abstract class SessionDriverAbstract<
+  TOptions extends SessionDriverOptions = SessionDriverOptions
+> {
+  constructor(readonly options: TOptions) {}
   async onInit() {}
   abstract onWrite(data: WriteDataType): Promise<void>;
   async onEnd(data?: Record<string, any>) {}

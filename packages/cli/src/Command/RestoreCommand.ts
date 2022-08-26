@@ -81,6 +81,8 @@ export class RestoreCommand extends CommandAbstract<
       altDrivers: [
         new ConsoleSessionDriver({
           verbose: verbose > 0,
+          progress: this.globalOptions.progress,
+          progressInterval: this.globalOptions.progressInterval,
         }),
       ],
       verbose: verbose > 1,

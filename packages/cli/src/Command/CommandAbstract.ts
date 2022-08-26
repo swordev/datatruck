@@ -7,6 +7,8 @@ export type GlobalOptionsType<TResolved = false> = {
   config: string | ConfigType;
   outputFormat?: FormatType;
   verbose?: number;
+  progress?: "auto" | "plain" | "tty";
+  progressInterval?: number;
 };
 
 export type CommandConstructorType<

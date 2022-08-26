@@ -100,6 +100,12 @@ program.option(
   process.env["DATATRUCK_CONFIG"] ?? (cwd.endsWith(sep) ? cwd : `${cwd}${sep}`)
 );
 program.option(
+  "--progress <value>",
+  "Progress type (auto, plain, tty)",
+  "auto"
+);
+program.option("--progress-interval <ms>", "Progress interval");
+program.option(
   "-o,--output-format <format>",
   "Output format (json, pjson, yaml, table, custom=$, tpl=name)",
   "table" as FormatType
