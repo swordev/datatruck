@@ -58,10 +58,12 @@ export class SnapshotsAction<TRequired extends boolean = true> {
         continue;
       const repoInstance = RepositoryFactory(repo);
       const configPackageNames = this.config.packages.map((pkg) => pkg.name);
-      const packageNames =
-        this.options.packageNames?.filter((name) =>
-          configPackageNames.includes(name)
-        ) || configPackageNames;
+
+      const packageNames = this.options.packageConfig
+        ? this.options.packageNames?.filter((name) =>
+            configPackageNames.includes(name)
+          ) || configPackageNames
+        : this.options.packageNames;
 
       const snapshots = await repoInstance.onSnapshots({
         options: {
