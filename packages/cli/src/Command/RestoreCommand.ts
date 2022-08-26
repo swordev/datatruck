@@ -12,6 +12,7 @@ export type RestoreCommandOptionsType<TResolved = false> = {
   id: string;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
+  packageConfig?: boolean;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   tag?: If<TResolved, string[]>;
@@ -38,6 +39,10 @@ export class RestoreCommand extends CommandAbstract<
         option: "-pt,--package-task <values>",
         parser: parseStringList,
       },
+      packageConfig: {
+        description: "Filter by package config",
+        option: "-pc,--package-config",
+      },
       repository: {
         description: "Filter by repository names",
         option: "-r,--repository <values>",
@@ -62,6 +67,7 @@ export class RestoreCommand extends CommandAbstract<
       snapshotId: this.options.id,
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
+      packageConfig: this.options.packageConfig,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
       tags: this.options.tag,

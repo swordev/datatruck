@@ -26,6 +26,7 @@ export type RestoreActionOptionsType = {
   tags?: string[];
   packageNames?: string[];
   packageTaskNames?: string[];
+  packageConfig?: boolean;
   repositoryNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;
@@ -111,8 +112,8 @@ export class RestoreAction<TRequired extends boolean = true> {
         ids: [this.options.snapshotId],
         packageNames: this.options.packageNames,
         packageTaskNames: this.options.packageTaskNames,
+        packageConfig: this.options.packageConfig,
         tags: this.options.tags,
-        },
       });
       const snapshots = await snapshotsAction.exec("restore");
 

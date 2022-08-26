@@ -10,6 +10,7 @@ export type SnapshotsCommandOptionsType<TResolved = false> = {
   id?: If<TResolved, string[]>;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
+  packageConfig?: boolean;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   longId?: boolean;
@@ -92,6 +93,10 @@ export class SnapshotsCommand extends CommandAbstract<
         description: "Filter by task names",
         parser: parseStringList,
       },
+      packageConfig: {
+        description: "Filter by package config",
+        option: "-pc,--package-config",
+      },
       repository: {
         option: "-r,--repository <names>",
         description: "Filter by repository names",
@@ -116,6 +121,7 @@ export class SnapshotsCommand extends CommandAbstract<
       ids: this.options.id,
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
+      packageConfig: this.options.packageConfig,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
       last: this.options.last,

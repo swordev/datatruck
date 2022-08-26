@@ -15,6 +15,7 @@ export type SnapshotsActionOptionsType = {
   repositoryNames?: string[];
   packageNames?: string[];
   packageTaskNames?: string[];
+  packageConfig?: boolean;
   repositoryTypes?: string[];
   verbose?: boolean;
   tags?: string[];
@@ -56,14 +57,24 @@ export class SnapshotsAction<TRequired extends boolean = true> {
       )
         continue;
       const repoInstance = RepositoryFactory(repo);
+      const configPackageNames = this.config.packages.map((pkg) => pkg.name);
+      const packageNames =
+        this.options.packageNames?.filter((name) =>
+          configPackageNames.includes(name)
+        ) || configPackageNames;
+
       const snapshots = await repoInstance.onSnapshots({
-        options: this.options,
+        options: {
+          ...this.options,
+          packageNames,
+        },
       });
+
       const extentedItems = snapshots.map(
-        (item) =>
+        (ss) =>
           ({
-            ...item,
-            shortId: item.id.slice(0, 8),
+            ...ss,
+            shortId: ss.id.slice(0, 8),
             repositoryName: repo.name,
             repositoryType: repo.type,
           } as SnapshotExtendedType)
