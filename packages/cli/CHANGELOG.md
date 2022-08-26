@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.12.1
+
+### Patch Changes
+
+- [`23bab2a`](https://github.com/swordev/datatruck/commit/23bab2ad73801398c799759cc275be2b17350545) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix package config option
+
 ## 0.12.0
 
 ### Minor Changes
