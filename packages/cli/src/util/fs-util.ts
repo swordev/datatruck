@@ -2,6 +2,7 @@ import globalData from "../globalData";
 import { rootPath } from "./path-util";
 import { eachLimit } from "async";
 import { randomBytes } from "crypto";
+import fastFolderSize from "fast-folder-size";
 import FastGlob from "fast-glob";
 import { createReadStream, Stats } from "fs";
 import { createWriteStream, WriteStream } from "fs";
@@ -21,6 +22,7 @@ import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
 import { isAbsolute } from "path";
 import { createInterface, Interface } from "readline";
+import { promisify } from "util";
 
 export const isWSLSystem = release().includes("microsoft-standard-WSL");
 
@@ -131,6 +133,10 @@ export function sessionTmpDir() {
 export function tmpDir(prefix: string, id?: string) {
   if (!id) id = randomBytes(8).toString("hex");
   return join(sessionTmpDir(), `${prefix}-${id}`);
+}
+
+export async function fastFolderSizeAsync(path: string) {
+  return (await promisify(fastFolderSize)(path)) || 0;
 }
 
 export async function mkTmpDir(prefix: string, id?: string) {

@@ -4,6 +4,7 @@ import { logExec } from "../util/cli-util";
 import { parsePaths } from "../util/datatruck/paths-util";
 import {
   existsDir,
+  fastFolderSizeAsync,
   mkdirIfNotExists,
   mkTmpDir,
   parsePackageFile,
@@ -191,6 +192,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
           packageName: parsedTag.package,
           packageTaskName: parsedTag.task,
           tags: parsedTag.tags,
+          size: Number(parsedTag.size) || 0,
         });
         return result;
       }, [] as SnapshotResultType[])
@@ -280,6 +282,10 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
+      size: (
+        (await fastFolderSizeAsync(tmpPath)) -
+        (await fastFolderSizeAsync(join(tmpPath, ".git")))
+      ).toString(),
     });
 
     await git.addTag(meta.name, meta.message);

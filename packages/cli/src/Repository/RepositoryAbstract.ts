@@ -18,6 +18,7 @@ export type SnapshotResultType = SnapshotType & {
   packageName: string;
   packageTaskName: string | undefined;
   tags: string[];
+  size: number;
 };
 
 export type ProgressDataType = {
@@ -78,6 +79,7 @@ export enum SnapshotTagEnum {
   TASK = "task",
   TAGS = "tags",
   VERSION = "version",
+  SIZE = "size",
 }
 
 export type SnapshotTagObjectType = {
@@ -88,6 +90,7 @@ export type SnapshotTagObjectType = {
   [SnapshotTagEnum.TASK]: string | undefined;
   [SnapshotTagEnum.TAGS]: string[];
   [SnapshotTagEnum.VERSION]: string;
+  [SnapshotTagEnum.SIZE]: string;
 };
 
 export abstract class RepositoryAbstract<TConfig> {

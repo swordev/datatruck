@@ -209,6 +209,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         date: tag.date,
         id: tag.id,
         tags: itemTags,
+        size: Number(tag.size) || 0,
       });
       return items;
     }, [] as SnapshotResultType[]);

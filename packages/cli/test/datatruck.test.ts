@@ -330,4 +330,67 @@ describe("datatruck", () => {
       });
     }
   });
+
+  it.each(repositoryTypes)("snapshots", async (type) => {
+    const fileChanger = await createFileChanger();
+    const configPath = await makeConfig({
+      repositories: [await makeRepositoryConfig(type)],
+      packages: [
+        {
+          name: "main/files",
+          path: fileChanger.path,
+          repositoryNames: [type],
+        },
+      ],
+    });
+
+    const changes: FileChanges = {
+      file1: "abc",
+      folder: {
+        file2: "xyz",
+      },
+    };
+
+    expect(
+      await exec(
+        CommandEnum.init,
+        {
+          config: configPath,
+          verbose: 1,
+        },
+        {}
+      )
+    ).toBe(0);
+
+    await expectSuccessBackup({
+      configPath,
+      fileChanger,
+      changes,
+      backupIndex: 0,
+    });
+
+    const parseSnapshotsLog = makeParseLog(CommandEnum.snapshots);
+
+    expect(
+      await exec(
+        CommandEnum.snapshots,
+        {
+          config: configPath,
+          outputFormat: "json",
+          verbose: 1,
+        },
+        {}
+      )
+    ).toBe(0);
+
+    const snapshots = parseSnapshotsLog();
+    const [snapshot] = snapshots;
+    expect(snapshots.length).toBe(1);
+    expect(snapshot.packageName).toBe("main/files");
+    expect(snapshot.tags.join()).toBe("");
+    expect(snapshot.shortId).toBe(snapshot.id.slice(0, 8));
+    expect(snapshot.size).toBe(6);
+    expect(snapshot.repositoryName).toBe(type);
+    expect(snapshot.repositoryType).toBe(type);
+  });
 });

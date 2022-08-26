@@ -6,6 +6,7 @@ import {
   checkDir,
   checkFile,
   cpy,
+  fastFolderSizeAsync,
   forEachFile,
   mkdirIfNotExists,
   parsePackageFile,
@@ -41,6 +42,7 @@ export type MetaDataType = {
   task: string | undefined;
   tags: string[];
   version: string;
+  size: number;
 };
 
 export type DatatruckRepositoryConfigType = {
@@ -228,6 +230,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         packageName: meta.package,
         packageTaskName: meta.task,
         tags: meta.tags,
+        size: meta.size || 0,
       });
     }
 
@@ -400,6 +403,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
+      size: await fastFolderSizeAsync(outPath),
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
     await writeFile(metaPath, DatatruckRepository.stringifyMetaData(meta));
