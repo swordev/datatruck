@@ -98,7 +98,11 @@ export class ResticUtil {
               stderr: true,
               colorize: true,
               allToStderr: true,
-              envNames: ["RESTIC_REPOSITORY", "RESTIC_PASSWORD_FILE"],
+              envNames: [
+                "RESTIC_REPOSITORY",
+                "RESTIC_PASSWORD_FILE",
+                "RESTIC_PASSWORD",
+              ],
             }
           : {},
         ...(settings ?? {}),
