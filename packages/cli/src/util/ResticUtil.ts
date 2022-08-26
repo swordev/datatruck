@@ -86,7 +86,7 @@ export class ResticUtil {
       args,
       {
         stdio: ["ignore", "pipe", "pipe"],
-        env: { ...this.options.env },
+        env: { ...process.env, ...this.options.env },
         cwd: options?.cwd,
       },
       {
