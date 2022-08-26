@@ -469,10 +469,11 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       target: restorePath,
       onStream: async (streamData) => {
         if (streamData.message_type === "restore-status") {
+          const current = Math.min(streamData.total_bytes, snapshot.size);
           await data.onProgress({
             total: snapshot.size,
-            current: streamData.total_bytes,
-            percent: progressPercent(snapshot.size, streamData.total_bytes),
+            current,
+            percent: progressPercent(snapshot.size, current),
           });
         }
       },
