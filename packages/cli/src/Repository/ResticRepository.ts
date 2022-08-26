@@ -9,6 +9,7 @@ import {
   parsePackageFile,
   writeGitIgnoreList,
 } from "../util/fs-util";
+import { progressPercent } from "../util/math-util";
 import { checkMatch, formatUri, makePathPatterns } from "../util/string-util";
 import {
   RepositoryAbstract,
@@ -322,6 +323,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       step: "Executing backup action...",
     });
 
+    let resticSnapshotId: string | undefined;
+    let resticTotalBytes: number | undefined;
+
     await restic.backup({
       cwd: sourcePath,
       paths: ["."],
@@ -380,9 +384,25 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
               step: streamData.current_files?.join(", ") ?? "-",
             })
           );
+        } else if (streamData.message_type === "summary") {
+          resticSnapshotId = streamData.snapshot_id;
+          resticTotalBytes = streamData.total_bytes_processed;
         }
       },
     });
+
+    if (typeof resticSnapshotId !== "string")
+      throw new AppError(`Restic snapshot id is is not defined`);
+
+    if (typeof resticTotalBytes !== "number")
+      throw new AppError(`Restic snapshot total bytes is not defined`);
+
+    const sizeTag = ResticRepository.buildSnapshotTag(
+      SnapshotTagEnum.SIZE,
+      resticTotalBytes.toString()
+    );
+
+    await restic.exec(["tag", "--add", sizeTag, resticSnapshotId]);
 
     await data.onProgress({
       total: lastProgress?.total || 0,
@@ -444,6 +464,15 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     await restic.restore({
       id: snapshot.originalId,
       target: restorePath,
+      onStream: async (streamData) => {
+        if (streamData.message_type === "restore-status") {
+          await data.onProgress({
+            total: streamData.total_bytes,
+            current: snapshot.size,
+            percent: progressPercent(snapshot.size, streamData.total_bytes),
+          });
+        }
+      },
     });
   }
 }

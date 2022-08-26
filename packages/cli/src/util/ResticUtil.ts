@@ -1,4 +1,4 @@
-import { mkTmpDir } from "./fs-util";
+import { fastFolderSizeAsync, mkTmpDir } from "./fs-util";
 import { exec, ExecResultType, ExecSettingsInterface } from "./process-util";
 import { formatUri, UriType } from "./string-util";
 import { writeFile, readFile } from "fs/promises";
@@ -21,6 +21,10 @@ export type BackupStreamType =
       total_bytes: number;
       bytes_done?: number;
       current_files?: string[];
+    }
+  | {
+      message_type: "restore-status";
+      total_bytes: number;
     }
   | {
       message_type: "summary";
@@ -290,24 +294,50 @@ export class ResticUtil {
   async restore(options: {
     id: string;
     target: string;
+    /**
+     * @default 30_000
+     */
+    progressInterval?: number | false;
     onStream?: (data: BackupStreamType) => Promise<void>;
   }) {
-    return await this.exec(
-      ["restore", "--json", options.id, "--target", options.target],
-      {
-        stderr: {
-          toExitCode: true,
-        },
-        stdout: {
-          ...(options.onStream && {
-            onData: async (data) => {
-              if (data.startsWith("{") && data.endsWith("}")) {
-                await options.onStream?.(JSON.parse(data));
-              }
-            },
-          }),
-        },
+    let progressTimeout: NodeJS.Timeout | undefined;
+    const progressInterval = options.progressInterval ?? 30_000;
+
+    async function progressRutine() {
+      try {
+        const total_bytes = await fastFolderSizeAsync(options.target);
+        options.onStream?.({
+          message_type: "restore-status",
+          total_bytes,
+        });
+      } finally {
+        if (typeof progressInterval === "number")
+          progressTimeout = setTimeout(progressRutine, progressInterval);
       }
-    );
+    }
+
+    if (typeof progressInterval === "number") progressRutine();
+
+    try {
+      return await this.exec(
+        ["restore", "--json", options.id, "--target", options.target],
+        {
+          stderr: {
+            toExitCode: true,
+          },
+          stdout: {
+            ...(options.onStream && {
+              onData: async (data) => {
+                if (data.startsWith("{") && data.endsWith("}")) {
+                  await options.onStream?.(JSON.parse(data));
+                }
+              },
+            }),
+          },
+        }
+      );
+    } finally {
+      clearTimeout(progressTimeout);
+    }
   }
 }
