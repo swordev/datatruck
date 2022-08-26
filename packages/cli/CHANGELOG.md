@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.12.0
+
+### Minor Changes
+
+- [`0effb38`](https://github.com/swordev/datatruck/commit/0effb38d1cc0b50ba43cd2948c7ff98d2b17325d) Thanks [@juanrgm](https://github.com/juanrgm)! - Add package config filter
+
+### Patch Changes
+
+- [`31446fb`](https://github.com/swordev/datatruck/commit/31446fb69273ac1619cdf2f8965f8b702da5882f) Thanks [@juanrgm](https://github.com/juanrgm)! - Throw controlled error when package config not found
+
 ## 0.11.7
 
 ### Patch Changes
