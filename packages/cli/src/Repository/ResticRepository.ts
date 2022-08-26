@@ -373,7 +373,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           }
           await data.onProgress(
             (lastProgress = {
-              total: Math.max(lastProgress?.total || 0, streamData.total_files),
+              total: Math.max(
+                lastProgress?.total || 0,
+                streamData.total_files || 0
+              ),
               current: Math.max(
                 lastProgress?.current || 0,
                 streamData.files_done ?? 0

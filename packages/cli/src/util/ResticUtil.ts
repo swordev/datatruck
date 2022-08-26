@@ -14,9 +14,9 @@ export type RepositoryType = {
 export type BackupStreamType =
   | {
       message_type: "status";
-      seconds_elapsed: number;
+      seconds_elapsed?: number;
       percent_done: number;
-      total_files: number;
+      total_files?: number;
       files_done?: number;
       total_bytes: number;
       bytes_done?: number;
