@@ -74,7 +74,8 @@ export async function exec(
   return new Promise<ExecResultType>(async (resolve, reject) => {
     if (log.exec) {
       const logEnv = log.envNames?.reduce((env, key) => {
-        env[key] = options?.env?.[key] ?? "";
+        const value = options?.env?.[key];
+        if (typeof value !== "undefined") env[key] = value;
         return env;
       }, {} as NodeJS.ProcessEnv);
       logExec(
