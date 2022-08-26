@@ -470,8 +470,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       onStream: async (streamData) => {
         if (streamData.message_type === "restore-status") {
           await data.onProgress({
-            total: streamData.total_bytes,
-            current: snapshot.size,
+            total: snapshot.size,
+            current: streamData.total_bytes,
             percent: progressPercent(snapshot.size, streamData.total_bytes),
           });
         }
