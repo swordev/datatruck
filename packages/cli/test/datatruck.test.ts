@@ -9,6 +9,7 @@ import {
   FileChanges,
 } from "./util";
 import { rm } from "fs/promises";
+import { platform } from "os";
 
 jest.setTimeout(300_000);
 
@@ -389,7 +390,11 @@ describe("datatruck", () => {
     expect(snapshot.packageName).toBe("main/files");
     expect(snapshot.tags.join()).toBe("");
     expect(snapshot.shortId).toBe(snapshot.id.slice(0, 8));
-    expect(snapshot.size).toBe(6);
+    if (platform() === "win32") {
+      expect(snapshot.size).toBe(6);
+    } else {
+      expect(snapshot.size > 0).toBeTruthy();
+    }
     expect(snapshot.repositoryName).toBe(type);
     expect(snapshot.repositoryType).toBe(type);
   });
