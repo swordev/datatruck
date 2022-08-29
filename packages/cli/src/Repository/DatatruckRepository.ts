@@ -381,6 +381,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         basePath: sourcePath,
       },
       targetPath: outPath,
+      skipNotFoundError: true,
       concurrency: this.config.fileCopyConcurrency,
       async onPath({ isDir, entryPath }) {
         if (isDir) return;

@@ -394,6 +394,10 @@ export async function updateFileStats(path: string, fileInfo: Stats) {
   await chown(path, fileInfo.uid, fileInfo.gid);
 }
 
+export function isNotFoundError(error: unknown) {
+  return (error as NodeJS.ErrnoException).code === "ENOENT";
+}
+
 export async function cpy(options: {
   input:
     | {
@@ -417,6 +421,7 @@ export async function cpy(options: {
    * @default 1
    */
   concurrency?: number;
+  skipNotFoundError?: boolean;
   onPath?: (data: {
     isDir: boolean;
     entryPath: string;
@@ -463,18 +468,31 @@ export async function cpy(options: {
 
       // https://github.com/nodejs/node/issues/44261
       if (isWSLSystem) {
-        const fileInfo = await stat(entrySourcePath);
-        const isWritable = (fileInfo.mode & 0o200) === 0o200;
-        if (!isWritable) {
-          await copyFileWithStreams(entrySourcePath, entryTargetPath);
-          await updateFileStats(entryTargetPath, fileInfo);
-          return;
+        let fileInfo!: Stats | undefined;
+        try {
+          fileInfo = await stat(entrySourcePath);
+        } catch (error) {
+          const skipError = options.skipNotFoundError && isNotFoundError(error);
+          if (!skipError) throw error;
+        }
+        if (fileInfo) {
+          const isWritable = (fileInfo.mode & 0o200) === 0o200;
+          if (!isWritable) {
+            await copyFileWithStreams(entrySourcePath, entryTargetPath);
+            await updateFileStats(entryTargetPath, fileInfo);
+            return;
+          }
         }
       }
 
-      await cp(entrySourcePath, entryTargetPath, {
-        preserveTimestamps: true,
-      });
+      try {
+        await cp(entrySourcePath, entryTargetPath, {
+          preserveTimestamps: true,
+        });
+      } catch (error) {
+        const skipError = options.skipNotFoundError && isNotFoundError(error);
+        if (!skipError) throw error;
+      }
     }
   };
 

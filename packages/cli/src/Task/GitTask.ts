@@ -231,6 +231,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
           basePath: path,
         },
         targetPath: outPath,
+        skipNotFoundError: true,
         concurrency: this.config.fileCopyConcurrency,
         onPath: async ({ entryPath }) => {
           currentFiles++;
