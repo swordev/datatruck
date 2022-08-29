@@ -34,6 +34,7 @@ export type SqlDumpTaskConfigType = {
 export const sqlDumpTaskDefinition: JSONSchema7 = {
   type: "object",
   required: ["password", "hostname", "username", "database"],
+  additionalProperties: false,
   properties: {
     password: {
       anyOf: [
