@@ -1,5 +1,23 @@
 # @datatruck/cli
 
+## 0.13.0
+
+### Minor Changes
+
+- [`64cbb10`](https://github.com/swordev/datatruck/commit/64cbb10ea2526612e9f1183c878f146dbe4cea13) Thanks [@juanrgm](https://github.com/juanrgm)! - Save and show snapshot size
+
+* [`297d120`](https://github.com/swordev/datatruck/commit/297d1202c49a3a6b4a5eafc3871359c1af637d52) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `progress` and `progress-interval` global options
+
+- [`cb0ea35`](https://github.com/swordev/datatruck/commit/cb0ea35161ce8f67c40c6c77d1169d648ac0dfcd) Thanks [@juanrgm](https://github.com/juanrgm)! - Show restic restore progress
+
+* [`357b995`](https://github.com/swordev/datatruck/commit/357b995c041f3167290a5ce9ae4f9a8d122f2a10) Thanks [@juanrgm](https://github.com/juanrgm)! - Rename local repository to datatruck
+
+### Patch Changes
+
+- [`aca9634`](https://github.com/swordev/datatruck/commit/aca9634313d562065a3e09efde8adf31b9939f89) Thanks [@juanrgm](https://github.com/juanrgm)! - Use local cache in the restic repositories
+
+* [`25f0cbb`](https://github.com/swordev/datatruck/commit/25f0cbb2754ca1b082a51e929c373f88825bc18d) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix undefined progress of restic
+
 ## 0.12.1
 
 ### Patch Changes
