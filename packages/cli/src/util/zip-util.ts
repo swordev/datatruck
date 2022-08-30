@@ -120,6 +120,14 @@ function parseZipStream(
   }
 }
 
+let checkSSEOptionResult: boolean | undefined;
+
+export async function checkSSEOption(command = "7z") {
+  const result = await exec(command);
+  if (typeof checkSSEOptionResult === "boolean") return checkSSEOptionResult;
+  return (checkSSEOptionResult = result.stdout.includes(" -sse"));
+}
+
 export async function zip(data: ZipDataType) {
   let result = {
     folders: 0,
@@ -130,7 +138,9 @@ export async function zip(data: ZipDataType) {
     data.command ?? "7z",
     [
       "a",
-      "-mmt1",
+      // https://sourceforge.net/p/sevenzip/bugs/2099/,
+      // https://github.com/mcmilk/7-Zip/commit/87ba6f01ba3c5b2ce3186bddfe3d7d880639193c#diff-779d6b1bfa6196b288478f78ca96c4d4c6d7ac6cf8be15a28a20dabc9137ca36L515
+      ...((await checkSSEOption(data.command)) ? [] : ["-mmt1"]),
       "-bsp1",
       ...(data.deleteOnZip ? ["-sdel"] : []),
       normalize(data.output),
@@ -143,9 +153,7 @@ export async function zip(data: ZipDataType) {
     },
     {
       log: data.verbose ?? false,
-      stderr: {
-        toExitCode: true,
-      },
+      onExitCodeError: (data, error) => (data.exitCode > 2 ? error : false),
       stdout: {
         onData: (chunk) => {
           parseZipStream(chunk, buffer, (stream) => {
@@ -183,7 +191,6 @@ export async function unzip(data: UnzipDataType) {
     data.command ?? "7z",
     [
       "x",
-      "-mmt1", // https://sourceforge.net/p/sevenzip/bugs/2099/,
       "-bsp1",
       normalize(data.input),
       ...buildArguments(data.files ?? []),
