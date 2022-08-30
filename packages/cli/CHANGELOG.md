@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.13.1
+
+### Patch Changes
+
+- [`bfd61c7`](https://github.com/swordev/datatruck/commit/bfd61c7c5cdec7aea4f66193094786797231b1d6) Thanks [@juanrgm](https://github.com/juanrgm)! - Enhance 7zip performance
+
+* [`a208200`](https://github.com/swordev/datatruck/commit/a20820044fe8dac007bbc70de840b27735c689ef) Thanks [@juanrgm](https://github.com/juanrgm)! - Skip not found file errors during backups
+
+- [`442bd3d`](https://github.com/swordev/datatruck/commit/442bd3d7376e6c546cfcba69a80048e90e11a488) Thanks [@juanrgm](https://github.com/juanrgm)! - Deny additional properties in SQL dump task config
+
 ## 0.13.0
 
 ### Minor Changes
