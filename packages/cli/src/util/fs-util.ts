@@ -4,7 +4,7 @@ import { eachLimit } from "async";
 import { randomBytes } from "crypto";
 import fastFolderSize from "fast-folder-size";
 import FastGlob from "fast-glob";
-import { createReadStream, Stats } from "fs";
+import { createReadStream, Dirent, Stats } from "fs";
 import { createWriteStream, WriteStream } from "fs";
 import {
   cp,
@@ -16,8 +16,8 @@ import {
   utimes,
   chmod,
   chown,
+  opendir,
 } from "fs/promises";
-import { isMatch } from "micromatch";
 import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
 import { isAbsolute } from "path";
@@ -25,6 +25,55 @@ import { createInterface, Interface } from "readline";
 import { promisify } from "util";
 
 export const isWSLSystem = release().includes("microsoft-standard-WSL");
+
+export async function isEmptyDir(path: string) {
+  const iterator = await opendir(path);
+  let done = false;
+  try {
+    const next = await iterator[Symbol.asyncIterator]().next();
+    done = !!next.done;
+    return done;
+  } finally {
+    if (!done) {
+      await iterator.close();
+    }
+  }
+}
+
+type EntryObject = {
+  name: string;
+  path: string;
+  dirent: Dirent;
+  stats: Stats;
+};
+
+export async function applyPermissions(
+  baseDir: string,
+  permissionsPath: string
+) {
+  const singleReader = createInterface({
+    input: createReadStream(permissionsPath),
+  });
+
+  for await (const line of singleReader) {
+    const [rpath, rawUid, rawGui, rawMode] = line.split(":");
+    const path = join(baseDir, rpath);
+    if (!path.startsWith(baseDir)) {
+      throw new Error(
+        `Entry path is out of the base dir: (${path}, ${baseDir})`
+      );
+    }
+    const uid = Number(rawUid);
+    const guid = Number(rawGui);
+    await chown(path, uid, guid);
+    const mode = Number(rawMode);
+    await chmod(path, mode);
+  }
+}
+
+export function pathIterator(stream: AsyncIterable<string | Buffer>) {
+  return stream as any as AsyncIterable<EntryObject>;
+}
 
 export function isLocalDir(path: string) {
   return /^[\/\.]|([A-Z]:)/i.test(path);
@@ -60,9 +109,9 @@ export async function existsDir(path: string) {
 export async function writeJSONFile<T = any>(path: string, json: T) {
   await writeFile(path, JSON.stringify(json));
 }
+
 export async function readdirIfExists(path: string) {
-  if (!(await existsDir(path))) return [];
-  return await readDir(path);
+  return await readDir(path, true);
 }
 
 export const parseFileExtensions = ["json", "js", "ts", "yaml", "yml"];
@@ -191,12 +240,13 @@ export async function checkDir(path: string) {
   }
 }
 
-export async function readDir(path: string) {
+export async function readDir(path: string, optional?: boolean) {
   try {
     return await readdir(path);
   } catch (anyError) {
     const nodeError = anyError as NodeJS.ErrnoException;
     if (nodeError.code === "ENOENT") {
+      if (optional) return [];
       const error: NodeJS.ErrnoException = new Error(nodeError.message);
       error.code = nodeError.code;
       error.errno = nodeError.errno;
@@ -271,104 +321,12 @@ export async function writeGitIgnoreList(options: {
   return path;
 }
 
-export async function writePathLists(options: {
-  paths: NodeJS.ReadableStream | string[];
-  packs?: {
-    include: string[];
-    exclude?: string[];
-    multiple?: boolean;
-  }[];
-}) {
-  const tempDir = await mkTmpDir("path-lists");
-  const includedPaths: string[] = [];
-  const excludedPaths: string[] = [];
-  const included: WriteStream[] = [];
-  const excluded: WriteStream[] = [];
-  const multipleStats: Record<string, number> = {};
-  const total = new Array<number>((options.packs?.length || 0) + 1).fill(0);
-  await Promise.all([
-    ...new Array((options.packs?.length || 0) + 1).fill(null).map(
-      (_, index) =>
-        new Promise((resolve, reject) => {
-          const path = join(tempDir, `${index}-included.txt`);
-          const stream = createWriteStream(path);
-          includedPaths.push(path);
-          included.push(stream);
-          stream.on("close", resolve);
-          stream.on("error", reject);
-        })
-    ),
-    ...new Array(options.packs?.length || 0).fill(null).map(
-      (_, index) =>
-        new Promise((resolve, reject) => {
-          const path = join(tempDir, `${index}-excluded.txt`);
-          const stream = createWriteStream(path);
-          excludedPaths.push(path);
-          excluded.push(stream);
-          stream.on("close", resolve);
-          stream.on("error", reject);
-        })
-    ),
-    new Promise<void>(async (resolve) => {
-      const packDirectories: [number, string][] = [];
-      for await (const value of options.paths) {
-        const entry = value.toString();
-        const isDir = entry.endsWith("/");
-        const matchEntry = isDir ? entry.slice(0, -1) : entry;
-        let packIndex = 1;
-        let matches = false;
-
-        for (const pack of options.packs || []) {
-          if (
-            isMatch(matchEntry, pack.include) &&
-            (!pack.exclude || !isMatch(matchEntry, pack.exclude))
-          ) {
-            if (isDir) packDirectories.push([packIndex - 1, entry]);
-            included[packIndex].write(`${entry}\n`);
-            if (!isDir) total[packIndex]++;
-            matches = true;
-            break;
-          }
-          packIndex++;
-        }
-
-        if (!matches) {
-          const packDir = packDirectories.find(([, p]) => entry.startsWith(p));
-
-          if (packDir) {
-            const [i, v] = packDir;
-            const multipleExclude = options.packs?.[i].exclude;
-            if (multipleExclude && isMatch(matchEntry, multipleExclude)) {
-              included[0].write(`${entry}\n`);
-              excluded[i].write(`${entry}\n`);
-            } else {
-              if (!multipleStats[v]) multipleStats[v] = 0;
-              multipleStats[v]++;
-            }
-          } else {
-            included[0].write(`${entry}\n`);
-          }
-          if (!isDir) total[0]++;
-        }
-      }
-
-      for (const stream of [...included, ...excluded]) {
-        stream.end();
-      }
-      resolve();
-    }),
-  ]);
-  return {
-    path: includedPaths[0],
-    includedPackPaths: includedPaths.slice(1),
-    excludedPackPaths: excludedPaths,
-    total: {
-      all: total.reduce((p, v) => p + v, 0),
-      path: total[0],
-      packsPaths: total.slice(1),
-      multipleStats,
-    },
-  };
+export async function waitForClose(stream: WriteStream) {
+  return new Promise<WriteStream>(async (resolve, reject) => {
+    stream.on("close", resolve);
+    stream.on("error", reject);
+    return stream;
+  });
 }
 
 export async function copyFileWithStreams(source: string, target: string) {
@@ -445,6 +403,7 @@ export async function cpy(options: {
   };
 
   const task = async (rawEntryPath: string, basePath: string) => {
+    [rawEntryPath] = rawEntryPath.split(":");
     const isDir = rawEntryPath.endsWith("/");
     const entryPath = normalize(rawEntryPath);
     const entrySourcePath = resolve(join(basePath, rawEntryPath));

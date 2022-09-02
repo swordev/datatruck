@@ -7,23 +7,6 @@ export interface ZipDataFilterType {
   patterns: string[];
 }
 
-export type ZipStreamDataType =
-  | {
-      type: "progress";
-      data: {
-        progress: number;
-        files: number;
-        path: string;
-      };
-    }
-  | {
-      type: "summary";
-      data: {
-        folders: number;
-        files: number;
-      };
-    };
-
 export interface ZipDataType {
   command?: string;
   path: string;
@@ -33,7 +16,7 @@ export interface ZipDataType {
   includeList?: string;
   excludeList?: string;
   verbose?: boolean;
-  onStream?: (data: ZipStreamDataType) => void;
+  onStream?: (data: ZipStream) => void;
 }
 
 export interface UnzipDataType {
@@ -42,17 +25,8 @@ export interface UnzipDataType {
   files?: (ZipDataFilterType | string)[];
   output: string;
   verbose?: boolean;
-  onStream?: (data: UnzipStreamDataType) => void;
+  onStream?: (data: UnzipStream) => void;
 }
-
-export type UnzipStreamDataType = {
-  type: "progress";
-  data: {
-    progress: number;
-    files: number;
-    path: string;
-  };
-};
 
 export function buildArguments(filters: (ZipDataFilterType | string)[]) {
   const args: string[] = [];
@@ -85,41 +59,6 @@ export function buildArguments(filters: (ZipDataFilterType | string)[]) {
   return args;
 }
 
-function parseZipStream(
-  chunk: string,
-  buffer: {
-    lastPath?: string;
-    currentPaths?: number;
-  },
-  cb: (data: ZipStreamDataType) => void
-) {
-  const lines = chunk.replaceAll("\b", "").trim().split(/\r?\n/);
-  for (const line of lines) {
-    let matches: RegExpExecArray | null = null;
-    if ((matches = /^(\d+)% (\d+ )?\+/.exec(line))) {
-      const path = line.slice(line.indexOf("+") + 1).trim();
-      const progress = Number(matches[1]);
-      if (!buffer.currentPaths) buffer.currentPaths = 0;
-      if (path !== buffer.lastPath) buffer.currentPaths++;
-      buffer.lastPath = path;
-      cb({
-        type: "progress",
-        data: { progress, path, files: buffer.currentPaths },
-      });
-    } else if (line.startsWith("Add new data to archive:")) {
-      const [, folders] = /(\d+) folders?/i.exec(line) || [, 0];
-      const [, files] = /(\d+) files?/i.exec(line) || [, 0];
-      cb({
-        type: "summary",
-        data: {
-          folders: Number(folders),
-          files: Number(files),
-        },
-      });
-    }
-  }
-}
-
 let checkSSEOptionResult: boolean | undefined;
 
 export async function checkSSEOption(command = "7z") {
@@ -128,12 +67,133 @@ export async function checkSSEOption(command = "7z") {
   return (checkSSEOptionResult = result.stdout.includes(" -sse"));
 }
 
+type ListZipStream = {
+  Path?: string;
+  Folder?: string;
+  Size?: string;
+  "Packed Size"?: string;
+  Modified?: string;
+  Created?: string;
+  Accessed?: string;
+  Attributes?: string;
+  Encrypted?: string;
+  Comment?: string;
+  CRC?: string;
+  Method?: string;
+  Characteristics?: string;
+  "Host OS"?: string;
+  Version?: string;
+  Volume?: string;
+  Offset?: string;
+};
+
+type ListZipLineBuffer = {
+  started?: boolean;
+  opened?: boolean;
+  stream?: ListZipStream;
+};
+
+const listZipLineEqChar = " = ";
+
+function parseListZipLine(line: string, buffer: ListZipLineBuffer) {
+  if (buffer.started) {
+    if (line === "") {
+      if (buffer.opened) {
+        const { stream } = buffer;
+        buffer.stream = {};
+        buffer.opened = false;
+        return stream;
+      }
+    } else {
+      const separator = line.indexOf(listZipLineEqChar);
+      const key = line.slice(0, separator);
+      const value = line.slice(separator + listZipLineEqChar.length);
+      buffer.opened = true;
+      buffer.stream![key as keyof ListZipStream] = value;
+    }
+  } else if (line.startsWith("----------")) {
+    buffer.started = true;
+    buffer.stream = {};
+  }
+}
+
+export async function listZip(data: {
+  command?: string;
+  path: string;
+  onStream: (item: ListZipStream) => void;
+  verbose?: boolean;
+}) {
+  const buffer: ListZipLineBuffer = {};
+  await exec(
+    data.command ?? "7z",
+    ["l", data.path, "-slt"],
+    {},
+    {
+      log: {
+        exec: data.verbose ?? false,
+        stderr: data.verbose ?? false,
+        stdout: false,
+      },
+      onExitCodeError: (data, error) => (data.exitCode > 2 ? error : false),
+      stdout: {
+        parseLines: true,
+        onData: (line) => {
+          const stream = parseListZipLine(line, buffer);
+          if (stream) {
+            data.onStream?.(stream);
+          }
+        },
+      },
+    }
+  );
+}
+
+export type ZipStream =
+  | {
+      type: "progress";
+      data: {
+        progress: number;
+        files: number;
+        path: string;
+      };
+    }
+  | {
+      type: "summary";
+      data: {
+        folders: number;
+        files: number;
+      };
+    };
+
+function parseZipLine(line: string) {
+  let matches: RegExpExecArray | null = null;
+  if (!line.trim().length) return;
+  if ((matches = /^\s*(\d+)% (\d+ )?\+/.exec(line))) {
+    const path = line.slice(line.indexOf("+") + 1).trim();
+    const progress = Number(matches[1]);
+    const files = Number(matches[2]);
+    return {
+      type: "progress",
+      data: { progress, path, files },
+    } as ZipStream;
+  } else if (line.startsWith("Add new data to archive:")) {
+    const [, folders] = /(\d+) folders?/i.exec(line) || [, 0];
+    const [, files] = /(\d+) files?/i.exec(line) || [, 0];
+    return {
+      type: "summary",
+      data: {
+        folders: Number(folders),
+        files: Number(files),
+      },
+    } as ZipStream;
+  }
+}
+
 export async function zip(data: ZipDataType) {
   let result = {
     folders: 0,
     files: 0,
   };
-  let buffer = {};
   await exec(
     data.command ?? "7z",
     [
@@ -155,11 +215,12 @@ export async function zip(data: ZipDataType) {
       log: data.verbose ?? false,
       onExitCodeError: (data, error) => (data.exitCode > 2 ? error : false),
       stdout: {
-        onData: (chunk) => {
-          parseZipStream(chunk, buffer, (stream) => {
+        onData: (line) => {
+          const stream = parseZipLine(line);
+          if (stream) {
             data.onStream?.(stream);
             if (stream.type === "summary") result = stream.data;
-          });
+          }
         },
       },
     }
@@ -167,22 +228,24 @@ export async function zip(data: ZipDataType) {
   return result;
 }
 
-function parseUnzipStream(
-  chunk: string,
-  cb: (data: UnzipStreamDataType) => void
-) {
-  const lines = chunk.trim().split(/\r?\n/g);
-  for (const line of lines) {
-    let matches: RegExpExecArray | null = null;
-    if ((matches = /^(\d+)% (\d+) \-/.exec(line))) {
-      const progress = Number(matches[1]);
-      const files = Number(matches[2]);
-      const path = line.slice(line.indexOf("-") + 1).trim();
-      cb({
-        type: "progress",
-        data: { progress, path, files },
-      });
-    }
+export type UnzipStream = {
+  type: "progress";
+  data: {
+    progress: number;
+    files: number;
+    path: string;
+  };
+};
+function parseUnzipLine(line: string) {
+  let matches: RegExpExecArray | null = null;
+  if ((matches = /^\s*(\d+)% (\d+) \-/.exec(line))) {
+    const progress = Number(matches[1]);
+    const files = Number(matches[2]);
+    const path = line.slice(line.indexOf("-") + 1).trim();
+    return {
+      type: "progress",
+      data: { progress, path, files },
+    } as UnzipStream;
   }
 }
 
@@ -203,8 +266,10 @@ export async function unzip(data: UnzipDataType) {
       stderr: { toExitCode: true },
       stdout: {
         ...(data.onStream && {
-          onData: (chunk) => {
-            if (data.onStream) parseUnzipStream(chunk, data.onStream);
+          parseLines: true,
+          onData: (line) => {
+            const stream = parseUnzipLine(line);
+            if (stream) data.onStream!(stream);
           },
         }),
       },
