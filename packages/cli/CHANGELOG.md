@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.14.0
+
+### Minor Changes
+
+- [`91fe442`](https://github.com/swordev/datatruck/commit/91fe44257fa58400d7ce6a4678747e034e94228a) Thanks [@juanrgm](https://github.com/juanrgm)! - Show progress and apply permissions in datatruck repository
+
 ## 0.13.1
 
 ### Patch Changes
