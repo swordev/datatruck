@@ -5,6 +5,7 @@ import chalk from "chalk";
 import { SpawnOptions, spawn, ChildProcess } from "child_process";
 import { ReadStream, WriteStream } from "fs";
 import { stat } from "fs/promises";
+import { createInterface } from "readline";
 
 export type ExecLogSettingsType = {
   colorize?: boolean;
@@ -27,7 +28,11 @@ export interface ExecSettingsInterface {
   };
   log?: ExecLogSettingsType | boolean;
   onSpawn?: (p: ChildProcess) => void;
-  stdout?: { save?: boolean; onData?: (data: string) => void };
+  stdout?: {
+    save?: boolean;
+    parseLines?: boolean;
+    onData?: (data: string) => void;
+  };
   stderr?: {
     save?: boolean;
     onData?: (data: string) => void;
@@ -122,7 +127,10 @@ export async function exec(
       exitCode: 0,
     };
 
-    let finishListeners = pipe?.stream instanceof WriteStream ? 2 : 1;
+    let finishListeners = 1;
+    if (pipe?.stream instanceof WriteStream) finishListeners++;
+    if (settings.stdout?.parseLines) finishListeners++;
+
     let streamError: Error | undefined;
 
     const tryFinish = () => {
@@ -189,16 +197,26 @@ export async function exec(
 
     if (log.stdout || settings.stdout) {
       if (!p.stdout) throw new Error(`stdout is not defined`);
-      p.stdout.on("data", (data: Buffer) => {
+      const parseLines = settings.stdout?.parseLines;
+      const onData = (data: string | Buffer) => {
         if (log.stdout)
           logExecStdout({
-            data: data.toString(),
+            data: parseLines ? `${data}\n` : data.toString(),
             stderr: log.allToStderr,
             colorize: log.colorize,
           });
         if (settings.stdout?.save) spawnData.stdout += data.toString();
         if (settings.stdout?.onData) settings.stdout.onData(data.toString());
-      });
+      };
+      if (parseLines) {
+        const rl = createInterface({
+          input: p.stdout!,
+        });
+        rl.on("line", onData);
+        rl.on("close", tryFinish);
+      } else {
+        p.stdout.on("data", onData);
+      }
     }
 
     if (log.stderr || settings.stderr) {
