@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.15.0
+
+### Minor Changes
+
+- [`c73ceec`](https://github.com/swordev/datatruck/commit/c73ceec5ccb6a824fe6a6fceee56700705191fba) Thanks [@juanrgm](https://github.com/juanrgm)! - Detail the progress in all actions
+
 ## 0.14.0
 
 ### Minor Changes
