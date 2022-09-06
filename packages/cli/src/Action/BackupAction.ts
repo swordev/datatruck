@@ -117,11 +117,7 @@ export class BackupAction<TRequired extends boolean = true> {
           onProgress: async (data) => {
             await session.progressTask({
               id: taskId,
-              progressCurrent: data.current,
-              progressPercent: data.percent,
-              progressStep: data.step,
-              progressStepPercent: data.stepPercent,
-              progressTotal: data.total,
+              ...data,
             });
           },
         });
@@ -174,11 +170,7 @@ export class BackupAction<TRequired extends boolean = true> {
           onProgress: async (data) => {
             await session.progressRepository({
               id: repositoryId,
-              progressCurrent: data.current,
-              progressPercent: data.percent,
-              progressStep: data.step,
-              progressStepPercent: data.stepPercent,
-              progressTotal: data.total,
+              ...data,
             });
           },
         });
@@ -224,11 +216,7 @@ export class BackupAction<TRequired extends boolean = true> {
           onProgress: async (data) => {
             await session.progressRepository({
               id: repositoryId,
-              progressCurrent: data.current,
-              progressPercent: data.percent,
-              progressStep: data.step,
-              progressStepPercent: data.stepPercent,
-              progressTotal: data.total,
+              ...data,
             });
           },
         });

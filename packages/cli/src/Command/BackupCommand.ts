@@ -82,9 +82,10 @@ export class BackupCommand extends CommandAbstract<
         new ConsoleSessionDriver({
           verbose: verbose > 0,
           progress: this.globalOptions.progress,
-          progressInterval: this.globalOptions.progressInterval,
         }),
       ],
+      verbose: verbose > 1,
+      progressInterval: this.globalOptions.progressInterval,
     });
 
     const result = await backup.exec(sessionManager);

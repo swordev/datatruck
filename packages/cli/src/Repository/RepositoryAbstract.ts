@@ -22,11 +22,16 @@ export type SnapshotResultType = SnapshotType & {
 };
 
 export type ProgressDataType = {
-  total?: number;
-  current?: number;
-  percent?: number;
-  step?: string;
-  stepPercent?: number | null;
+  stats?: {
+    total?: number;
+    current?: number;
+    percent?: number;
+  };
+  step?: {
+    description?: string;
+    item?: string;
+    percent?: number | null;
+  };
 };
 
 export type InitDataType = {

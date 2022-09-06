@@ -156,27 +156,42 @@ export abstract class SqlDumpTaskAbstract<
         outputPath,
         serializeSqlFile({ database: this.config.database })
       );
+      data.onProgress({
+        step: {
+          description: "Exporting",
+        },
+      });
       await this.onExportTables(tableNames, outPath);
     } else {
       let current = 0;
       for (const tableName of tableNames) {
         data.onProgress({
-          total: tableNames.length,
-          current: current,
-          percent: progressPercent(tableNames.length, current),
-          step: tableName,
+          step: {
+            description: "Exporting",
+            item: tableName,
+          },
+          stats: {
+            total: tableNames.length,
+            current: current,
+            percent: progressPercent(tableNames.length, current),
+          },
         });
-        current++;
         const outPath = join(
           outputPath,
           serializeSqlFile({ table: tableName })
         );
         await this.onExportTables([tableName], outPath);
+        current++;
       }
     }
 
     if (this.config.storedPrograms) {
       const outPath = join(outputPath, "stored-programs.sql");
+      data.onProgress({
+        step: {
+          description: "Exporting storaged programs",
+        },
+      });
       await this.onExportStoredPrograms(outPath);
     }
   }
@@ -241,13 +256,18 @@ export abstract class SqlDumpTaskAbstract<
     for (const item of items) {
       const path = join(restorePath, item.fileName);
       data.onProgress({
-        total: items.length,
-        current: current,
-        percent: progressPercent(items.length, current),
-        step: item.fileName,
+        step: {
+          description: "Importing",
+          item: item.fileName,
+        },
+        stats: {
+          total: items.length,
+          current: current,
+          percent: progressPercent(items.length, current),
+        },
       });
-      current++;
       await this.onImport(path, database.name);
+      current++;
     }
   }
 }

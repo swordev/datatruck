@@ -14,7 +14,8 @@ CREATE TABLE "backup_session" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"snapshotId"	TEXT NOT NULL,
@@ -35,7 +36,8 @@ CREATE TABLE "backup_session_task" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"sessionId"	INTEGER NOT NULL,
@@ -54,7 +56,8 @@ CREATE TABLE "backup_session_repository" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"sessionId"	INTEGER NOT NULL,
@@ -74,7 +77,8 @@ CREATE TABLE "restore_session" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"snapshotId"	TEXT NOT NULL,
@@ -94,7 +98,8 @@ CREATE TABLE "restore_session_task" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"sessionId"	INTEGER NOT NULL,
@@ -113,7 +118,8 @@ CREATE TABLE "restore_session_repository" (
 	"progressCurrent" INTEGER,
 	"progressTotal" INTEGER,
 	"progressPercent" INTEGER,
-	"progressStep" TEXT,
+	"progressStepDescription" TEXT,
+	"progressStepItem" TEXT,
 	"progressStepPercent" INTEGER,
 
 	"sessionId"	INTEGER NOT NULL,

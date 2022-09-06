@@ -60,6 +60,7 @@ export class BackupSessionsCommand extends CommandAbstract<
         verbose: verbose > 1,
       }),
       verbose: verbose > 1,
+      progressInterval: this.globalOptions.progressInterval,
     });
 
     const items = await action.exec(manager);

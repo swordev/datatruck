@@ -35,7 +35,8 @@ type MessageType = {
   progressCurrent?: number | null;
   progressTotal?: number | null;
   progressPercent?: number | null;
-  progressStep?: string | null;
+  progressStepDescription?: string | null;
+  progressStepItem?: string | null;
   progressStepPercent?: number | null;
 };
 
@@ -49,13 +50,11 @@ const renderBadges = (badges: BadgeType[]) =>
 
 type ConsoleSessionDriverOptions = SessionDriverOptions & {
   progress?: "auto" | "tty" | "plain";
-  progressInterval?: number;
 };
 
 export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDriverOptions> {
   protected lastMessage: MessageType | undefined;
   protected lastMessageText: string | undefined;
-  protected lastProgressDate: number | undefined;
   protected prints = 0;
   protected renderInterval!: NodeJS.Timeout;
   protected rendering?: boolean;
@@ -151,8 +150,15 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       );
     }
 
-    if (typeof message.progressStep === "string")
-      parts.push(message.progressStep);
+    if (message.progressStepDescription && message.progressStepItem) {
+      parts.push(
+        `${message.progressStepDescription}: ${message.progressStepItem}`
+      );
+    } else if (message.progressStepDescription) {
+      parts.push(message.progressStepDescription);
+    } else if (message.progressStepItem) {
+      parts.push(message.progressStepItem);
+    }
 
     if (typeof message.progressStepPercent === "number") {
       parts.push(cyan(renderProgressBar(message.progressStepPercent ?? 0, 10)));
@@ -163,14 +169,6 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
 
   override async onWrite(data: WriteDataType) {
     if (data.action === ActionEnum.Init) return;
-
-    if (data.action === ActionEnum.Progress && this.options.progressInterval) {
-      const skip =
-        this.lastProgressDate &&
-        Date.now() - this.lastProgressDate < this.options.progressInterval;
-      if (skip) return;
-      this.lastProgressDate = Date.now();
-    }
 
     const message: MessageType = {
       sessionId: "sessionId" in data.data ? data.data.sessionId : data.data.id,
@@ -210,7 +208,8 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       message.progressPercent = data.data.progressPercent;
       message.progressCurrent = data.data.progressCurrent;
       message.progressTotal = data.data.progressTotal;
-      message.progressStep = data.data.progressStep;
+      message.progressStepDescription = data.data.progressStepDescription;
+      message.progressStepItem = data.data.progressStepItem;
       message.progressStepPercent = data.data.progressStepPercent;
     }
 

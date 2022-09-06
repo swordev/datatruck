@@ -142,10 +142,15 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       } else if (paths.length) {
         const path = normalize(paths[0]);
         await data.onProgress({
-          current,
-          percent: progressPercent(total, current),
-          total,
-          step: `Copying ${path}`,
+          step: {
+            description: "Copying file",
+            item: path,
+          },
+          stats: {
+            current,
+            percent: progressPercent(total, current),
+            total,
+          },
         });
       }
     };

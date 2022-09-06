@@ -28,14 +28,16 @@ import {
   SnapshotResultType,
   PruneDataType,
   CopyBackupType,
+  ProgressDataType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
-import fg from "fast-glob";
+import fg, { Entry, Options } from "fast-glob";
 import { createReadStream, createWriteStream } from "fs";
 import { mkdir, readFile, writeFile, rm, copyFile, opendir } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, resolve } from "path";
+import { performance } from "perf_hooks";
 import { createInterface } from "readline";
 
 export type MetaDataType = {
@@ -167,6 +169,87 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await mkdirIfNotExists(this.config.outPath);
   }
 
+  private async createFileScanner(options: {
+    glob: Options & {
+      include: string[];
+    };
+    onProgress: (data: ProgressDataType) => Promise<void>;
+    disableCounting?: boolean;
+  }) {
+    const object = {
+      total: 0,
+      current: 0,
+      progress: async (
+        description: string,
+        data: {
+          path?: string;
+          current: number;
+          type?: "start" | "end";
+          percent?: number;
+        }
+      ) => {
+        await options.onProgress({
+          step: {
+            description,
+            item: data.path,
+            percent: data.percent,
+          },
+          stats: {
+            total: object.total,
+            current: object.current + data.current,
+            percent: progressPercent(
+              object.total,
+              object.current + data.current
+            ),
+          },
+        });
+        if (data.type === "end") {
+          object.current += data.current;
+        }
+      },
+      start: async (cb?: (entry: Required<Entry>) => any) => {
+        for await (const entry of pathIterator(stream)) {
+          if (!options.disableCounting) object.total++;
+          const currentTime = performance.now();
+          const diff = currentTime - lastTime;
+          if (diff > 1_000) {
+            await options.onProgress({
+              step: {
+                description: "Scanning files",
+                item: object.total.toString(),
+              },
+            });
+            lastTime = currentTime;
+          }
+          if (cb) await cb(entry);
+        }
+        await options.onProgress({
+          step: {
+            description: "Scanned files",
+            item: object.total.toString(),
+          },
+        });
+      },
+    };
+
+    await options.onProgress({
+      step: {
+        description: "Scanning files",
+      },
+    });
+
+    const stream = fg.stream(options.glob.include, {
+      dot: true,
+      markDirectories: true,
+      stats: true,
+      ...options.glob,
+    });
+
+    let lastTime = performance.now();
+
+    return object;
+  }
+
   override async onPrune(data: PruneDataType) {
     const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
@@ -293,15 +376,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         })
       : undefined;
 
-    const stream = fg.stream(include, {
-      cwd: sourcePath,
-      ignore: exclude,
-      dot: true,
-      onlyFiles: false,
-      markDirectories: true,
-      stats: true,
-    });
-
     const packs = compress?.packs || [];
     const tmpDir = await mkTmpDir("path-lists");
     const nonPackStream = createWriteStream(join(tmpDir, "nonpack.txt"));
@@ -310,17 +384,25 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       createWriteStream(join(tmpDir, `pack-${i}.txt`))
     );
 
-    let totalFiles = 0;
     const streams = [nonPackStream, singlePackStream, ...packStreams];
 
     if (data.options.verbose) logExec(`Writing file lists in ${tmpDir}`);
-    await data.onProgress({
-      step: "Writing the file lists...",
+
+    const scanner = await this.createFileScanner({
+      glob: {
+        include,
+        cwd: sourcePath,
+        ignore: exclude,
+        onlyFiles: false,
+      },
+      onProgress: data.onProgress,
+      disableCounting: true,
     });
+
     await Promise.all([
       ...streams.map((p) => waitForClose(p)),
       (async () => {
-        for await (const entry of pathIterator(stream)) {
+        await scanner.start(async (entry) => {
           const pathSubject = entry.stats.isDirectory()
             ? entry.path.slice(0, -1)
             : entry.path;
@@ -353,10 +435,10 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
             } else if (isSinglePackStream) {
               value += `:${successPackIndex}`;
             }
-            if (!entry.stats.isDirectory()) totalFiles++;
+            if (!entry.stats.isDirectory()) scanner.total++;
             stream.write(`${value}\n`);
           }
-        }
+        });
 
         for (const stream of streams) {
           stream.end();
@@ -364,17 +446,18 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       })(),
     ]);
 
-    let currentFiles = 0;
-
     const dttFolder = `.dtt-${data.snapshot.id.slice(0, 8)}`;
     const dttPath = join(outPath, dttFolder);
     await mkdir(dttPath);
 
+    await copyFile(nonPackStream.path, join(dttPath, "permissions.txt"));
+
     // Non pack
 
-    if (data.options.verbose) logExec(`Copying files to ${outPath}`);
-
-    await copyFile(nonPackStream.path, join(dttPath, "permissions.txt"));
+    if (data.options.verbose)
+      logExec(
+        `Copying files from ${nonPackStream.path.toString()} to ${outPath}`
+      );
 
     await cpy({
       input: {
@@ -385,16 +468,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       targetPath: outPath,
       skipNotFoundError: true,
       concurrency: this.config.fileCopyConcurrency,
-      async onPath({ isDir, entryPath }) {
-        if (isDir) return;
-        currentFiles++;
-        await data.onProgress({
-          total: totalFiles,
-          current: currentFiles,
-          percent: progressPercent(totalFiles, currentFiles),
-          step: entryPath,
-        });
-      },
+      onProgress: async (progress) =>
+        await scanner.progress(
+          progress.type === "end" ? "Files copied" : "Copying file",
+          progress
+        ),
     });
 
     // Single pack
@@ -417,27 +495,19 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
       const target = join(dttPath, outBasename);
 
-      const stats = await zip({
+      await zip({
         path: pkg.path as string,
         output: target,
         filter: [{ patterns: [packPath] }],
         verbose: data.options.verbose,
-        onStream: async (stream) => {
-          if (stream.type === "progress")
-            await data.onProgress({
-              total: totalFiles,
-              current: currentFiles + stream.data.files,
-              percent: progressPercent(
-                totalFiles,
-                currentFiles + stream.data.files
-              ),
-              step: stream.data.path,
-              stepPercent: stream.data.progress,
-            });
-        },
+        onProgress: async (progress) =>
+          await scanner.progress(
+            progress.type === "start"
+              ? "Starting compressing"
+              : "Compressing file",
+            progress
+          ),
       });
-
-      currentFiles += stats.files;
     }
 
     // Packs
@@ -448,25 +518,19 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         dttPath,
         `pack-${packIndex}${pack.name ? `-${pack.name}` : ""}.zip`
       );
-      const stats = await zip({
+      await zip({
         path: sourcePath,
         output: target,
         includeList: packStream.path.toString(),
         verbose: data.options.verbose,
-        onStream: async (stream) => {
-          if (stream.type === "progress")
-            await data.onProgress({
-              total: totalFiles,
-              current: currentFiles + stream.data.files,
-              percent: progressPercent(
-                totalFiles,
-                currentFiles + stream.data.files
-              ),
-              step: stream.data.path,
-            });
-        },
+        onProgress: async (progress) =>
+          await scanner.progress(
+            progress.type === "start"
+              ? "Starting compressing"
+              : "Compressing file",
+            progress
+          ),
       });
-      currentFiles += stats.files;
     }
 
     // Meta
@@ -507,12 +571,27 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     await mkdir(targetPath);
 
+    const scanner = await this.createFileScanner({
+      glob: {
+        include: ["**/*"],
+        cwd: sourcePath,
+      },
+      onProgress: data.onProgress,
+    });
+
+    await scanner.start();
+
     await cpy({
       input: {
         type: "glob",
         sourcePath,
       },
       targetPath,
+      onProgress: async (progress) =>
+        await scanner.progress(
+          progress.type === "end" ? "Files copied" : "Copying file",
+          progress
+        ),
     });
 
     await copyFile(sourceMetaPath, targetMetaPath);
@@ -539,46 +618,36 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
 
     const sourcePath = join(this.config.outPath, snapshotName);
-
-    let totalFiles = 0;
-    let currentFiles = 0;
-
-    await data.onProgress({
-      step: "Counting files...",
-    });
-
     const dttFolder = `.dtt-${data.snapshot.id.slice(0, 8)}`;
     const dttPath = join(sourcePath, dttFolder);
-    const dttPathExists = await checkDir(dttPath);
+    const scanner = await this.createFileScanner({
+      glob: {
+        include: ["**/*"],
+        cwd: sourcePath,
+        ignore: [dttFolder],
+      },
+      onProgress: data.onProgress,
+    });
 
+    await scanner.start();
+    const dttPathExists = await checkDir(dttPath);
     if (dttPathExists) {
       const it = await opendir(dttPath);
       for await (const dirent of it) {
         const path = join(dttPath, dirent.name);
         if (dirent.name === "permissions.txt") {
-          totalFiles++;
+          scanner.total++;
         } else if (dirent.name.endsWith(".zip")) {
           await listZip({
             path,
             verbose: data.options.verbose,
-            onStream: (item) => {
+            onStream: async (item) => {
               const isDir = item.Folder === "+";
-              if (!isDir) totalFiles++;
+              if (!isDir) scanner.total++;
             },
           });
         }
       }
-    }
-
-    const allFiles = fg.stream(["**"], {
-      cwd: sourcePath,
-      ignore: [dttFolder],
-      dot: true,
-      onlyFiles: true,
-    });
-
-    for await (const _file of allFiles) {
-      totalFiles++;
     }
 
     if (data.options.verbose) logExec(`Copying files to ${restorePath}`);
@@ -591,53 +660,38 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       },
       targetPath: restorePath,
       concurrency: this.config.fileCopyConcurrency,
-      onPath: async ({ entryPath, isDir }) => {
-        if (!isDir) {
-          currentFiles++;
-          await data.onProgress({
-            total: totalFiles,
-            current: Math.max(currentFiles, 0),
-            percent: progressPercent(totalFiles, Math.max(currentFiles, 0)),
-            step: entryPath,
-          });
-        }
-      },
+      onProgress: async (progress) =>
+        await scanner.progress(
+          progress.type === "end" ? "Files copied" : "Copying file",
+          progress
+        ),
     });
-
     if (dttPathExists) {
       const it = await opendir(dttPath);
       for await (const dirent of it) {
         const path = join(dttPath, dirent.name);
         if (dirent.name === "permissions.txt") {
           if (data.options.verbose) logExec(`Applying permissions (${path})`);
-          currentFiles++;
-          await data.onProgress({
-            total: totalFiles,
-            current: currentFiles,
-            percent: progressPercent(totalFiles, currentFiles),
-            step: "Applying permissions",
+          await scanner.progress("Applying permissions", {
+            current: 0,
           });
           await applyPermissions(restorePath, path);
+          await scanner.progress("Permissions applied", {
+            current: 1,
+            type: "end",
+          });
         } else if (dirent.name.endsWith(".zip")) {
           await unzip({
             input: path,
             output: restorePath,
             verbose: data.options.verbose,
-            onStream: async (stream) => {
-              await data.onProgress({
-                total: totalFiles,
-                current: currentFiles + stream.data.files,
-                percent: progressPercent(
-                  totalFiles,
-                  currentFiles + stream.data.files
-                ),
-                step:
-                  stream.type === "progress"
-                    ? `Extracting ${stream.data.path}`
-                    : "",
-                stepPercent: stream.data.progress,
-              });
-            },
+            onProgress: async (progress) =>
+              await scanner.progress(
+                progress.type === "start"
+                  ? "Starting extracting"
+                  : "Extracting file",
+                progress
+              ),
           });
         }
       }

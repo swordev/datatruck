@@ -8,6 +8,7 @@ export abstract class StateEntityAbstract extends CrudEntityAbstract {
   progressTotal?: number | null;
   progressCurrent?: number | null;
   progressPercent?: number | null;
-  progressStep?: string | null;
+  progressStepDescription?: string | null;
+  progressStepItem?: string | null;
   progressStepPercent?: number | null;
 }

@@ -59,6 +59,7 @@ export class RestoreSessionsCommand extends CommandAbstract<
       driver: new SqliteSessionDriver({
         verbose: verbose > 1,
       }),
+      progressInterval: this.globalOptions.progressInterval,
     });
 
     const items = await action.exec(manager);

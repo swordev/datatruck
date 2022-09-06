@@ -380,6 +380,11 @@ export async function cpy(options: {
    */
   concurrency?: number;
   skipNotFoundError?: boolean;
+  onProgress?: (data: {
+    current: number;
+    path?: string;
+    type?: "start" | "end";
+  }) => Promise<boolean | void>;
   onPath?: (data: {
     isDir: boolean;
     entryPath: string;
@@ -422,6 +427,11 @@ export async function cpy(options: {
     } else {
       const dir = dirname(entryTargetPath);
       await makeRecursiveDir(dir);
+
+      await options.onProgress?.({
+        current: stats.files,
+        path: entryPath,
+      });
 
       stats.files++;
 
@@ -489,4 +499,11 @@ export async function cpy(options: {
       },
     });
   }
+
+  await options.onProgress?.({
+    current: stats.files,
+    type: "end",
+  });
+
+  return stats;
 }

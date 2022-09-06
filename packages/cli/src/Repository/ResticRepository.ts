@@ -249,7 +249,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       });
 
       await data.onProgress({
-        step: "Writing excluded paths list...",
+        step: {
+          description: "Writing excluded paths list",
+        },
       });
 
       const tmpDir = await mkTmpDir("restic-exclude");
@@ -283,7 +285,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       if (data.options.verbose) logExec(`Writing paths lists`);
 
       await data.onProgress({
-        step: "Writing excluded paths list...",
+        step: {
+          description: "Writing excluded paths list",
+        },
       });
 
       gitignorePath = await writeGitIgnoreList({
@@ -304,7 +308,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     );
 
     await data.onProgress({
-      step: "Fetching last snapshot...",
+      step: {
+        description: "Fetching last snapshot",
+      },
     });
 
     const [lastSnapshot] = await restic.snapshots({
@@ -320,7 +326,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     const totalFilesChangesLimit = 10;
 
     await data.onProgress({
-      step: "Executing backup action...",
+      step: {
+        description: "Executing backup action",
+      },
     });
 
     let resticSnapshotId: string | undefined;
@@ -366,25 +374,30 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           let showProgressBar = false;
           if (totalFilesChanges > totalFilesChangesLimit) {
             showProgressBar = true;
-          } else if (lastProgress?.total !== streamData.total_files) {
+          } else if (lastProgress?.stats?.total !== streamData.total_files) {
             totalFilesChanges = 0;
           } else {
             totalFilesChanges++;
           }
           await data.onProgress(
             (lastProgress = {
-              total: Math.max(
-                lastProgress?.total || 0,
-                streamData.total_files || 0
-              ),
-              current: Math.max(
-                lastProgress?.current || 0,
-                streamData.files_done ?? 0
-              ),
-              percent: showProgressBar
-                ? Number((streamData.percent_done * 100).toFixed(2))
-                : 0,
-              step: streamData.current_files?.join(", ") ?? "-",
+              step: {
+                description: "Copying file",
+                item: streamData.current_files?.join(", ") ?? "-",
+              },
+              stats: {
+                total: Math.max(
+                  lastProgress?.stats?.total || 0,
+                  streamData.total_files || 0
+                ),
+                current: Math.max(
+                  lastProgress?.stats?.current || 0,
+                  streamData.files_done ?? 0
+                ),
+                percent: showProgressBar
+                  ? Number((streamData.percent_done * 100).toFixed(2))
+                  : 0,
+              },
             })
           );
         } else if (streamData.message_type === "summary") {
@@ -408,9 +421,11 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     await restic.exec(["tag", "--add", sizeTag, resticSnapshotId]);
 
     await data.onProgress({
-      total: lastProgress?.total || 0,
-      current: lastProgress?.total || 0,
-      percent: 100,
+      stats: {
+        total: lastProgress?.stats?.total || 0,
+        current: lastProgress?.stats?.total || 0,
+        percent: 100,
+      },
     });
   }
 
@@ -471,9 +486,11 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         if (streamData.message_type === "restore-status") {
           const current = Math.min(streamData.total_bytes, snapshot.size);
           await data.onProgress({
-            total: snapshot.size,
-            current,
-            percent: progressPercent(snapshot.size, current),
+            stats: {
+              total: snapshot.size,
+              current,
+              percent: progressPercent(snapshot.size, current),
+            },
           });
         }
       },

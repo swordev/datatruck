@@ -112,7 +112,9 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     const bundlePath = join(targetPath, "repo.bundle");
 
     await data.onProgress({
-      step: "Creating bundle...",
+      step: {
+        description: "Creating bundle",
+      },
     });
 
     await exec(
@@ -236,10 +238,15 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
         onPath: async ({ entryPath }) => {
           currentFiles++;
           await data.onProgress({
-            total,
-            current: currentFiles,
-            percent: progressPercent(total, currentFiles),
-            step: entryPath,
+            step: {
+              description: "Copying file",
+              item: entryPath,
+            },
+            stats: {
+              total,
+              current: currentFiles,
+              percent: progressPercent(total, currentFiles),
+            },
           });
         },
       });
@@ -273,14 +280,20 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     await forEachFile(targetPath, () => totalFiles++, true);
 
-    const incrementProgress = async (step = "") => {
+    const incrementProgress = async (
+      description?: string,
+      item?: string,
+      count = true
+    ) => {
       await data.onProgress({
-        total: totalFiles,
-        current: Math.max(currentFiles, 0),
-        percent: progressPercent(totalFiles, Math.max(currentFiles, 0)),
-        step,
+        stats: {
+          total: totalFiles,
+          current: Math.max(currentFiles, 0),
+          percent: progressPercent(totalFiles, Math.max(currentFiles, 0)),
+        },
+        step: { description, item },
       });
-      currentFiles++;
+      if (count) currentFiles++;
     };
 
     // Bundle
@@ -323,9 +336,12 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
           },
           targetPath: restorePath,
           concurrency: this.config.fileCopyConcurrency,
-          onPath: async ({ entryPath }) => {
-            await incrementProgress(entryPath);
-          },
+          onProgress: async (progress) =>
+            await incrementProgress(
+              progress.type === "end" ? "Files copied" : "Copying file",
+              progress.path,
+              !progress.type
+            ),
         });
       }
     }

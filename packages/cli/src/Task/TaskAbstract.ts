@@ -4,11 +4,16 @@ import { PackageConfigType } from "../Config/PackageConfig";
 import { SnapshotType } from "../Repository/RepositoryAbstract";
 
 export type ProgressDataType = {
-  total?: number;
-  current?: number;
-  percent?: number;
-  step?: string;
-  stepPercent?: number;
+  stats?: {
+    total?: number;
+    current?: number;
+    percent?: number;
+  };
+  step?: {
+    description?: string;
+    item?: string;
+    percent?: number;
+  };
 };
 
 export type BackupDataType = {

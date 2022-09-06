@@ -104,7 +104,7 @@ program.option(
   "Progress type (auto, plain, tty)",
   "auto"
 );
-program.option("--progress-interval <ms>", "Progress interval");
+program.option("--progress-interval <ms>", "Progress interval", Number, 1000);
 program.option(
   "-o,--output-format <format>",
   "Output format (json, pjson, yaml, table, custom=$, tpl=name)",

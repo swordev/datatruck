@@ -2,26 +2,19 @@ import { BackupSessionsActionOptionsType } from "../Action/BackupSessionsAction"
 import { BackupSessionEntity } from "../Entity/BackupSessionEntity";
 import { BackupSessionRepositoryEntity } from "../Entity/BackupSessionRepositoryEntity";
 import { BackupSessionTaskEntity } from "../Entity/BackupSessionTaskEntity";
+import { ProgressDataType } from "../Repository/RepositoryAbstract";
 import {
   ActionEnum,
   WriteDataType,
   EntityEnum,
-  SessionDriverAbstract,
 } from "../SessionDriver/SessionDriverAbstract";
 import { ObjectVault } from "../util/ObjectVault";
+import SessionManagerAbstract from "./SessionManagerAbstract";
 
-export type OptionsType = {
-  driver: SessionDriverAbstract;
-  altDrivers?: SessionDriverAbstract[];
-  verbose?: boolean;
-};
-
-export class BackupSessionManager {
+export class BackupSessionManager extends SessionManagerAbstract {
   sessionVault = new ObjectVault<BackupSessionEntity>();
   taskVault = new ObjectVault<BackupSessionTaskEntity>();
   repositoryVault = new ObjectVault<BackupSessionRepositoryEntity>();
-
-  constructor(readonly options: OptionsType) {}
 
   findId(data: { packageName: string }) {
     return this.sessionVault.getId([data.packageName]);
@@ -53,6 +46,11 @@ export class BackupSessionManager {
 
   protected async alter(data: WriteDataType) {
     const drivers = [this.options.driver, ...(this.options.altDrivers ?? [])];
+    if (
+      data.action === ActionEnum.Progress &&
+      !this.checkProgress(data.data.progressStepDescription)
+    )
+      return data.data.id;
     for (const driver of drivers) {
       await driver.onWrite(data);
     }
@@ -166,15 +164,9 @@ export class BackupSessionManager {
     });
   }
   async progressTask(
-    input: Pick<
-      BackupSessionTaskEntity,
-      | "id"
-      | "progressTotal"
-      | "progressCurrent"
-      | "progressPercent"
-      | "progressStep"
-      | "progressStepPercent"
-    >
+    input: {
+      id: number;
+    } & ProgressDataType
   ) {
     const object = this.taskVault.get(input.id);
     return await this.alter({
@@ -183,7 +175,13 @@ export class BackupSessionManager {
       sessionData: this.sessionVault.get(object.sessionId),
       data: {
         ...object,
-        ...input,
+        id: input.id,
+        progressCurrent: input.stats?.current,
+        progressTotal: input.stats?.total,
+        progressPercent: input.stats?.percent,
+        progressStepDescription: input.step?.description,
+        progressStepItem: input.step?.item,
+        progressStepPercent: input.step?.percent,
         updatingDate: new Date().toISOString(),
       },
     });
@@ -222,15 +220,9 @@ export class BackupSessionManager {
   }
 
   async progressRepository(
-    input: Pick<
-      BackupSessionTaskEntity,
-      | "id"
-      | "progressTotal"
-      | "progressCurrent"
-      | "progressPercent"
-      | "progressStep"
-      | "progressStepPercent"
-    >
+    input: {
+      id: number;
+    } & ProgressDataType
   ) {
     const object = this.repositoryVault.get(input.id);
     return await this.alter({
@@ -239,7 +231,13 @@ export class BackupSessionManager {
       sessionData: this.sessionVault.get(object.sessionId),
       data: {
         ...object,
-        ...input,
+        id: input.id,
+        progressCurrent: input.stats?.current,
+        progressTotal: input.stats?.total,
+        progressPercent: input.stats?.percent,
+        progressStepDescription: input.step?.description,
+        progressStepItem: input.step?.item,
+        progressStepPercent: input.step?.percent,
         updatingDate: new Date().toISOString(),
       },
     });
