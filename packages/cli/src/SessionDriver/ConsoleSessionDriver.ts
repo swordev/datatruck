@@ -134,12 +134,21 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       badges,
     ];
 
-    if (typeof message.progressPercent === "number") {
+    if (
+      typeof message.progressPercent === "number" ||
+      typeof message.progressStepPercent === "number"
+    ) {
       parts.push(
-        cyan(renderProgressBar(message.progressPercent ?? 0, 10)),
-        `${message.progressPercent?.toFixed(2)}%`
+        renderProgressBar(
+          message.progressPercent ?? 0,
+          10,
+          message.progressStepPercent ?? undefined
+        )
       );
     }
+
+    if (typeof message.progressPercent === "number")
+      parts.push(`${message.progressPercent?.toFixed(2)}%`);
 
     if (
       typeof message.progressCurrent === "number" ||
@@ -158,10 +167,6 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       parts.push(message.progressStepDescription);
     } else if (message.progressStepItem) {
       parts.push(message.progressStepItem);
-    }
-
-    if (typeof message.progressStepPercent === "number") {
-      parts.push(cyan(renderProgressBar(message.progressStepPercent ?? 0, 10)));
     }
 
     return parts.join(` ${sep} `);

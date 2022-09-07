@@ -17,12 +17,34 @@ export function renderSpinner(counter: number) {
   return spinnerChars[counter % (spinnerChars.length - 1)];
 }
 
-export function renderProgressBar(progress: number, size = 10) {
+export function renderProgressBar(
+  progress: number,
+  size = 10,
+  subprogress?: number
+) {
   const completeChar = "\u2588";
   const incompleteChar = "\u2591";
   const completedSize = Math.round((progress * size) / 100);
   const restSize = Math.max(size - completedSize, 0);
-  return completeChar.repeat(completedSize) + incompleteChar.repeat(restSize);
+  let result =
+    completeChar.repeat(completedSize) + incompleteChar.repeat(restSize);
+
+  if (typeof subprogress === "number") {
+    const subprogressChar = Math.round((subprogress * size) / 100);
+
+    if (subprogressChar === size) {
+      result =
+        result.slice(0, subprogressChar - 1) +
+        chalk.white(result[Math.max(0, subprogressChar - 1)]);
+    } else {
+      result =
+        result.slice(0, subprogressChar) +
+        chalk.white(result[Math.max(0, subprogressChar - 1)]) +
+        result.slice(subprogressChar + 1);
+    }
+  }
+
+  return cyan(result);
 }
 
 export function logVars(data: Record<string, any>) {
