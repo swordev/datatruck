@@ -5,7 +5,6 @@ import { parsePaths } from "../util/datatruck/paths-util";
 import {
   applyPermissions,
   checkDir,
-  checkFile,
   cpy,
   fastFolderSizeAsync,
   isEmptyDir,
@@ -137,7 +136,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   static parseSnapshotName(name: string) {
-    if (!name.endsWith(".json")) return null;
     name = name.replace(/\.json$/, "");
     const nameParts = name.split("_");
     if (nameParts.length !== 3) return null;
@@ -257,14 +255,12 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       packageName: data.snapshot.packageName,
     });
     const snapshotPath = join(this.config.outPath, snapshotName);
-    const metaPath = `${snapshotPath}.json`;
 
     if (data.options.verbose) logExec(`Deleting ${snapshotPath}`);
     if (await checkDir(snapshotPath))
       await rm(snapshotPath, {
         recursive: true,
       });
-    if (await checkFile(metaPath)) await rm(metaPath);
   }
 
   override async onSnapshots(data: SnapshotsDataType) {
@@ -295,7 +291,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       )
         continue;
 
-      const metaPath = join(this.config.outPath, snapshotName);
+      const metaPath = join(this.config.outPath, snapshotName, "meta.json");
       const meta = await DatatruckRepository.parseMetaData(metaPath);
 
       if (taskPatterns && !checkMatch(meta.task, taskPatterns)) continue;
@@ -378,13 +374,13 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const packs = compress?.packs || [];
     const tmpDir = await mkTmpDir("path-lists");
-    const nonPackStream = createWriteStream(join(tmpDir, "nonpack.txt"));
+    const unpackedStream = createWriteStream(join(tmpDir, "unpacked.txt"));
     const singlePackStream = createWriteStream(join(tmpDir, "single-pack.txt"));
     const packStreams = Array.from({ length: packs.length }).map((v, i) =>
       createWriteStream(join(tmpDir, `pack-${i}.txt`))
     );
 
-    const streams = [nonPackStream, singlePackStream, ...packStreams];
+    const streams = [unpackedStream, singlePackStream, ...packStreams];
 
     if (data.options.verbose) logExec(`Writing file lists in ${tmpDir}`);
 
@@ -406,7 +402,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           const pathSubject = entry.stats.isDirectory()
             ? entry.path.slice(0, -1)
             : entry.path;
-          let stream = nonPackStream;
+          let stream = unpackedStream;
           let successPackIndex: number | undefined;
 
           for (const [packIndex, pack] of packs.entries()) {
@@ -419,8 +415,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
             }
           }
 
-          const isNonPackStream = stream === nonPackStream;
-          const isPackStream = stream !== nonPackStream;
+          const isUnpackedStream = stream === unpackedStream;
+          const isPackStream = stream !== unpackedStream;
           const isSinglePackStream = stream === singlePackStream;
           const include = isPackStream
             ? entry.stats.isDirectory()
@@ -430,7 +426,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
           if (include) {
             let value = entry.path;
-            if (isNonPackStream) {
+            if (isUnpackedStream) {
               value += `:${entry.stats.uid}:${entry.stats.gid}:${entry.stats.mode}`;
             } else if (isSinglePackStream) {
               value += `:${successPackIndex}`;
@@ -446,26 +442,26 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       })(),
     ]);
 
-    const dttFolder = `.dtt-${data.snapshot.id.slice(0, 8)}`;
-    const dttPath = join(outPath, dttFolder);
-    await mkdir(dttPath);
+    const unpackedPath = join(outPath, "unpacked");
 
-    await copyFile(nonPackStream.path, join(dttPath, "permissions.txt"));
+    await mkdir(unpackedPath);
+
+    await copyFile(unpackedStream.path, join(outPath, "permissions.txt"));
 
     // Non pack
 
     if (data.options.verbose)
       logExec(
-        `Copying files from ${nonPackStream.path.toString()} to ${outPath}`
+        `Copying files from ${unpackedStream.path.toString()} to ${unpackedPath}`
       );
 
     await cpy({
       input: {
         type: "pathList",
-        path: nonPackStream.path.toString(),
+        path: unpackedStream.path.toString(),
         basePath: sourcePath,
       },
-      targetPath: outPath,
+      targetPath: unpackedPath,
       skipNotFoundError: true,
       concurrency: this.config.fileCopyConcurrency,
       onProgress: async (progress) =>
@@ -493,7 +489,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         `.zip`
       ).slice(0, 255);
 
-      const target = join(dttPath, outBasename);
+      const target = join(outPath, outBasename);
 
       await zip({
         path: pkg.path as string,
@@ -515,7 +511,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     for (const [packIndex, packStream] of packStreams.entries()) {
       const pack = packs[packIndex];
       const target = join(
-        dttPath,
+        outPath,
         `pack-${packIndex}${pack.name ? `-${pack.name}` : ""}.zip`
       );
       await zip({
@@ -535,7 +531,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     // Meta
 
-    const metaPath = `${outPath}.json`;
+    const metaPath = `${outPath}/meta.json`;
     const nodePkg = parsePackageFile();
     const meta: MetaDataType = {
       id: data.snapshot.id,
@@ -544,9 +540,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
-      size:
-        (await fastFolderSizeAsync(outPath)) -
-        (await fastFolderSizeAsync(dttPath)),
+      size: await fastFolderSizeAsync(outPath),
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
     await writeFile(metaPath, DatatruckRepository.stringifyMetaData(meta));
@@ -564,8 +558,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const targetPath = resolve(
       join(data.mirrorRepositoryConfig.outPath, snapshotName)
     );
-    const sourceMetaPath = `${sourcePath}.json`;
-    const targetMetaPath = `${targetPath}.json`;
 
     if (data.options.verbose) logExec(`Copying backup files to ${targetPath}`);
 
@@ -593,8 +585,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           progress
         ),
     });
-
-    await copyFile(sourceMetaPath, targetMetaPath);
   }
 
   override async onRestore(
@@ -618,35 +608,31 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
 
     const sourcePath = join(this.config.outPath, snapshotName);
-    const dttFolder = `.dtt-${data.snapshot.id.slice(0, 8)}`;
-    const dttPath = join(sourcePath, dttFolder);
+
     const scanner = await this.createFileScanner({
       glob: {
-        include: ["**/*"],
+        include: ["unpacked/**/*"],
         cwd: sourcePath,
-        ignore: [dttFolder],
       },
       onProgress: data.onProgress,
     });
 
     await scanner.start();
-    const dttPathExists = await checkDir(dttPath);
-    if (dttPathExists) {
-      const it = await opendir(dttPath);
-      for await (const dirent of it) {
-        const path = join(dttPath, dirent.name);
-        if (dirent.name === "permissions.txt") {
-          scanner.total++;
-        } else if (dirent.name.endsWith(".zip")) {
-          await listZip({
-            path,
-            verbose: data.options.verbose,
-            onStream: async (item) => {
-              const isDir = item.Folder === "+";
-              if (!isDir) scanner.total++;
-            },
-          });
-        }
+
+    const it = await opendir(sourcePath);
+    for await (const dirent of it) {
+      const path = join(sourcePath, dirent.name);
+      if (dirent.name === "permissions.txt") {
+        scanner.total++;
+      } else if (dirent.name.endsWith(".zip")) {
+        await listZip({
+          path,
+          verbose: data.options.verbose,
+          onStream: async (item) => {
+            const isDir = item.Folder === "+";
+            if (!isDir) scanner.total++;
+          },
+        });
       }
     }
 
@@ -655,8 +641,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await cpy({
       input: {
         type: "glob",
-        sourcePath,
-        exclude: [dttFolder],
+        sourcePath: join(sourcePath, "unpacked"),
       },
       targetPath: restorePath,
       concurrency: this.config.fileCopyConcurrency,
@@ -666,34 +651,33 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           progress
         ),
     });
-    if (dttPathExists) {
-      const it = await opendir(dttPath);
-      for await (const dirent of it) {
-        const path = join(dttPath, dirent.name);
-        if (dirent.name === "permissions.txt") {
-          if (data.options.verbose) logExec(`Applying permissions (${path})`);
-          await scanner.progress("Applying permissions", {
-            current: 0,
-          });
-          await applyPermissions(restorePath, path);
-          await scanner.progress("Permissions applied", {
-            current: 1,
-            type: "end",
-          });
-        } else if (dirent.name.endsWith(".zip")) {
-          await unzip({
-            input: path,
-            output: restorePath,
-            verbose: data.options.verbose,
-            onProgress: async (progress) =>
-              await scanner.progress(
-                progress.type === "start"
-                  ? "Starting extracting"
-                  : "Extracting file",
-                progress
-              ),
-          });
-        }
+
+    const it2 = await opendir(sourcePath);
+    for await (const dirent of it2) {
+      const path = join(sourcePath, dirent.name);
+      if (dirent.name === "permissions.txt") {
+        if (data.options.verbose) logExec(`Applying permissions (${path})`);
+        await scanner.progress("Applying permissions", {
+          current: 0,
+        });
+        await applyPermissions(restorePath, path);
+        await scanner.progress("Permissions applied", {
+          current: 1,
+          type: "end",
+        });
+      } else if (dirent.name.endsWith(".zip")) {
+        await unzip({
+          input: path,
+          output: restorePath,
+          verbose: data.options.verbose,
+          onProgress: async (progress) =>
+            await scanner.progress(
+              progress.type === "start"
+                ? "Starting extracting"
+                : "Extracting file",
+              progress
+            ),
+        });
       }
     }
   }
