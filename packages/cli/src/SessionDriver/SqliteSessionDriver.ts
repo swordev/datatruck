@@ -165,6 +165,12 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
     let object = data.data;
     const id = object.id;
 
+    object = {
+      ...object,
+      // @ts-expect-error
+      progress: data.data.progress ? JSON.stringify(data.data.progress) : null,
+    };
+
     if (data.action === ActionEnum.Init) {
       // @ts-expect-error
       object = { ...object, id: null };

@@ -10,6 +10,7 @@ import {
   writeGitIgnoreList,
 } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
+import { Progress } from "../util/progress";
 import { checkMatch, formatUri, makePathPatterns } from "../util/string-util";
 import {
   RepositoryAbstract,
@@ -21,7 +22,6 @@ import {
   SnapshotTagObjectType,
   SnapshotTagEnum,
   PruneDataType,
-  ProgressDataType,
   CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
@@ -249,7 +249,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       });
 
       await data.onProgress({
-        step: {
+        relative: {
           description: "Writing excluded paths list",
         },
       });
@@ -285,7 +285,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       if (data.options.verbose) logExec(`Writing paths lists`);
 
       await data.onProgress({
-        step: {
+        relative: {
           description: "Writing excluded paths list",
         },
       });
@@ -308,7 +308,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     );
 
     await data.onProgress({
-      step: {
+      relative: {
         description: "Fetching last snapshot",
       },
     });
@@ -321,12 +321,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     const nodePkg = parsePackageFile();
 
-    let lastProgress: ProgressDataType | undefined;
+    let lastProgress: Progress | undefined;
     let totalFilesChanges = 0;
     const totalFilesChangesLimit = 10;
 
     await data.onProgress({
-      step: {
+      relative: {
         description: "Executing backup action",
       },
     });
@@ -374,24 +374,24 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           let showProgressBar = false;
           if (totalFilesChanges > totalFilesChangesLimit) {
             showProgressBar = true;
-          } else if (lastProgress?.stats?.total !== streamData.total_files) {
+          } else if (lastProgress?.absolute?.total !== streamData.total_files) {
             totalFilesChanges = 0;
           } else {
             totalFilesChanges++;
           }
           await data.onProgress(
             (lastProgress = {
-              step: {
+              relative: {
                 description: "Copying file",
-                item: streamData.current_files?.join(", ") ?? "-",
+                payload: streamData.current_files?.join(", ") ?? "-",
               },
-              stats: {
+              absolute: {
                 total: Math.max(
-                  lastProgress?.stats?.total || 0,
+                  lastProgress?.absolute?.total || 0,
                   streamData.total_files || 0
                 ),
                 current: Math.max(
-                  lastProgress?.stats?.current || 0,
+                  lastProgress?.absolute?.current || 0,
                   streamData.files_done ?? 0
                 ),
                 percent: showProgressBar
@@ -421,9 +421,9 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     await restic.exec(["tag", "--add", sizeTag, resticSnapshotId]);
 
     await data.onProgress({
-      stats: {
-        total: lastProgress?.stats?.total || 0,
-        current: lastProgress?.stats?.total || 0,
+      absolute: {
+        total: lastProgress?.absolute?.total || 0,
+        current: lastProgress?.absolute?.total || 0,
         percent: 100,
       },
     });
@@ -486,7 +486,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         if (streamData.message_type === "restore-status") {
           const current = Math.min(streamData.total_bytes, snapshot.size);
           await data.onProgress({
-            stats: {
+            absolute: {
               total: snapshot.size,
               current,
               percent: progressPercent(snapshot.size, current),

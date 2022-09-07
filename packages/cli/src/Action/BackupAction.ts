@@ -114,10 +114,10 @@ export class BackupAction<TRequired extends boolean = true> {
           options: this.options,
           snapshot,
           targetPath,
-          onProgress: async (data) => {
+          onProgress: async (progress) => {
             await session.progressTask({
               id: taskId,
-              ...data,
+              progress,
             });
           },
         });
@@ -167,10 +167,10 @@ export class BackupAction<TRequired extends boolean = true> {
           )?.config,
           options: this.options,
           snapshot: snapshot,
-          onProgress: async (data) => {
+          onProgress: async (progress) => {
             await session.progressRepository({
               id: repositoryId,
-              ...data,
+              progress,
             });
           },
         });
@@ -213,10 +213,10 @@ export class BackupAction<TRequired extends boolean = true> {
           package: pkg,
           snapshot,
           mirrorRepositoryConfig: mirrorRepo.config,
-          onProgress: async (data) => {
+          onProgress: async (progress) => {
             await session.progressRepository({
               id: repositoryId,
-              ...data,
+              progress,
             });
           },
         });

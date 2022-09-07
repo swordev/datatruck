@@ -2,22 +2,10 @@ import { BackupActionOptionsType } from "../Action/BackupAction";
 import { RestoreActionOptionsType } from "../Action/RestoreAction";
 import { PackageConfigType } from "../Config/PackageConfig";
 import { SnapshotType } from "../Repository/RepositoryAbstract";
-
-export type ProgressDataType = {
-  stats?: {
-    total?: number;
-    current?: number;
-    percent?: number;
-  };
-  step?: {
-    description?: string;
-    item?: string;
-    percent?: number;
-  };
-};
+import { Progress } from "../util/progress";
 
 export type BackupDataType = {
-  onProgress: (data: ProgressDataType) => Promise<void>;
+  onProgress: (data: Progress) => Promise<void>;
   options: BackupActionOptionsType;
   package: PackageConfigType;
   targetPath: string | undefined;
@@ -25,7 +13,7 @@ export type BackupDataType = {
 };
 
 export type RestoreDataType = {
-  onProgress: (data: ProgressDataType) => Promise<void>;
+  onProgress: (data: Progress) => Promise<void>;
   options: RestoreActionOptionsType;
   package: PackageConfigType;
   targetPath: string | undefined;

@@ -112,7 +112,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     const bundlePath = join(targetPath, "repo.bundle");
 
     await data.onProgress({
-      step: {
+      relative: {
         description: "Creating bundle",
       },
     });
@@ -238,11 +238,11 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
         onPath: async ({ entryPath }) => {
           currentFiles++;
           await data.onProgress({
-            step: {
+            relative: {
               description: "Copying file",
-              item: entryPath,
+              payload: entryPath,
             },
-            stats: {
+            absolute: {
               total,
               current: currentFiles,
               percent: progressPercent(total, currentFiles),
@@ -286,12 +286,12 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
       count = true
     ) => {
       await data.onProgress({
-        stats: {
+        absolute: {
           total: totalFiles,
           current: Math.max(currentFiles, 0),
           percent: progressPercent(totalFiles, Math.max(currentFiles, 0)),
         },
-        step: { description, item },
+        relative: { description, payload: item },
       });
       if (count) currentFiles++;
     };

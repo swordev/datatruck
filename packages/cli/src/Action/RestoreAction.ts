@@ -175,10 +175,10 @@ export class RestoreAction<TRequired extends boolean = true> {
           options: this.options,
           snapshot,
           targetPath,
-          onProgress: async (data) => {
+          onProgress: async (progress) => {
             await session.progressTask({
               id: taskId,
-              ...data,
+              progress,
             });
           },
         });
@@ -235,10 +235,10 @@ export class RestoreAction<TRequired extends boolean = true> {
         )?.config,
         options: this.options,
         snapshot: snapshot,
-        onProgress: async (data) => {
+        onProgress: async (progress) => {
           await session.progressRepository({
             id: repositoryId,
-            ...data,
+            progress,
           });
         },
       });

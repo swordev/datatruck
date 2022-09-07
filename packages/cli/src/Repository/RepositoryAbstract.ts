@@ -7,6 +7,7 @@ import type {
 } from "../Action/SnapshotsAction";
 import type { PackageConfigType } from "../Config/PackageConfig";
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { Progress } from "../util/progress";
 
 export type SnapshotType = {
   id: string;
@@ -19,19 +20,6 @@ export type SnapshotResultType = SnapshotType & {
   packageTaskName: string | undefined;
   tags: string[];
   size: number;
-};
-
-export type ProgressDataType = {
-  stats?: {
-    total?: number;
-    current?: number;
-    percent?: number;
-  };
-  step?: {
-    description?: string;
-    item?: string;
-    percent?: number | null;
-  };
 };
 
 export type InitDataType = {
@@ -50,7 +38,7 @@ export type CopyBackupType<TRepositoryConfig> = {
   snapshot: SnapshotType;
   package: PackageConfigType;
   mirrorRepositoryConfig: TRepositoryConfig;
-  onProgress: (data: ProgressDataType) => Promise<void>;
+  onProgress: (data: Progress) => Promise<void>;
 };
 
 export type BackupDataType<TPackageConfig> = {
@@ -59,7 +47,7 @@ export type BackupDataType<TPackageConfig> = {
   package: PackageConfigType;
   targetPath: string | undefined;
   packageConfig: TPackageConfig | undefined;
-  onProgress: (data: ProgressDataType) => Promise<void>;
+  onProgress: (data: Progress) => Promise<void>;
 };
 
 export type RestoreDataType<TPackageConfig> = {
@@ -68,7 +56,7 @@ export type RestoreDataType<TPackageConfig> = {
   package: PackageConfigType;
   targetPath: string | undefined;
   packageConfig: TPackageConfig;
-  onProgress: (data: ProgressDataType) => Promise<void>;
+  onProgress: (data: Progress) => Promise<void>;
 };
 
 export type PruneDataType = {

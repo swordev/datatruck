@@ -17,6 +17,7 @@ import {
   waitForClose,
 } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
+import { Progress } from "../util/progress";
 import { checkMatch, checkPath, makePathPatterns } from "../util/string-util";
 import { listZip, unzip, zip } from "../util/zip-util";
 import {
@@ -28,7 +29,6 @@ import {
   SnapshotResultType,
   PruneDataType,
   CopyBackupType,
-  ProgressDataType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import fg, { Entry, Options } from "fast-glob";
@@ -173,7 +173,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     glob: Options & {
       include: string[];
     };
-    onProgress: (data: ProgressDataType) => Promise<void>;
+    onProgress: (data: Progress) => Promise<void>;
     disableCounting?: boolean;
   }) {
     const object = {
@@ -189,12 +189,12 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         }
       ) => {
         await options.onProgress({
-          step: {
+          relative: {
             description,
-            item: data.path,
+            payload: data.path,
             percent: data.percent,
           },
-          stats: {
+          absolute: {
             total: object.total,
             current: object.current + data.current,
             percent: progressPercent(
@@ -214,9 +214,9 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           const diff = currentTime - lastTime;
           if (diff > 1_000) {
             await options.onProgress({
-              step: {
+              relative: {
                 description: "Scanning files",
-                item: object.total.toString(),
+                payload: object.total.toString(),
               },
             });
             lastTime = currentTime;
@@ -224,16 +224,16 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           if (cb) await cb(entry);
         }
         await options.onProgress({
-          step: {
+          relative: {
             description: "Scanned files",
-            item: object.total.toString(),
+            payload: object.total.toString(),
           },
         });
       },
     };
 
     await options.onProgress({
-      step: {
+      relative: {
         description: "Scanning files",
       },
     });

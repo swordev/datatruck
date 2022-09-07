@@ -2,13 +2,13 @@ import { BackupSessionsActionOptionsType } from "../Action/BackupSessionsAction"
 import { RestoreSessionEntity } from "../Entity/RestoreSessionEntity";
 import { RestoreSessionRepositoryEntity } from "../Entity/RestoreSessionRepositoryEntity";
 import { RestoreSessionTaskEntity } from "../Entity/RestoreSessionTaskEntity";
-import { ProgressDataType } from "../Repository/RepositoryAbstract";
 import {
   ActionEnum,
   WriteDataType,
   EntityEnum,
 } from "../SessionDriver/SessionDriverAbstract";
 import { ObjectVault } from "../util/ObjectVault";
+import { Progress } from "../util/progress";
 import SessionManagerAbstract from "./SessionManagerAbstract";
 
 export class RestoreSessionManager extends SessionManagerAbstract {
@@ -17,7 +17,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   taskVault = new ObjectVault<RestoreSessionTaskEntity>();
 
   protected lastProgressDate: number | undefined;
-  protected lastProgressStepDescription: string | null | undefined;
+  protected lastRelativeProgressDescription: string | null | undefined;
 
   findId(data: { packageName: string }) {
     return this.sessionVault.getId([data.packageName]);
@@ -56,7 +56,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
     };
     if (
       data.action === ActionEnum.Progress &&
-      !this.checkProgress(data.data.progressStepDescription)
+      !this.checkProgress(data.data.progress?.relative?.description)
     ) {
       this.delayProgress(write);
     } else {
@@ -188,11 +188,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
     });
   }
 
-  async progressTask(
-    input: {
-      id: number;
-    } & ProgressDataType
-  ) {
+  async progressTask(input: { id: number; progress: Progress }) {
     const object = this.taskVault.get(input.id);
     return await this.alter({
       action: ActionEnum.Progress,
@@ -200,13 +196,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
       sessionData: this.sessionVault.get(object.sessionId),
       data: {
         ...object,
-        id: input.id,
-        progressCurrent: input.stats?.current,
-        progressTotal: input.stats?.total,
-        progressPercent: input.stats?.percent,
-        progressStepDescription: input.step?.description,
-        progressStepItem: input.step?.item,
-        progressStepPercent: input.step?.percent,
+        ...input,
         updatingDate: new Date().toISOString(),
       },
     });
@@ -228,11 +218,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
     });
   }
 
-  async progressRepository(
-    input: {
-      id: number;
-    } & ProgressDataType
-  ) {
+  async progressRepository(input: { id: number; progress: Progress }) {
     const object = this.repositoryVault.get(input.id);
     return await this.alter({
       action: ActionEnum.Progress,
@@ -240,13 +226,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
       sessionData: this.sessionVault.get(object.sessionId),
       data: {
         ...object,
-        id: input.id,
-        progressCurrent: input.stats?.current,
-        progressTotal: input.stats?.total,
-        progressPercent: input.stats?.percent,
-        progressStepDescription: input.step?.description,
-        progressStepItem: input.step?.item,
-        progressStepPercent: input.step?.percent,
+        ...input,
         updatingDate: new Date().toISOString(),
       },
     });

@@ -1,3 +1,4 @@
+import { Progress } from "../util/progress";
 import { CrudEntityAbstract } from "./CrudEntityAbstract";
 
 export abstract class StateEntityAbstract extends CrudEntityAbstract {
@@ -5,10 +6,5 @@ export abstract class StateEntityAbstract extends CrudEntityAbstract {
   error?: string | null;
   startDate?: string | null;
   endDate?: string | null;
-  progressTotal?: number | null;
-  progressCurrent?: number | null;
-  progressPercent?: number | null;
-  progressStepDescription?: string | null;
-  progressStepItem?: string | null;
-  progressStepPercent?: number | null;
+  progress?: Progress;
 }

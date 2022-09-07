@@ -9,6 +9,7 @@ import {
   truncate,
 } from "../util/cli-util";
 import { createChron } from "../util/date-util";
+import { Progress, ProgressStats } from "../util/progress";
 import {
   ActionEnum,
   WriteDataType,
@@ -18,6 +19,7 @@ import {
   SessionDriverOptions,
 } from "./SessionDriverAbstract";
 import { cyan, white, red, grey, green } from "chalk";
+import prettyBytes from "pretty-bytes";
 
 type BadgeType = {
   name: string;
@@ -32,12 +34,7 @@ type MessageType = {
   text?: string;
   badges: BadgeType[];
   errorBadge?: BadgeType;
-  progressCurrent?: number | null;
-  progressTotal?: number | null;
-  progressPercent?: number | null;
-  progressStepDescription?: string | null;
-  progressStepItem?: string | null;
-  progressStepPercent?: number | null;
+  progress?: Progress;
 };
 
 const sep = grey(`|`);
@@ -129,44 +126,64 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
 
     const padding = "   ".repeat(message.level ?? 0);
     const sessionId = message.sessionId.toString().padStart(2, "0");
-    const parts = [
+    let parts = [
       `${padding}${message.textPrefix} [${grey(sessionId)}] ${message.text}`,
       badges,
     ];
 
+    const progress = message.progress;
+    const absolute = progress?.absolute || {};
+    const relative = progress?.relative || {};
+
     if (
-      typeof message.progressPercent === "number" ||
-      typeof message.progressStepPercent === "number"
+      typeof absolute.percent === "number" ||
+      typeof relative.percent === "number"
     ) {
       parts.push(
         renderProgressBar(
-          message.progressPercent ?? 0,
+          absolute.percent ?? 0,
           10,
-          message.progressStepPercent ?? undefined
+          relative.percent ?? undefined
         )
       );
     }
 
-    if (typeof message.progressPercent === "number")
-      parts.push(`${message.progressPercent?.toFixed(2)}%`);
+    const createProgressParts = (p: ProgressStats) => {
+      const result: string[] = [];
+      if (typeof p.percent === "number")
+        result.push(`${p.percent.toFixed(2)}%`);
+      if (typeof p.current === "number" || typeof p.total === "number") {
+        const format = (value: number) =>
+          p.format === "size" ? prettyBytes(value) : value;
+        if (typeof p.current === "number" && typeof p.total === "number") {
+          result.push(`${format(p.current)}/${format(p.total)}`);
+        } else if (typeof p.current === "number") {
+          result.push(`${format(p.current)}`);
+        } else if (typeof p.total === "number") {
+          result.push(`?/${format(p.total)}`);
+        }
+      }
+      if (p.description && p.payload) {
+        result.push(`${p.description}: ${p.payload}`);
+      } else if (p.description) {
+        result.push(p.description);
+      } else if (p.payload) {
+        result.push(p.payload);
+      }
+      return result;
+    };
 
-    if (
-      typeof message.progressCurrent === "number" ||
-      typeof message.progressTotal === "number"
-    ) {
-      parts.push(
-        `${message.progressCurrent ?? "?"}/${message.progressTotal ?? "?"}`
-      );
-    }
-
-    if (message.progressStepDescription && message.progressStepItem) {
-      parts.push(
-        `${message.progressStepDescription}: ${message.progressStepItem}`
-      );
-    } else if (message.progressStepDescription) {
-      parts.push(message.progressStepDescription);
-    } else if (message.progressStepItem) {
-      parts.push(message.progressStepItem);
+    if (progress?.absolute)
+      parts.push(...createProgressParts(progress?.absolute));
+    if (progress?.relative) {
+      const relativeParts = createProgressParts(progress?.relative);
+      if (relativeParts.length) {
+        return (
+          parts.join(` ${sep} `) +
+          `  ${cyan("▷")}  ` +
+          relativeParts.join(` ${sep} `)
+        );
+      }
     }
 
     return parts.join(` ${sep} `);
@@ -213,12 +230,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
     }
 
     if (hasProgress) {
-      message.progressPercent = data.data.progressPercent;
-      message.progressCurrent = data.data.progressCurrent;
-      message.progressTotal = data.data.progressTotal;
-      message.progressStepDescription = data.data.progressStepDescription;
-      message.progressStepItem = data.data.progressStepItem;
-      message.progressStepPercent = data.data.progressStepPercent;
+      message.progress = data.data.progress;
     }
 
     if (

@@ -157,7 +157,7 @@ export abstract class SqlDumpTaskAbstract<
         serializeSqlFile({ database: this.config.database })
       );
       data.onProgress({
-        step: {
+        relative: {
           description: "Exporting",
         },
       });
@@ -165,12 +165,12 @@ export abstract class SqlDumpTaskAbstract<
     } else {
       let current = 0;
       for (const tableName of tableNames) {
-        data.onProgress({
-          step: {
+        await data.onProgress({
+          relative: {
             description: "Exporting",
-            item: tableName,
+            payload: tableName,
           },
-          stats: {
+          absolute: {
             total: tableNames.length,
             current: current,
             percent: progressPercent(tableNames.length, current),
@@ -188,7 +188,7 @@ export abstract class SqlDumpTaskAbstract<
     if (this.config.storedPrograms) {
       const outPath = join(outputPath, "stored-programs.sql");
       data.onProgress({
-        step: {
+        relative: {
           description: "Exporting storaged programs",
         },
       });
@@ -256,11 +256,11 @@ export abstract class SqlDumpTaskAbstract<
     for (const item of items) {
       const path = join(restorePath, item.fileName);
       data.onProgress({
-        step: {
+        relative: {
           description: "Importing",
-          item: item.fileName,
+          payload: item.fileName,
         },
-        stats: {
+        absolute: {
           total: items.length,
           current: current,
           percent: progressPercent(items.length, current),

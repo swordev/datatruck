@@ -9,7 +9,7 @@ export type OptionsType = {
 
 export default abstract class SessionManagerAbstract {
   protected lastProgressDate: number | undefined;
-  protected lastProgressStepDescription: string | null | undefined;
+  protected lastRelativeProgressDescription: string | null | undefined;
   protected progressTimeout: ReturnType<typeof setTimeout> | undefined;
   constructor(readonly options: OptionsType) {}
 
@@ -31,11 +31,11 @@ export default abstract class SessionManagerAbstract {
     if (progressInterval) {
       const skip =
         this.lastProgressDate &&
-        description === this.lastProgressStepDescription &&
+        description === this.lastRelativeProgressDescription &&
         Date.now() - this.lastProgressDate < progressInterval;
       if (skip) return false;
       this.lastProgressDate = Date.now();
-      this.lastProgressStepDescription = description;
+      this.lastRelativeProgressDescription = description;
     }
     return true;
   }
