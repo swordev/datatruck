@@ -1,5 +1,27 @@
 # @datatruck/cli
 
+## 0.16.0
+
+### Minor Changes
+
+- [`e25867a`](https://github.com/swordev/datatruck/commit/e25867a49217e682c0fee7e1822a12daa583b168) Thanks [@juanrgm](https://github.com/juanrgm)! - New backup structure in datatruck repository
+
+* [`b65f080`](https://github.com/swordev/datatruck/commit/b65f080d7eca5588bce533e988067bd432da3c50) Thanks [@juanrgm](https://github.com/juanrgm)! - Show all progress steps
+
+- [`e603aee`](https://github.com/swordev/datatruck/commit/e603aee22febd7cc23056caeeb9f9304957199d6) Thanks [@juanrgm](https://github.com/juanrgm)! - Add progress stats in the `sql-dump` tasks
+
+### Patch Changes
+
+- [`dae957b`](https://github.com/swordev/datatruck/commit/dae957b20f519d1bc0f6b046074ae2ad02a071dc) Thanks [@juanrgm](https://github.com/juanrgm)! - Show zip progress
+
+* [`7ba3dd3`](https://github.com/swordev/datatruck/commit/7ba3dd3521fc10140adc178810cc2b6153f0f5df) Thanks [@juanrgm](https://github.com/juanrgm)! - Enable multithread in 7zip
+
+- [`1024225`](https://github.com/swordev/datatruck/commit/102422501f629f50164db439e69a456725579cbe) Thanks [@juanrgm](https://github.com/juanrgm)! - Show full error stack when the error is not controlled
+
+* [`09db164`](https://github.com/swordev/datatruck/commit/09db164db462077289b66931e82f162a92558720) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix backup action in datatruck repository
+
+- [`2b9b2bb`](https://github.com/swordev/datatruck/commit/2b9b2bbb407b0b84a4b7fe3cd8773d6326983e8a) Thanks [@juanrgm](https://github.com/juanrgm)! - Unify progress bars
+
 ## 0.15.0
 
 ### Minor Changes
