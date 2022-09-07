@@ -13,7 +13,7 @@ import {
   resolvePackages,
 } from "../util/datatruck/config-util";
 import { IfRequireKeys } from "../util/ts-util";
-import { randomBytes } from "crypto";
+import { randomUUID } from "crypto";
 
 export type BackupActionOptionsType = {
   repositoryNames?: string[];
@@ -39,7 +39,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
   protected async init(session: BackupSessionManager) {
     const snapshot = {
-      id: randomBytes(20).toString("hex"),
+      id: randomUUID().replaceAll("-", ""),
       date: this.options.date ?? new Date().toISOString(),
     } as SnapshotType;
 

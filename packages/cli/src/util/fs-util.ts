@@ -1,7 +1,7 @@
 import globalData from "../globalData";
 import { rootPath } from "./path-util";
 import { eachLimit } from "async";
-import { randomBytes } from "crypto";
+import { randomUUID } from "crypto";
 import fastFolderSize from "fast-folder-size";
 import FastGlob from "fast-glob";
 import { createReadStream, Dirent, Stats } from "fs";
@@ -180,7 +180,7 @@ export function sessionTmpDir() {
 }
 
 export function tmpDir(prefix: string, id?: string) {
-  if (!id) id = randomBytes(8).toString("hex");
+  if (!id) id = randomUUID().slice(0, 8);
   return join(sessionTmpDir(), `${prefix}-${id}`);
 }
 
