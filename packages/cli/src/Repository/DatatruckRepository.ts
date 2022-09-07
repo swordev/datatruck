@@ -424,7 +424,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           const isSinglePackStream = stream === singlePackStream;
           const include = isPackStream
             ? entry.stats.isDirectory()
-              ? await isEmptyDir(entry.path)
+              ? await isEmptyDir(join(sourcePath, entry.path))
               : true
             : true;
 
