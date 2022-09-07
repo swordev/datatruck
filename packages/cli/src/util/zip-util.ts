@@ -75,7 +75,16 @@ export function buildArguments(filters: (ZipDataFilterType | string)[]) {
 let checkSSEOptionResult: boolean | undefined;
 
 export async function checkSSEOption(command = "7z") {
-  const result = await exec(command);
+  const result = await exec(
+    command,
+    [],
+    {},
+    {
+      stdout: {
+        save: true,
+      },
+    }
+  );
   if (typeof checkSSEOptionResult === "boolean") return checkSSEOptionResult;
   return (checkSSEOptionResult = result.stdout.includes(" -sse"));
 }
