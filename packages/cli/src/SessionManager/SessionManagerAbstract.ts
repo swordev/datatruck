@@ -10,7 +10,22 @@ export type OptionsType = {
 export default abstract class SessionManagerAbstract {
   protected lastProgressDate: number | undefined;
   protected lastProgressStepDescription: string | null | undefined;
+  protected progressTimeout: ReturnType<typeof setTimeout> | undefined;
   constructor(readonly options: OptionsType) {}
+
+  protected stopDelayedProgress() {
+    clearTimeout(this.progressTimeout);
+    this.progressTimeout = undefined;
+  }
+
+  protected delayProgress(cb: () => Promise<any>) {
+    clearTimeout(this.progressTimeout);
+    this.progressTimeout = setTimeout(async () => {
+      this.progressTimeout = undefined;
+      await cb();
+    }, 1_500);
+  }
+
   protected checkProgress(description: string | null | undefined) {
     const progressInterval = this.options.progressInterval;
     if (progressInterval) {

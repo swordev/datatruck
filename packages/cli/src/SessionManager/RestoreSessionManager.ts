@@ -41,20 +41,29 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   }
   async endDrivers() {
     const drivers = [this.options.driver, ...(this.options.altDrivers ?? [])];
+    this.stopDelayedProgress();
     for (const driver of drivers) {
       await driver.onEnd();
     }
   }
+
   protected async alter(data: WriteDataType) {
     const drivers = [this.options.driver, ...(this.options.altDrivers ?? [])];
+    const write = async () => {
+      for (const driver of drivers) {
+        await driver.onWrite(data);
+      }
+    };
     if (
       data.action === ActionEnum.Progress &&
       !this.checkProgress(data.data.progressStepDescription)
-    )
-      return data.data.id;
-    for (const driver of drivers) {
-      await driver.onWrite(data);
+    ) {
+      this.delayProgress(write);
+    } else {
+      this.stopDelayedProgress();
+      await write();
     }
+
     return data.data.id;
   }
 
