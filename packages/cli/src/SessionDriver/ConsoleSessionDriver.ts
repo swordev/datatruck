@@ -197,7 +197,10 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       if (data.data.error)
         message.errorBadge = {
           name: "error",
-          value: this.tty ? data.data.error.split("\n")[0] : data.data.error,
+          value:
+            this.tty && data.data.error.startsWith(`${AppError.name} :`)
+              ? data.data.error.split("\n")[0]
+              : data.data.error,
           color: red,
         };
     } else if (data.action === ActionEnum.Progress) {
