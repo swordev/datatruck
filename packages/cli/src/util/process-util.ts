@@ -20,6 +20,7 @@ export interface ExecSettingsInterface {
   exec?: boolean;
   pipe?: {
     stream: WriteStream | ReadStream;
+    onWriteProgress?: (data: { totalBytes: number }) => void;
     onReadProgress?: (data: {
       totalBytes: number;
       currentBytes: number;
@@ -186,6 +187,17 @@ export async function exec(
       if (pipe.stream instanceof WriteStream) {
         if (!p.stdout) throw new Error(`stdout is not defined`);
         if (!p.stderr) throw new Error(`stderr is not defined`);
+        if (pipe.onWriteProgress) {
+          let totalBytes = 0;
+          p.stdout.on("data", (chunk: Buffer) => {
+            totalBytes += chunk.length;
+            pipe.onWriteProgress!({ totalBytes });
+          });
+          p.stderr.on("data", (chunk: Buffer) => {
+            totalBytes += chunk.length;
+            pipe.onWriteProgress!({ totalBytes });
+          });
+        }
         p.stdout.pipe(pipe.stream, { end: false });
         p.stderr.pipe(pipe.stream, { end: false });
         p.on("close", tryFinish);

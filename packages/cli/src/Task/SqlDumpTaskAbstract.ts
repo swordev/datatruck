@@ -129,7 +129,11 @@ export abstract class SqlDumpTaskAbstract<
   abstract onDatabaseIsEmpty(databaseName: string): Promise<boolean>;
   abstract onFetchTableNames(database: string): Promise<string[]>;
   abstract onExecQuery(query: string): ReturnType<typeof exec>;
-  abstract onExportTables(tableNames: string[], output: string): Promise<void>;
+  abstract onExportTables(
+    tableNames: string[],
+    output: string,
+    onProgress: (data: { totalBytes: number }) => void
+  ): Promise<void>;
   abstract onExportStoredPrograms(output: string): Promise<void>;
   abstract onImport(path: string, database: string): Promise<void>;
 
@@ -161,7 +165,15 @@ export abstract class SqlDumpTaskAbstract<
           description: "Exporting",
         },
       });
-      await this.onExportTables(tableNames, outPath);
+      await this.onExportTables(tableNames, outPath, async (progress) => {
+        await data.onProgress({
+          absolute: {
+            description: "Exporting in single file",
+            current: progress.totalBytes,
+            format: "size",
+          },
+        });
+      });
     } else {
       let current = 0;
       for (const tableName of tableNames) {
@@ -180,7 +192,21 @@ export abstract class SqlDumpTaskAbstract<
           outputPath,
           serializeSqlFile({ table: tableName })
         );
-        await this.onExportTables([tableName], outPath);
+        await this.onExportTables([tableName], outPath, async (progress) => {
+          await data.onProgress({
+            relative: {
+              description: "Exporting",
+              payload: tableName,
+              current: progress.totalBytes,
+              format: "size",
+            },
+            absolute: {
+              total: tableNames.length,
+              current: current,
+              percent: progressPercent(tableNames.length, current),
+            },
+          });
+        });
         current++;
       }
     }

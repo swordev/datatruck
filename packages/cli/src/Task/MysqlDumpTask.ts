@@ -86,7 +86,11 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
 	`);
   }
 
-  override async onExportTables(tableNames: string[], output: string) {
+  override async onExportTables(
+    tableNames: string[],
+    output: string,
+    onProgress: (progress: { totalBytes: number }) => void
+  ) {
     const stream = createWriteStream(output);
 
     await Promise.all([
@@ -104,7 +108,10 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
         ],
         null,
         {
-          pipe: { stream: stream },
+          pipe: {
+            stream,
+            onWriteProgress: onProgress,
+          },
           log: {
             exec: this.verbose,
             stderr: this.verbose,
