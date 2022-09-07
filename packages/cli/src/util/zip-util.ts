@@ -245,7 +245,7 @@ export async function zip(data: ZipDataType) {
       onExitCodeError: (data, error) => (data.exitCode > 2 ? error : false),
       stdout: {
         onData: async (lines) => {
-          for (const line of lines.split(/\r?\n/)) {
+          for (const line of lines.replaceAll("\b", "").split(/\r?\n/)) {
             const stream = parseZipLine(line);
             if (stream) {
               if (stream.type === "summary") summary = stream.data;
