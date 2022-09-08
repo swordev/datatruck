@@ -145,7 +145,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
   }
 
-  protected async execTask(
+  protected async task(
     session: RestoreSessionManager,
     pkg: PackageConfigType,
     task: TaskConfigType,
@@ -196,7 +196,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     return error ? false : true;
   }
 
-  protected async execRepository(
+  protected async restore(
     session: RestoreSessionManager,
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
@@ -325,10 +325,10 @@ export class RestoreAction<TRequired extends boolean = true> {
         targetPath = result?.targetPath;
       }
 
-      await this.execRepository(session, pkg, repo, snapshot, targetPath);
+      await this.restore(session, pkg, repo, snapshot, targetPath);
 
       if (pkg.task)
-        await this.execTask(session, pkg, pkg.task, snapshot, targetPath);
+        await this.task(session, pkg, pkg.task, snapshot, targetPath);
 
       const error = this.getError(pkg);
       await session.end({

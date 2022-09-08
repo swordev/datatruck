@@ -85,7 +85,7 @@ export class BackupAction<TRequired extends boolean = true> {
     return [snapshot, packages] as [SnapshotType, PackageConfigType[]];
   }
 
-  protected async execTask(
+  protected async task(
     session: BackupSessionManager,
     pkg: PackageConfigType,
     task: TaskConfigType,
@@ -135,7 +135,7 @@ export class BackupAction<TRequired extends boolean = true> {
     return error ? false : true;
   }
 
-  protected async execRepository(
+  protected async backup(
     session: BackupSessionManager,
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
@@ -186,7 +186,7 @@ export class BackupAction<TRequired extends boolean = true> {
     return error ? false : true;
   }
 
-  protected async execCopyRepository(
+  protected async copyBackup(
     session: BackupSessionManager,
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
@@ -247,12 +247,39 @@ export class BackupAction<TRequired extends boolean = true> {
     }
   }
 
+  protected splitRepositories(repositoryNames: string[]) {
+    const mirrorRepoMap: Record<string, string[]> = {};
+    const allMirrorRepoNames: string[] = [];
+    const repoNames = repositoryNames ?? [];
+
+    for (const repoName of repoNames) {
+      const repo = findRepositoryOrFail(this.config, repoName);
+      if (repo.mirrorRepoNames)
+        mirrorRepoMap[repoName] = repo.mirrorRepoNames.filter(
+          (mirrorRepoName) => {
+            allMirrorRepoNames.push(mirrorRepoName);
+            return repoNames.includes(mirrorRepoName);
+          }
+        );
+    }
+
+    return {
+      repoNames: repoNames.filter((v) => !allMirrorRepoNames.includes(v)),
+      mirrors: repoNames.flatMap((sourceName) => {
+        const mirrorNames = mirrorRepoMap[sourceName] || [];
+        return mirrorNames.map((name) => ({
+          sourceName,
+          name,
+        }));
+      }),
+    };
+  }
+
   async exec(session: BackupSessionManager) {
     const [snapshot, packages] = await this.init(session);
-    let total = 0;
     let errors = 0;
+
     for (const pkg of packages) {
-      total++;
       const id = session.findId({
         packageName: pkg.name,
       });
@@ -270,7 +297,7 @@ export class BackupAction<TRequired extends boolean = true> {
           package: pkg,
           snapshot,
         });
-        await this.execTask(
+        await this.task(
           session,
           pkg,
           pkg.task,
@@ -279,45 +306,19 @@ export class BackupAction<TRequired extends boolean = true> {
         );
       }
 
-      const mirrorRepoMap: Record<string, string[]> = {};
-      const allMirrorRepoNames: string[] = [];
-      const repoNames = pkg.repositoryNames ?? [];
+      const { repoNames, mirrors } = this.splitRepositories(
+        pkg.repositoryNames ?? []
+      );
 
       for (const repoName of repoNames) {
         const repo = findRepositoryOrFail(this.config, repoName);
-        if (repo.mirrorRepoNames)
-          mirrorRepoMap[repoName] = repo.mirrorRepoNames.filter(
-            (mirrorRepoName) => {
-              allMirrorRepoNames.push(mirrorRepoName);
-              return repoNames.includes(mirrorRepoName);
-            }
-          );
+        await this.backup(session, pkg, repo, snapshot, targetPath);
       }
 
-      for (const repoName of repoNames) {
-        if (allMirrorRepoNames.includes(repoName)) continue;
-        const repo = findRepositoryOrFail(this.config, repoName);
-        await this.execRepository(session, pkg, repo, snapshot, targetPath);
-      }
-
-      for (const repoName of repoNames) {
-        const repo = findRepositoryOrFail(this.config, repoName);
-        const mirrorRepoNames = mirrorRepoMap[repoName];
-        if (mirrorRepoNames) {
-          for (const mirrorRepoName of mirrorRepoNames) {
-            const mirrorRepo = findRepositoryOrFail(
-              this.config,
-              mirrorRepoName
-            );
-            await this.execCopyRepository(
-              session,
-              pkg,
-              repo,
-              mirrorRepo,
-              snapshot
-            );
-          }
-        }
+      for (const mirror of mirrors) {
+        const repo = findRepositoryOrFail(this.config, mirror.sourceName);
+        const mirrorRepo = findRepositoryOrFail(this.config, mirror.name);
+        await this.copyBackup(session, pkg, repo, mirrorRepo, snapshot);
       }
 
       const error = this.getError(pkg);
@@ -334,7 +335,7 @@ export class BackupAction<TRequired extends boolean = true> {
     });
 
     return {
-      total: total,
+      total: packages.length,
       errors: errors,
     };
   }
