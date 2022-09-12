@@ -173,6 +173,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     };
     onProgress: (data: Progress) => Promise<void>;
     disableCounting?: boolean;
+    disableEndProgress?: boolean;
   }) {
     const object = {
       total: 0,
@@ -205,28 +206,26 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           object.current += data.current;
         }
       },
+      updateProgress: async (end?: boolean) => {
+        const currentTime = performance.now();
+        const diff = currentTime - lastTime;
+        if (end || diff > 1_000) {
+          await options.onProgress({
+            relative: {
+              description: end ? "Scanned files" : "Scanning files",
+              payload: object.total.toString(),
+            },
+          });
+          lastTime = currentTime;
+        }
+      },
       start: async (cb?: (entry: Required<Entry>) => any) => {
         for await (const entry of pathIterator(stream)) {
           if (!options.disableCounting) object.total++;
-          const currentTime = performance.now();
-          const diff = currentTime - lastTime;
-          if (diff > 1_000) {
-            await options.onProgress({
-              relative: {
-                description: "Scanning files",
-                payload: object.total.toString(),
-              },
-            });
-            lastTime = currentTime;
-          }
+          await object.updateProgress();
           if (cb) await cb(entry);
         }
-        await options.onProgress({
-          relative: {
-            description: "Scanned files",
-            payload: object.total.toString(),
-          },
-        });
+        if (!options.disableEndProgress) await object.updateProgress(true);
       },
     };
 
@@ -615,6 +614,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         cwd: sourcePath,
       },
       onProgress: data.onProgress,
+      disableEndProgress: true,
     });
 
     await scanner.start();
@@ -624,6 +624,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       const path = join(sourcePath, dirent.name);
       if (dirent.name === "permissions.txt") {
         scanner.total++;
+        await scanner.updateProgress();
       } else if (dirent.name.endsWith(".zip")) {
         await listZip({
           path,
@@ -631,10 +632,13 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           onStream: async (item) => {
             const isDir = item.Folder === "+";
             if (!isDir) scanner.total++;
+            await scanner.updateProgress();
           },
         });
       }
     }
+
+    await scanner.updateProgress(true);
 
     if (data.options.verbose) logExec(`Copying files to ${restorePath}`);
 
