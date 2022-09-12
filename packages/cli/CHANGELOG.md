@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.16.1
+
+### Patch Changes
+
+- [`62ce7c4`](https://github.com/swordev/datatruck/commit/62ce7c4d4ee6edc0375f3c1ad1e7bfe8912a2f3c) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix unzip progress
+
+* [`3fd4258`](https://github.com/swordev/datatruck/commit/3fd42588011353d744be2f964ab24cf0bdd690bf) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix restore progress in datatruck repository
+
 ## 0.16.0
 
 ### Minor Changes
