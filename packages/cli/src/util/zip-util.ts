@@ -284,9 +284,9 @@ export type UnzipStream = {
 };
 function parseUnzipLine(line: string) {
   let matches: RegExpExecArray | null = null;
-  if ((matches = /^\s*(\d+)% (\d+) \-/.exec(line))) {
-    const progress = Number(matches[1]);
-    const files = Number(matches[2]);
+  if ((matches = /^\s*(?<percent>\d+)%(?: (?<files>\d+))? \-/.exec(line))) {
+    const progress = Number(matches.groups!["percent"]);
+    const files = matches.groups!["files"] ? Number(matches[2]) : 1;
     const path = line.slice(line.indexOf("-") + 1).trim();
     return {
       type: "progress",
@@ -320,20 +320,22 @@ export async function unzip(data: UnzipDataType) {
       stderr: { toExitCode: true },
       stdout: {
         ...((data.onStream || data.onProgress) && {
-          parseLines: true,
-          onData: async (line) => {
-            const stream = parseUnzipLine(line);
-            if (stream) {
-              if (stream.type === "progress") {
-                const current = Math.max(0, stream.data.files - 1);
-                summary.files = stream.data.files;
-                await data.onProgress?.({
-                  current,
-                  percent: stream.data.percent,
-                  path: stream.data.path,
-                });
+          onData: async (chunk) => {
+            const lines = chunk.replaceAll("\b", "").split(/\r?\n/);
+            for (const line of lines) {
+              const stream = parseUnzipLine(line);
+              if (stream) {
+                if (stream.type === "progress") {
+                  const current = Math.max(0, stream.data.files - 1);
+                  summary.files = stream.data.files;
+                  await data.onProgress?.({
+                    current,
+                    percent: stream.data.percent,
+                    path: stream.data.path,
+                  });
+                }
+                await data.onStream?.(stream);
               }
-              await data.onStream?.(stream);
             }
           },
         }),
