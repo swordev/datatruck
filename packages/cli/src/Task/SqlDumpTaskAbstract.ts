@@ -160,7 +160,7 @@ export abstract class SqlDumpTaskAbstract<
         outputPath,
         serializeSqlFile({ database: this.config.database })
       );
-      data.onProgress({
+      await data.onProgress({
         relative: {
           description: "Exporting",
         },
@@ -213,7 +213,7 @@ export abstract class SqlDumpTaskAbstract<
 
     if (this.config.storedPrograms) {
       const outPath = join(outputPath, "stored-programs.sql");
-      data.onProgress({
+      await data.onProgress({
         relative: {
           description: "Exporting storaged programs",
         },
