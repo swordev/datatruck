@@ -2,6 +2,7 @@ import { BackupActionOptionsType } from "../Action/BackupAction";
 import { RestoreActionOptionsType } from "../Action/RestoreAction";
 import { PackageConfigType } from "../Config/PackageConfig";
 import { SnapshotType } from "../Repository/RepositoryAbstract";
+import { mkTmpDir } from "../util/fs-util";
 import { Progress } from "../util/progress";
 
 export type BackupDataType = {
@@ -22,7 +23,9 @@ export type RestoreDataType = {
 
 export abstract class TaskAbstract<TConfig = any> {
   constructor(readonly config: TConfig) {}
-
+  async mkTmpDir(prefix: string, id?: string) {
+    return await mkTmpDir(prefix, id);
+  }
   async onBeforeBackup(
     data: Omit<BackupDataType, "onProgress" | "targetPath">
   ): Promise<{ targetPath?: string } | undefined> {

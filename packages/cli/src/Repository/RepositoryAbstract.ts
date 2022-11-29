@@ -7,6 +7,7 @@ import type {
 } from "../Action/SnapshotsAction";
 import type { PackageConfigType } from "../Config/PackageConfig";
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { mkTmpDir } from "../util/fs-util";
 import { Progress } from "../util/progress";
 
 export type SnapshotType = {
@@ -90,6 +91,9 @@ export abstract class RepositoryAbstract<TConfig> {
   readonly config: TConfig;
   constructor(readonly repository: RepositoryConfigType) {
     this.config = repository.config as never;
+  }
+  async mkTmpDir(prefix: string, id?: string) {
+    return await mkTmpDir(prefix, id);
   }
   abstract onGetSource(): string;
   abstract onInit(data: InitDataType): Promise<void>;

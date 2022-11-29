@@ -7,7 +7,6 @@ import {
   ensureEmptyDir,
   forEachFile,
   mkdirIfNotExists,
-  mkTmpDir,
 } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
@@ -94,7 +93,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
   }
   override async onBeforeBackup() {
     return {
-      targetPath: await mkTmpDir(GitTask.name),
+      targetPath: await this.mkTmpDir(GitTask.name),
     };
   }
   override async onBackup(data: BackupDataType) {
@@ -257,7 +256,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
   override async onBeforeRestore() {
     return {
-      targetPath: await mkTmpDir(GitTask.name),
+      targetPath: await this.mkTmpDir(GitTask.name),
     };
   }
 

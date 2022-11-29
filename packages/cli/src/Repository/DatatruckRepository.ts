@@ -9,7 +9,6 @@ import {
   fastFolderSizeAsync,
   isEmptyDir,
   mkdirIfNotExists,
-  mkTmpDir,
   parsePackageFile,
   pathIterator,
   readDir,
@@ -372,7 +371,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       : undefined;
 
     const packs = compress?.packs || [];
-    const tmpDir = await mkTmpDir("path-lists");
+    const tmpDir = await this.mkTmpDir("path-lists");
     const unpackedStream = createWriteStream(join(tmpDir, "unpacked.txt"));
     const singlePackStream = createWriteStream(join(tmpDir, "single-pack.txt"));
     const packStreams = Array.from({ length: packs.length }).map((v, i) =>

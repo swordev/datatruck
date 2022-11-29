@@ -1,11 +1,6 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../util/cli-util";
-import {
-  forEachFile,
-  mkdirIfNotExists,
-  mkTmpDir,
-  readDir,
-} from "../util/fs-util";
+import { forEachFile, mkdirIfNotExists, readDir } from "../util/fs-util";
 import { progressPercent } from "../util/math-util";
 import { exec } from "../util/process-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
@@ -66,7 +61,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
   }
   override async onBeforeBackup() {
     return {
-      targetPath: await mkTmpDir(MariadbTask.name),
+      targetPath: await this.mkTmpDir(MariadbTask.name),
     };
   }
   override async onBackup(data: BackupDataType) {

@@ -5,7 +5,6 @@ import { parsePaths } from "../util/datatruck/paths-util";
 import {
   fastglobToGitIgnore,
   mkdirIfNotExists,
-  mkTmpDir,
   parsePackageFile,
   writeGitIgnoreList,
 } from "../util/fs-util";
@@ -254,7 +253,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         },
       });
 
-      const tmpDir = await mkTmpDir("restic-exclude");
+      const tmpDir = await this.mkTmpDir("restic-exclude");
       const ignoredContents = fastglobToGitIgnore(exclude, sourcePath).join(
         "\n"
       );

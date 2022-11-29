@@ -1,5 +1,5 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { ensureEmptyDir, mkdirIfNotExists, mkTmpDir } from "../util/fs-util";
+import { ensureEmptyDir, mkdirIfNotExists } from "../util/fs-util";
 import { exec } from "../util/process-util";
 import { render } from "../util/string-util";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
@@ -130,7 +130,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
   protected verbose?: boolean;
   override async onBeforeBackup() {
     return {
-      targetPath: await mkTmpDir(ScriptTask.name),
+      targetPath: await this.mkTmpDir(ScriptTask.name),
     };
   }
 
@@ -146,7 +146,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
     };
   }
 
-  static async processSteps(
+  protected async processSteps(
     input: Step[] | Step,
     options: {
       env?: Record<string, string | undefined>;
@@ -173,7 +173,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
           }
         );
       } else if (step.type === "node") {
-        const tempDir = await mkTmpDir("script-task-node-step");
+        const tempDir = await this.mkTmpDir("script-task-node-step");
         const scriptPath = join(tempDir, "script.js");
         await writeFile(
           scriptPath,
@@ -212,7 +212,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
     ok(typeof path === "string");
     ok(typeof targetPath === "string");
 
-    await ScriptTask.processSteps(config.backupSteps, {
+    await this.processSteps(config.backupSteps, {
       env: config.env,
       vars: this.getVars(data),
       verbose: this.verbose,
@@ -221,7 +221,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
 
   override async onBeforeRestore() {
     return {
-      targetPath: await mkTmpDir(ScriptTask.name),
+      targetPath: await this.mkTmpDir(ScriptTask.name),
     };
   }
 
@@ -238,7 +238,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
     await mkdirIfNotExists(restorePath);
     await ensureEmptyDir(restorePath);
 
-    await ScriptTask.processSteps(config.restoreSteps, {
+    await this.processSteps(config.restoreSteps, {
       env: config.env,
       vars: this.getVars(data),
       verbose: this.verbose,

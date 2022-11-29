@@ -6,7 +6,6 @@ import {
   existsDir,
   fastFolderSizeAsync,
   mkdirIfNotExists,
-  mkTmpDir,
   parsePackageFile,
   tmpDir,
 } from "../util/fs-util";
@@ -126,7 +125,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
   }
   override async onPrune(data: PruneDataType) {
     const git = new GitUtil({
-      dir: await mkTmpDir(GitRepository.name + "-snapshot"),
+      dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
       log: data.options.verbose,
     });
 
@@ -153,7 +152,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
   }
   override async onSnapshots(data: SnapshotsDataType) {
     const git = new GitUtil({
-      dir: await mkTmpDir(GitRepository.name + "-snapshot"),
+      dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
       log: data.options.verbose,
     });
 
@@ -209,7 +208,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     if (!(await existsDir(sourcePath)))
       throw new AppError(`Package path not exists: ${sourcePath}`);
 
-    const tmpPath = await mkTmpDir(GitRepository.name + "-backup");
+    const tmpPath = await this.mkTmpDir(GitRepository.name + "-backup");
     const branchName = GitRepository.buildBranchName(data.package.name);
 
     const git = new GitUtil({
