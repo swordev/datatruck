@@ -5,15 +5,24 @@ import { TaskConfigType } from "../Config/TaskConfig";
 import { AppError } from "../Error/AppError";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
 import { TaskFactory } from "../Factory/TaskFactory";
-import { SnapshotResultType } from "../Repository/RepositoryAbstract";
+import {
+  RepositoryAbstract,
+  SnapshotResultType,
+} from "../Repository/RepositoryAbstract";
 import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
+import { TaskAbstract } from "../Task/TaskAbstract";
 import { logExec } from "../util/cli-util";
 import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
 } from "../util/datatruck/config-util";
-import { isDirEmpty, mkdirIfNotExists } from "../util/fs-util";
+import {
+  isDirEmpty,
+  isTmpDir,
+  mkdirIfNotExists,
+  rmTmpDir,
+} from "../util/fs-util";
 import { push } from "../util/object-util";
 import { exec } from "../util/process-util";
 import { IfRequireKeys } from "../util/ts-util";
@@ -148,13 +157,13 @@ export class RestoreAction<TRequired extends boolean = true> {
   protected async task(
     session: RestoreSessionManager,
     pkg: PackageConfigType,
-    task: TaskConfigType,
+    task: TaskAbstract<any>,
     snapshot: SnapshotType,
     targetPath: string | undefined
   ) {
     const taskId = session.findTaskId({
       packageName: pkg.name,
-      taskName: task.name,
+      taskName: pkg.task!.name,
     });
 
     await session.startTask({
@@ -169,8 +178,7 @@ export class RestoreAction<TRequired extends boolean = true> {
       error = new AppError("Previous task failed");
     } else {
       try {
-        const taskInstance = TaskFactory(task);
-        await taskInstance.onRestore({
+        await task.onRestore({
           package: pkg,
           options: this.options,
           snapshot,
@@ -193,7 +201,10 @@ export class RestoreAction<TRequired extends boolean = true> {
       error: error?.stack,
     });
 
-    return error ? false : true;
+    return {
+      error: error ? false : true,
+      tmpDirs: task?.tmpDirs ?? [],
+    };
   }
 
   protected async restore(
@@ -213,6 +224,8 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
 
     let repoError: Error | undefined;
+    let repoInstance: RepositoryAbstract<any> | undefined;
+
     try {
       if (typeof pkg.restorePath !== "string")
         throw new AppError("Restore path is not defined");
@@ -224,7 +237,7 @@ export class RestoreAction<TRequired extends boolean = true> {
 
       if (this.options.verbose) logExec(`restorePath=${pkg.restorePath}`);
 
-      const repoInstance = RepositoryFactory(repo);
+      repoInstance = RepositoryFactory(repo);
       await repoInstance.onRestore({
         package: pkg,
         targetPath,
@@ -262,7 +275,10 @@ export class RestoreAction<TRequired extends boolean = true> {
       id: repositoryId,
       error: repoError?.stack,
     });
-    return repoError ? false : true;
+    return {
+      error: repoError ? false : true,
+      tmpDirs: repoInstance?.tmpDirs || [],
+    };
   }
 
   protected getError(pkg: PackageConfigType) {
@@ -314,9 +330,9 @@ export class RestoreAction<TRequired extends boolean = true> {
 
       await session.start({ id });
       let targetPath: string | undefined;
-
+      let taskInstance: TaskAbstract<any> | undefined;
       if (pkg.task) {
-        const taskInstance = TaskFactory(pkg.task);
+        taskInstance = TaskFactory(pkg.task);
         const result = await taskInstance.onBeforeRestore({
           options: this.options,
           package: pkg,
@@ -325,10 +341,24 @@ export class RestoreAction<TRequired extends boolean = true> {
         targetPath = result?.targetPath;
       }
 
-      await this.restore(session, pkg, repo, snapshot, targetPath);
+      const { tmpDirs } = await this.restore(
+        session,
+        pkg,
+        repo,
+        snapshot,
+        targetPath
+      );
 
-      if (pkg.task)
-        await this.task(session, pkg, pkg.task, snapshot, targetPath);
+      if (taskInstance) {
+        await this.task(session, pkg, taskInstance, snapshot, targetPath);
+      }
+
+      if (!this.options.verbose) {
+        await rmTmpDir(taskInstance?.tmpDirs || []);
+        await rmTmpDir(tmpDirs);
+        if (pkg.restorePath && isTmpDir(pkg.restorePath))
+          await rmTmpDir(pkg.restorePath);
+      }
 
       const error = this.getError(pkg);
       await session.end({

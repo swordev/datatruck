@@ -89,11 +89,14 @@ export type SnapshotTagObjectType = {
 
 export abstract class RepositoryAbstract<TConfig> {
   readonly config: TConfig;
+  readonly tmpDirs: string[] = [];
   constructor(readonly repository: RepositoryConfigType) {
     this.config = repository.config as never;
   }
   async mkTmpDir(prefix: string, id?: string) {
-    return await mkTmpDir(prefix, id);
+    const dir = await mkTmpDir(prefix, id);
+    this.tmpDirs.push(dir);
+    return dir;
   }
   abstract onGetSource(): string;
   abstract onInit(data: InitDataType): Promise<void>;

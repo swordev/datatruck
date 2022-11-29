@@ -291,6 +291,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       gitignorePath = await writeGitIgnoreList({
         paths: stream,
+        outDir: await this.mkTmpDir("gitignore-list"),
       });
     }
 
@@ -368,6 +369,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           : []),
         ...(data.options.tags ?? []),
       ],
+      createEmptyDir: async () => await this.mkTmpDir("empty"),
       onStream: async (streamData) => {
         if (streamData.message_type === "status") {
           let showProgressBar = false;

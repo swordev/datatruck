@@ -1,17 +1,21 @@
 import type { ConfigType } from "../Config/Config";
 import { PackageConfigType } from "../Config/PackageConfig";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { TaskConfigType } from "../Config/TaskConfig";
 import { AppError } from "../Error/AppError";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
 import { TaskFactory } from "../Factory/TaskFactory";
-import { SnapshotType } from "../Repository/RepositoryAbstract";
+import {
+  RepositoryAbstract,
+  SnapshotType,
+} from "../Repository/RepositoryAbstract";
 import { BackupSessionManager } from "../SessionManager/BackupSessionManager";
+import { TaskAbstract } from "../Task/TaskAbstract";
 import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
 } from "../util/datatruck/config-util";
+import { isTmpDir, rmTmpDir } from "../util/fs-util";
 import { IfRequireKeys } from "../util/ts-util";
 import { randomUUID } from "crypto";
 
@@ -88,13 +92,13 @@ export class BackupAction<TRequired extends boolean = true> {
   protected async task(
     session: BackupSessionManager,
     pkg: PackageConfigType,
-    task: TaskConfigType,
+    task: TaskAbstract<any>,
     snapshot: SnapshotType,
     targetPath: string | undefined
   ) {
     const taskId = session.findTaskId({
       packageName: pkg.name,
-      taskName: task.name,
+      taskName: pkg.task!.name,
     });
 
     await session.startTask({
@@ -108,8 +112,7 @@ export class BackupAction<TRequired extends boolean = true> {
       error = new AppError("Previous task failed");
     } else {
       try {
-        const taskInstance = TaskFactory(task);
-        await taskInstance.onBackup({
+        await task.onBackup({
           package: pkg,
           options: this.options,
           snapshot,
@@ -132,7 +135,10 @@ export class BackupAction<TRequired extends boolean = true> {
       error: error?.stack,
     });
 
-    return error ? false : true;
+    return {
+      error: error ? false : true,
+      tmpDirs: task.tmpDirs,
+    };
   }
 
   protected async backup(
@@ -152,11 +158,13 @@ export class BackupAction<TRequired extends boolean = true> {
     });
 
     let error: Error | undefined;
+    let repoInstance: RepositoryAbstract<any> | undefined;
+
     if (this.taskErrors[pkg.name]?.length) {
       error = new AppError("Task failed");
     } else {
       try {
-        const repoInstance = RepositoryFactory(repo);
+        repoInstance = RepositoryFactory(repo);
         await repoInstance.onBackup({
           package: pkg,
           targetPath,
@@ -183,7 +191,10 @@ export class BackupAction<TRequired extends boolean = true> {
       id: repositoryId,
       error: error?.stack,
     });
-    return error ? false : true;
+    return {
+      error: error ? false : true,
+      tmpDirs: repoInstance?.tmpDirs ?? [],
+    };
   }
 
   protected async copyBackup(
@@ -203,11 +214,13 @@ export class BackupAction<TRequired extends boolean = true> {
     });
 
     let error: Error | undefined;
+    let repoInstance: RepositoryAbstract<any> | undefined;
+
     if (this.taskErrors[pkg.name]?.length) {
       error = new AppError("Task failed");
     } else {
       try {
-        const repoInstance = RepositoryFactory(repo);
+        repoInstance = RepositoryFactory(repo);
         await repoInstance.onCopyBackup({
           options: this.options,
           package: pkg,
@@ -229,7 +242,11 @@ export class BackupAction<TRequired extends boolean = true> {
       id: repositoryId,
       error: error?.stack,
     });
-    return error ? false : true;
+
+    return {
+      error: error ? false : true,
+      tmpDirs: repoInstance?.tmpDirs ?? [],
+    };
   }
 
   protected getError(pkg: PackageConfigType) {
@@ -289,6 +306,7 @@ export class BackupAction<TRequired extends boolean = true> {
       });
 
       let targetPath: string | undefined;
+      let taskTmpDirs: string[] = [];
 
       if (pkg.task) {
         const taskInstance = TaskFactory(pkg.task);
@@ -297,13 +315,14 @@ export class BackupAction<TRequired extends boolean = true> {
           package: pkg,
           snapshot,
         });
-        await this.task(
+        const taskResult = await this.task(
           session,
           pkg,
-          pkg.task,
+          taskInstance,
           snapshot,
           (targetPath = result?.targetPath)
         );
+        taskTmpDirs.push(...taskResult.tmpDirs);
       }
 
       const { repoNames, mirrors } = this.splitRepositories(
@@ -312,13 +331,34 @@ export class BackupAction<TRequired extends boolean = true> {
 
       for (const repoName of repoNames) {
         const repo = findRepositoryOrFail(this.config, repoName);
-        await this.backup(session, pkg, repo, snapshot, targetPath);
+        const { tmpDirs } = await this.backup(
+          session,
+          pkg,
+          repo,
+          snapshot,
+          targetPath
+        );
+        if (!this.options.verbose) await rmTmpDir(tmpDirs);
+      }
+
+      if (!this.options.verbose) {
+        await rmTmpDir(taskTmpDirs);
+        if (pkg.path && isTmpDir(pkg.path)) {
+          await rmTmpDir(pkg.path);
+        }
       }
 
       for (const mirror of mirrors) {
         const repo = findRepositoryOrFail(this.config, mirror.sourceName);
         const mirrorRepo = findRepositoryOrFail(this.config, mirror.name);
-        await this.copyBackup(session, pkg, repo, mirrorRepo, snapshot);
+        const { tmpDirs } = await this.copyBackup(
+          session,
+          pkg,
+          repo,
+          mirrorRepo,
+          snapshot
+        );
+        if (!this.options.verbose) await rmTmpDir(tmpDirs);
       }
 
       const error = this.getError(pkg);

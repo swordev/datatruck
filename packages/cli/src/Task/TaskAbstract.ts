@@ -22,9 +22,12 @@ export type RestoreDataType = {
 };
 
 export abstract class TaskAbstract<TConfig = any> {
+  readonly tmpDirs: string[] = [];
   constructor(readonly config: TConfig) {}
   async mkTmpDir(prefix: string, id?: string) {
-    return await mkTmpDir(prefix, id);
+    const dir = await mkTmpDir(prefix, id);
+    this.tmpDirs.push(dir);
+    return dir;
   }
   async onBeforeBackup(
     data: Omit<BackupDataType, "onProgress" | "targetPath">

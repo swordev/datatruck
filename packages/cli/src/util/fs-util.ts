@@ -17,6 +17,7 @@ import {
   chmod,
   chown,
   opendir,
+  rm,
 } from "fs/promises";
 import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
@@ -179,6 +180,21 @@ export function sessionTmpDir() {
   return join(parentTmpDir(), process.pid.toString());
 }
 
+export function isTmpDir(path: string) {
+  return path.startsWith(sessionTmpDir()) && path.includes("datatruck-temp");
+}
+
+export async function rmTmpDir(input: string | string[]) {
+  if (typeof input === "string") {
+    if (!isTmpDir(input)) throw new Error(`Path is not a temp dir: ${input}`);
+    await rm(input, {
+      recursive: true,
+    });
+  } else {
+    for (const path of input) await rmTmpDir(path);
+  }
+}
+
 export function tmpDir(prefix: string, id?: string) {
   if (!id) id = randomUUID().slice(0, 8);
   return join(sessionTmpDir(), `${prefix}-${id}`);
@@ -286,9 +302,10 @@ export function fastglobToGitIgnore(patterns: string[], baseDir: string) {
 
 export async function writeGitIgnoreList(options: {
   paths: NodeJS.ReadableStream | string[];
+  outDir: string;
 }) {
-  const tempDir = await mkTmpDir("gitignore-list");
-  const path = join(tempDir, `.gitignore`);
+  const { outDir } = options;
+  const path = join(outDir, `.gitignore`);
   const stream = createWriteStream(path);
   const dirs = new Set();
   stream.write("*\n");

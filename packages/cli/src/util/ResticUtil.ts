@@ -1,4 +1,4 @@
-import { fastFolderSizeAsync, mkTmpDir } from "./fs-util";
+import { fastFolderSizeAsync } from "./fs-util";
 import { exec, ExecResultType, ExecSettingsInterface } from "./process-util";
 import { formatUri, UriType } from "./string-util";
 import { writeFile, readFile } from "fs/promises";
@@ -213,6 +213,7 @@ export class ResticUtil {
     parent?: string;
     allowEmptySnapshot?: boolean;
     onStream?: (data: BackupStreamType) => void;
+    createEmptyDir?: () => Promise<string>;
   }): Promise<ExecResultType> {
     const exec = async () =>
       await this.exec(
@@ -261,16 +262,18 @@ export class ResticUtil {
           "unable to save snapshot: snapshot is empty"
         )
       ) {
-        const emptyPath = await mkTmpDir("empty");
-        await writeFile(`${emptyPath}/.empty`, "");
-        return await this.backup({
-          ...options,
-          cwd: emptyPath,
-          allowEmptySnapshot: false,
-          paths: ["."],
-          exclude: [],
-          excludeFile: [],
-        });
+        if (options.createEmptyDir) {
+          const emptyPath = await options.createEmptyDir();
+          await writeFile(`${emptyPath}/.empty`, "");
+          return await this.backup({
+            ...options,
+            cwd: emptyPath,
+            allowEmptySnapshot: false,
+            paths: ["."],
+            exclude: [],
+            excludeFile: [],
+          });
+        }
       }
       throw error;
     }
