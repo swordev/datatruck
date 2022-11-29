@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.16.2
+
+### Patch Changes
+
+- [`14865df`](https://github.com/swordev/datatruck/commit/14865df18b784d756aa1b4896f59ca6310eaeca4) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
+- [`d91e6f8`](https://github.com/swordev/datatruck/commit/d91e6f8a024b14a15f9b9b97d5adc9b21c821a76) Thanks [@juanrgm](https://github.com/juanrgm)! - Delete temporary directories
+
 ## 0.16.1
 
 ### Patch Changes
