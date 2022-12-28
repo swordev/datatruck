@@ -1,5 +1,17 @@
 # @datatruck/cli
 
+## 0.17.0
+
+### Minor Changes
+
+- [`821096f`](https://github.com/swordev/datatruck/commit/821096f67cd3bcce310b8e42fc7ccda109b42672) Thanks [@juanrgm](https://github.com/juanrgm)! - Add grouping by id in `snapshots` command
+
+### Patch Changes
+
+- [`5a5e9c6`](https://github.com/swordev/datatruck/commit/5a5e9c62f3b6afded36d949c3149d475da17751b) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
+- [`b9fbbc9`](https://github.com/swordev/datatruck/commit/b9fbbc98ca147ae9a88b214586ef722a9212116b) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix filter by repository
+
 ## 0.16.2
 
 ### Patch Changes
