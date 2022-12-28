@@ -33,7 +33,12 @@ export class SnapshotsCommand extends CommandAbstract<
   SnapshotsCommandOptionsType<true>
 > {
   override onOptions() {
-    const groupByValues = ["packageName", "repositoryName", "repositoryType"];
+    const groupByValues = [
+      "id",
+      "packageName",
+      "repositoryName",
+      "repositoryType",
+    ];
     return this.returnsOptions({
       groupBy: {
         option: "-g,--group-by <values>",
