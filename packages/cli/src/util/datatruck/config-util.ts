@@ -25,7 +25,7 @@ export function filterRepository(
   const enabled = repository.enabled ?? true;
   if (typeof enabled === "boolean") return enabled;
   const defaults = enabled["defaults"] ?? true;
-  return action ? enabled[action] ?? defaults : defaults;
+  return action ? enabled[action] ?? defaults : true;
 }
 
 export function filterPackages(
