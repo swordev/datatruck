@@ -80,7 +80,7 @@ function makeCommandAction<T>(command: CommandEnum) {
         }
       }
     }
-    process.exit(exitCode);
+    process.stdout.write("", () => process.exit(exitCode));
   };
 }
 
