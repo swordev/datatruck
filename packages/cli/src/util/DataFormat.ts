@@ -30,8 +30,12 @@ export class DataFormat<TItem extends Record<string, unknown>> {
   protected formatToPrettyJson() {
     return formatWithOptions(
       {
-        colors: true,
         depth: Infinity,
+        colors: true,
+        maxArrayLength: Infinity,
+        maxStringLength: Infinity,
+        breakLength: Infinity,
+        compact: false,
       },
       this.options.items
     );
