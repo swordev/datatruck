@@ -7,11 +7,11 @@ import {
   OptionsMapType,
 } from "./Factory/CommandFactory";
 import globalData from "./globalData";
-import { FormatType } from "./util/DataFormat";
-import { OptionsType, showCursorCommand } from "./util/cli-util";
-import { sessionTmpDir, parsePackageFile } from "./util/fs-util";
-import { onExit } from "./util/process-util";
-import { snakeCase } from "./util/string-util";
+import { FormatType } from "./utils/DataFormat";
+import { OptionsType, showCursorCommand } from "./utils/cli";
+import { sessionTmpDir, parsePackageFile } from "./utils/fs";
+import { onExit } from "./utils/process";
+import { snakeCase } from "./utils/string";
 import { red } from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";

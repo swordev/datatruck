@@ -1,6 +1,6 @@
-import { fastFolderSizeAsync } from "./fs-util";
-import { exec, ExecResultType, ExecSettingsInterface } from "./process-util";
-import { formatUri, UriType } from "./string-util";
+import { fastFolderSizeAsync } from "./fs";
+import { exec, ExecResultType, ExecSettingsInterface } from "./process";
+import { formatUri, UriType } from "./string";
 import { writeFile, readFile } from "fs/promises";
 import { resolve } from "path";
 
@@ -43,7 +43,7 @@ export type BackupStreamType =
       snapshot_id: string;
     };
 
-export class ResticUtil {
+export class Restic {
   constructor(
     readonly options: {
       log?: boolean;

@@ -1,5 +1,5 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { exec } from "../util/process-util";
+import { exec } from "../utils/process";
 import {
   SqlDumpTaskAbstract,
   SqlDumpTaskConfigType,

@@ -1,9 +1,9 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { SnapshotsAction } from "../Action/SnapshotsAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { DataFormat } from "../util/DataFormat";
-import { parseStringList } from "../util/string-util";
-import { If, Unwrap } from "../util/ts-util";
+import { DataFormat } from "../utils/DataFormat";
+import { parseStringList } from "../utils/string";
+import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 import prettyBytes from "pretty-bytes";
 

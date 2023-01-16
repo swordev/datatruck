@@ -1,15 +1,15 @@
 import { AppError } from "../Error/AppError";
-import { GitUtil } from "../util/GitUtil";
-import { logExec } from "../util/cli-util";
-import { parsePaths } from "../util/datatruck/paths-util";
+import { Git } from "../utils/Git";
+import { logExec } from "../utils/cli";
+import { parsePaths } from "../utils/datatruck/paths";
 import {
   existsDir,
   fastFolderSizeAsync,
   mkdirIfNotExists,
   parsePackageFile,
   tmpDir,
-} from "../util/fs-util";
-import { checkMatch, makePathPatterns } from "../util/string-util";
+} from "../utils/fs";
+import { checkMatch, makePathPatterns } from "../utils/string";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -94,7 +94,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
   }
 
   override async onInit(data: InitDataType) {
-    const git = new GitUtil({
+    const git = new Git({
       dir: tmpDir(GitRepository.name + "-snapshot"),
       log: data.options.verbose,
     });
@@ -124,7 +124,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     }
   }
   override async onPrune(data: PruneDataType) {
-    const git = new GitUtil({
+    const git = new Git({
       dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
       log: data.options.verbose,
     });
@@ -151,7 +151,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     await git.exec(["push", "--delete", "origin", data.snapshot.originalId]);
   }
   override async onSnapshots(data: SnapshotsDataType) {
-    const git = new GitUtil({
+    const git = new Git({
       dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
       log: data.options.verbose,
     });
@@ -211,7 +211,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     const tmpPath = await this.mkTmpDir(GitRepository.name + "-backup");
     const branchName = GitRepository.buildBranchName(data.package.name);
 
-    const git = new GitUtil({
+    const git = new Git({
       dir: tmpPath,
       log: data.options.verbose,
     });
@@ -312,7 +312,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       package: data.package.name,
     });
 
-    const git = new GitUtil({
+    const git = new Git({
       dir: restorePath,
       log: data.options.verbose,
     });

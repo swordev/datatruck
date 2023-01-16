@@ -1,9 +1,9 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { DataFormat } from "../util/DataFormat";
-import { filterPackages } from "../util/datatruck/config-util";
-import { parseStringList } from "../util/string-util";
-import { If } from "../util/ts-util";
+import { DataFormat } from "../utils/DataFormat";
+import { filterPackages } from "../utils/datatruck/config";
+import { parseStringList } from "../utils/string";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type ConfigCommandOptionsType<TResolved = false> = {

@@ -1,4 +1,4 @@
-import { filterByLast } from "../../src/util/date-util";
+import { filterByLast } from "../../src/utils/date";
 
 const makeDates = (dates: string[]) => dates.map((d) => ({ date: d }));
 describe("filterByLast", () => {

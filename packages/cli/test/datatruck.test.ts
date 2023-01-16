@@ -1,6 +1,6 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
-import { parentTmpDir } from "../src/util/fs-util";
+import { parentTmpDir } from "../src/utils/fs";
 import { expectSuccessBackup, expectSuccessRestore } from "./expect";
 import {
   makeConfig,

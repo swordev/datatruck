@@ -1,7 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { readPartialFile } from "../util/fs-util";
-import { exec, logExecStdout } from "../util/process-util";
+import { readPartialFile } from "../utils/fs";
+import { exec, logExecStdout } from "../utils/process";
 import {
   SqlDumpTaskAbstract,
   SqlDumpTaskConfigType,

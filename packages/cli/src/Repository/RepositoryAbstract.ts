@@ -7,8 +7,8 @@ import type {
 } from "../Action/SnapshotsAction";
 import type { PackageConfigType } from "../Config/PackageConfig";
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { mkTmpDir } from "../util/fs-util";
-import { Progress } from "../util/progress";
+import { mkTmpDir } from "../utils/fs";
+import { Progress } from "../utils/progress";
 
 export type SnapshotType = {
   id: string;

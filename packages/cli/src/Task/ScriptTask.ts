@@ -1,7 +1,7 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { ensureEmptyDir, mkdirIfNotExists } from "../util/fs-util";
-import { exec } from "../util/process-util";
-import { render } from "../util/string-util";
+import { ensureEmptyDir, mkdirIfNotExists } from "../utils/fs";
+import { exec } from "../utils/process";
+import { render } from "../utils/string";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { writeFile } from "fs/promises";

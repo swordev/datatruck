@@ -9,7 +9,7 @@ import {
   serialize,
   snakeCase,
   ucfirst,
-} from "../../src/util/string-util";
+} from "../../src/utils/string";
 
 describe("checkMatch", () => {
   const subjects = ["", "a", "b", "c/d"];

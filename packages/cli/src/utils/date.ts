@@ -1,4 +1,4 @@
-import { formatSeconds } from "./string-util";
+import { formatSeconds } from "./string";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import isoWeek from "dayjs/plugin/isoWeek";

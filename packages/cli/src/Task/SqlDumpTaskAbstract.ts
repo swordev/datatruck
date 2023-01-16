@@ -1,10 +1,10 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { logExec } from "../util/cli-util";
-import { resolveDatabaseName } from "../util/datatruck/config-util";
-import { checkDir, readDir } from "../util/fs-util";
-import { progressPercent } from "../util/math-util";
-import { exec } from "../util/process-util";
+import { logExec } from "../utils/cli";
+import { resolveDatabaseName } from "../utils/datatruck/config";
+import { checkDir, readDir } from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { mkdir, readFile } from "fs/promises";

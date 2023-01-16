@@ -1,5 +1,5 @@
 import globalData from "../globalData";
-import { rootPath } from "./path-util";
+import { rootPath } from "./path";
 import { eachLimit } from "async";
 import { randomUUID } from "crypto";
 import fastFolderSize from "fast-folder-size";

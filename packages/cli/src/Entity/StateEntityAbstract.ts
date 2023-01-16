@@ -1,4 +1,4 @@
-import { Progress } from "../util/progress";
+import { Progress } from "../utils/progress";
 import { CrudEntityAbstract } from "./CrudEntityAbstract";
 
 export abstract class StateEntityAbstract extends CrudEntityAbstract {

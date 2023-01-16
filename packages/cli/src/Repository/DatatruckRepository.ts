@@ -1,7 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { logExec } from "../util/cli-util";
-import { parsePaths } from "../util/datatruck/paths-util";
+import { logExec } from "../utils/cli";
+import { parsePaths } from "../utils/datatruck/paths";
 import {
   applyPermissions,
   checkDir,
@@ -14,11 +14,11 @@ import {
   pathIterator,
   readDir,
   waitForClose,
-} from "../util/fs-util";
-import { progressPercent } from "../util/math-util";
-import { Progress } from "../util/progress";
-import { checkMatch, checkPath, makePathPatterns } from "../util/string-util";
-import { listZip, unzip, zip } from "../util/zip-util";
+} from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { Progress } from "../utils/progress";
+import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
+import { listZip, unzip, zip } from "../utils/zip";
 import {
   RepositoryAbstract,
   BackupDataType,

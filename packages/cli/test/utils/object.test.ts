@@ -3,7 +3,7 @@ import {
   groupBy,
   merge,
   push,
-} from "../../src/util/object-util";
+} from "../../src/utils/object";
 
 describe("getErrorProperties", () => {
   it("returns error properties", () => {

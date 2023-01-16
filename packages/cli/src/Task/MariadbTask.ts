@@ -1,8 +1,8 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { logExec } from "../util/cli-util";
-import { forEachFile, mkdirIfNotExists, readDir } from "../util/fs-util";
-import { progressPercent } from "../util/math-util";
-import { exec } from "../util/process-util";
+import { logExec } from "../utils/cli";
+import { forEachFile, mkdirIfNotExists, readDir } from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { ChildProcess } from "child_process";

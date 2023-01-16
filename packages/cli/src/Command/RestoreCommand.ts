@@ -4,8 +4,8 @@ import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { ConsoleSessionDriver } from "../SessionDriver/ConsoleSessionDriver";
 import { SqliteSessionDriver } from "../SessionDriver/SqliteSessionDriver";
 import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
-import { parseStringList } from "../util/string-util";
-import { If } from "../util/ts-util";
+import { parseStringList } from "../utils/string";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type RestoreCommandOptionsType<TResolved = false> = {

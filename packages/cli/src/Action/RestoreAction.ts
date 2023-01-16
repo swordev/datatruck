@@ -11,21 +11,16 @@ import {
 } from "../Repository/RepositoryAbstract";
 import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
 import { TaskAbstract } from "../Task/TaskAbstract";
-import { logExec } from "../util/cli-util";
+import { logExec } from "../utils/cli";
 import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
-} from "../util/datatruck/config-util";
-import {
-  isDirEmpty,
-  isTmpDir,
-  mkdirIfNotExists,
-  rmTmpDir,
-} from "../util/fs-util";
-import { push } from "../util/object-util";
-import { exec } from "../util/process-util";
-import { IfRequireKeys } from "../util/ts-util";
+} from "../utils/datatruck/config";
+import { isDirEmpty, isTmpDir, mkdirIfNotExists, rmTmpDir } from "../utils/fs";
+import { push } from "../utils/object";
+import { exec } from "../utils/process";
+import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
 import { platform } from "os";

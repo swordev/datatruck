@@ -7,8 +7,8 @@ import {
   WriteDataType,
   EntityEnum,
 } from "../SessionDriver/SessionDriverAbstract";
-import { ObjectVault } from "../util/ObjectVault";
-import { Progress } from "../util/progress";
+import { ObjectVault } from "../utils/ObjectVault";
+import { Progress } from "../utils/progress";
 import SessionManagerAbstract from "./SessionManagerAbstract";
 
 export class RestoreSessionManager extends SessionManagerAbstract {

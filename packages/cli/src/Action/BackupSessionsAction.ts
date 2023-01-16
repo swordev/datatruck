@@ -1,7 +1,7 @@
 import type { ConfigType } from "../Config/Config";
 import { ReadDataType } from "../SessionDriver/SessionDriverAbstract";
 import { BackupSessionManager } from "../SessionManager/BackupSessionManager";
-import { IfRequireKeys } from "../util/ts-util";
+import { IfRequireKeys } from "../utils/ts";
 
 export type BackupSessionsActionOptionsType = ReadDataType & {
   verbose?: boolean;

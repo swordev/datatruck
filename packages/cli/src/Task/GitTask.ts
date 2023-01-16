@@ -1,5 +1,5 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { logExec } from "../util/cli-util";
+import { logExec } from "../utils/cli";
 import {
   checkDir,
   checkFile,
@@ -7,9 +7,9 @@ import {
   ensureEmptyDir,
   forEachFile,
   mkdirIfNotExists,
-} from "../util/fs-util";
-import { progressPercent } from "../util/math-util";
-import { exec } from "../util/process-util";
+} from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { createWriteStream } from "fs";

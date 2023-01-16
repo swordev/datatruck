@@ -2,10 +2,10 @@ import { ConfigAction } from "../Action/ConfigAction";
 import { PruneAction } from "../Action/PruneAction";
 import { SnapshotGroupByType } from "../Action/SnapshotsAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { DataFormat } from "../util/DataFormat";
-import { confirm } from "../util/cli-util";
-import { parseStringList } from "../util/string-util";
-import { If } from "../util/ts-util";
+import { DataFormat } from "../utils/DataFormat";
+import { confirm } from "../utils/cli";
+import { parseStringList } from "../utils/string";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type PruneCommandOptionsType<TResolved = false> = {

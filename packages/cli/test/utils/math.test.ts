@@ -1,4 +1,4 @@
-import { progressPercent } from "../../src/util/math-util";
+import { progressPercent } from "../../src/utils/math";
 
 describe("progressPercent", () => {
   test("returns cero", () => {

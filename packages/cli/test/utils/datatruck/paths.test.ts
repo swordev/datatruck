@@ -1,4 +1,4 @@
-import { parsePaths } from "../../../src/util/datatruck/paths-util";
+import { parsePaths } from "../../../src/utils/datatruck/paths";
 import { platform } from "os";
 
 describe("parsePaths", () => {

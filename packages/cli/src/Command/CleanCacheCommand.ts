@@ -1,5 +1,5 @@
 import { CleanCacheAction } from "../Action/CleanCacheAction";
-import { parentTmpDir } from "../util/fs-util";
+import { parentTmpDir } from "../utils/fs";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type CleanCacheCommandOptionsType<TResolved = false> = {};

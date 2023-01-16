@@ -1,11 +1,11 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { InitAction } from "../Action/InitAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { DataFormat } from "../util/DataFormat";
-import { errorColumn, resultColumn } from "../util/cli-util";
-import { getErrorProperties } from "../util/object-util";
-import { parseStringList } from "../util/string-util";
-import { If, Unwrap } from "../util/ts-util";
+import { DataFormat } from "../utils/DataFormat";
+import { errorColumn, resultColumn } from "../utils/cli";
+import { getErrorProperties } from "../utils/object";
+import { parseStringList } from "../utils/string";
+import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type InitCommandOptionsType<TResolved = false> = {

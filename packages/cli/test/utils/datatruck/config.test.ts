@@ -7,7 +7,7 @@ import {
   resolvePackagePath,
   resolveDatabaseName,
   params,
-} from "../../../src/util/datatruck/config-util";
+} from "../../../src/utils/datatruck/config";
 
 describe("filterPackages", () => {
   const config: ConfigType = {

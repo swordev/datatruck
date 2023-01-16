@@ -5,8 +5,8 @@ import { AppError } from "../Error/AppError";
 import { ConsoleSessionDriver } from "../SessionDriver/ConsoleSessionDriver";
 import { SqliteSessionDriver } from "../SessionDriver/SqliteSessionDriver";
 import { BackupSessionManager } from "../SessionManager/BackupSessionManager";
-import { parseStringList } from "../util/string-util";
-import { If } from "../util/ts-util";
+import { parseStringList } from "../utils/string";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type BackupCommandOptionsType<TResolved = false> = {

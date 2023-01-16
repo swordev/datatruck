@@ -2,8 +2,8 @@ import { BackupActionOptionsType } from "../Action/BackupAction";
 import { RestoreActionOptionsType } from "../Action/RestoreAction";
 import { PackageConfigType } from "../Config/PackageConfig";
 import { SnapshotType } from "../Repository/RepositoryAbstract";
-import { mkTmpDir } from "../util/fs-util";
-import { Progress } from "../util/progress";
+import { mkTmpDir } from "../utils/fs";
+import { Progress } from "../utils/progress";
 
 export type BackupDataType = {
   onProgress: (data: Progress) => Promise<void>;

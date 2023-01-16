@@ -1,9 +1,9 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
-import { groupAndFilter } from "../util/datatruck/snapshot-util";
-import { groupBy } from "../util/object-util";
-import { IfRequireKeys } from "../util/ts-util";
+import { groupAndFilter } from "../utils/datatruck/snapshot";
+import { groupBy } from "../utils/object";
+import { IfRequireKeys } from "../utils/ts";
 import {
   SnapshotExtendedType,
   SnapshotsAction,

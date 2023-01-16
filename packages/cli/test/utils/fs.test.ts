@@ -4,7 +4,7 @@ import {
   rmTmpDir,
   sessionTmpDir,
   tmpDir,
-} from "../../src/util/fs-util";
+} from "../../src/utils/fs";
 import { randomBytes } from "crypto";
 import { mkdir, rmdir } from "fs/promises";
 import { tmpdir } from "os";

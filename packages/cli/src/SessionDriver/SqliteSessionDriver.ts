@@ -3,10 +3,10 @@ import { BackupSessionEntity } from "../Entity/BackupSessionEntity";
 import { BackupSessionRepositoryEntity } from "../Entity/BackupSessionRepositoryEntity";
 import { RestoreSessionEntity } from "../Entity/RestoreSessionEntity";
 import { RestoreSessionRepositoryEntity } from "../Entity/RestoreSessionRepositoryEntity";
-import { logExec } from "../util/cli-util";
-import { makeTableSelector } from "../util/entity-util";
-import { rootPath } from "../util/path-util";
-import { logExecStdout } from "../util/process-util";
+import { logExec } from "../utils/cli";
+import { makeTableSelector } from "../utils/entity";
+import { rootPath } from "../utils/path";
+import { logExecStdout } from "../utils/process";
 import {
   ActionEnum,
   WriteDataType,

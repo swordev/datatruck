@@ -1,7 +1,7 @@
 import { ConfigType } from "../Config/Config";
-import { FormatType } from "../util/DataFormat";
-import { OptionsType, parseOptions } from "../util/cli-util";
-import { SimilarObject } from "../util/ts-util";
+import { FormatType } from "../utils/DataFormat";
+import { OptionsType, parseOptions } from "../utils/cli";
+import { SimilarObject } from "../utils/ts";
 
 export type GlobalOptionsType<TResolved = false> = {
   config: string | ConfigType;

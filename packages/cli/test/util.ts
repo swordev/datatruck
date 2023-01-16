@@ -3,7 +3,7 @@ import {
   RepositoryConfigType,
   RepositoryConfigTypeType,
 } from "../src/Config/RepositoryConfig";
-import { mkTmpDir, writeJSONFile } from "../src/util/fs-util";
+import { mkTmpDir, writeJSONFile } from "../src/utils/fs";
 import "./toEqualMessage";
 import FastGlob from "fast-glob";
 import { mkdir, readFile, rm, writeFile } from "fs/promises";

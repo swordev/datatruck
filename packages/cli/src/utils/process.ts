@@ -1,6 +1,6 @@
-import { logExec } from "./cli-util";
-import { checkDir } from "./fs-util";
-import { progressPercent } from "./math-util";
+import { logExec } from "./cli";
+import { checkDir } from "./fs";
+import { progressPercent } from "./math";
 import chalk from "chalk";
 import { SpawnOptions, spawn, ChildProcess } from "child_process";
 import { ReadStream, WriteStream } from "fs";

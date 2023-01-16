@@ -7,9 +7,9 @@ import {
   renderSpinner,
   showCursorCommand,
   truncate,
-} from "../util/cli-util";
-import { createChron } from "../util/date-util";
-import { Progress, ProgressStats } from "../util/progress";
+} from "../utils/cli";
+import { createChron } from "../utils/date";
+import { Progress, ProgressStats } from "../utils/progress";
 import {
   ActionEnum,
   WriteDataType,

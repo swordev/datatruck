@@ -1,5 +1,5 @@
-import { existsDir, parentTmpDir } from "../util/fs-util";
-import { IfRequireKeys } from "../util/ts-util";
+import { existsDir, parentTmpDir } from "../utils/fs";
+import { IfRequireKeys } from "../utils/ts";
 import { rm } from "fs/promises";
 
 export type CleanCacheActionOptionsType = {

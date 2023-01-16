@@ -1,7 +1,7 @@
-import { checkDir, isLocalDir, readDir } from "./fs-util";
-import { exec, ExecSettingsInterface } from "./process-util";
+import { checkDir, isLocalDir, readDir } from "./fs";
+import { exec, ExecSettingsInterface } from "./process";
 
-export class GitUtil {
+export class Git {
   constructor(
     readonly options: {
       dir: string;

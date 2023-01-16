@@ -14,9 +14,9 @@ import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
-} from "../util/datatruck/config-util";
-import { isTmpDir, rmTmpDir } from "../util/fs-util";
-import { IfRequireKeys } from "../util/ts-util";
+} from "../utils/datatruck/config";
+import { isTmpDir, rmTmpDir } from "../utils/fs";
+import { IfRequireKeys } from "../utils/ts";
 import { randomUUID } from "crypto";
 
 export type BackupActionOptionsType = {

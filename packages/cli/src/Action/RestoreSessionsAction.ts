@@ -1,7 +1,7 @@
 import type { ConfigType } from "../Config/Config";
 import { ReadDataType } from "../SessionDriver/SessionDriverAbstract";
 import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
-import { IfRequireKeys } from "../util/ts-util";
+import { IfRequireKeys } from "../utils/ts";
 
 export type RestoreSessionsActionOptionsType = ReadDataType & {
   verbose?: boolean;

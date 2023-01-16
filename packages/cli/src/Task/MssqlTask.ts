@@ -1,8 +1,8 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { resolveDatabaseName } from "../util/datatruck/config-util";
-import { mkdirIfNotExists, readDir } from "../util/fs-util";
-import { exec } from "../util/process-util";
+import { resolveDatabaseName } from "../utils/datatruck/config";
+import { mkdirIfNotExists, readDir } from "../utils/fs";
+import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { readFile } from "fs/promises";

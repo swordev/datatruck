@@ -2,10 +2,10 @@ import { BackupSessionsAction } from "../Action/BackupSessionsAction";
 import { ConfigAction } from "../Action/ConfigAction";
 import { SqliteSessionDriver } from "../SessionDriver/SqliteSessionDriver";
 import { BackupSessionManager } from "../SessionManager/BackupSessionManager";
-import { DataFormat } from "../util/DataFormat";
-import { errorColumn, resultColumn } from "../util/cli-util";
-import { formatDateTime, parseStringList } from "../util/string-util";
-import { If } from "../util/ts-util";
+import { DataFormat } from "../utils/DataFormat";
+import { errorColumn, resultColumn } from "../utils/cli";
+import { formatDateTime, parseStringList } from "../utils/string";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type BackupSessionsCommandOptionsType<TResolved = false> = {

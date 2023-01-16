@@ -1,7 +1,7 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryFactory } from "../Factory/RepositoryFactory";
-import { filterRepository } from "../util/datatruck/config-util";
-import { IfRequireKeys } from "../util/ts-util";
+import { filterRepository } from "../utils/datatruck/config";
+import { IfRequireKeys } from "../utils/ts";
 
 export type InitActionOptionsType = {
   repositoryNames?: string[];

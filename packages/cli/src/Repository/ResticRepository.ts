@@ -1,16 +1,16 @@
 import { AppError } from "../Error/AppError";
-import { RepositoryType, ResticUtil } from "../util/ResticUtil";
-import { logExec } from "../util/cli-util";
-import { parsePaths } from "../util/datatruck/paths-util";
+import { RepositoryType, Restic } from "../utils/Restic";
+import { logExec } from "../utils/cli";
+import { parsePaths } from "../utils/datatruck/paths";
 import {
   fastglobToGitIgnore,
   mkdirIfNotExists,
   parsePackageFile,
   writeGitIgnoreList,
-} from "../util/fs-util";
-import { progressPercent } from "../util/math-util";
-import { Progress } from "../util/progress";
-import { checkMatch, formatUri, makePathPatterns } from "../util/string-util";
+} from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { Progress } from "../utils/progress";
+import { checkMatch, formatUri, makePathPatterns } from "../utils/string";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -118,9 +118,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       ...(typeof this.config.password === "string"
         ? { RESTIC_PASSWORD: this.config.password }
         : { RESTIC_PASSWORD_FILE: resolve(this.config.password.path) }),
-      RESTIC_REPOSITORY: await ResticUtil.formatRepository(
-        this.config.repository
-      ),
+      RESTIC_REPOSITORY: await Restic.formatRepository(this.config.repository),
     });
   }
 
@@ -163,7 +161,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async onInit(data: InitDataType) {
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
@@ -175,7 +173,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async onSnapshots(data: SnapshotsDataType) {
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
@@ -216,7 +214,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   async onPrune(data: PruneDataType) {
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
@@ -229,7 +227,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   override async onBackup(
     data: BackupDataType<ResticPackageRepositoryConfigType>
   ) {
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
@@ -444,15 +442,13 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     if (!snapshot) throw new AppError(`Snapshot not found`);
 
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: {
         ...(await this.buildEnv()),
         ...(typeof config.password === "string"
           ? { RESTIC_PASSWORD2: config.password }
           : { RESTIC_PASSWORD_FILE2: resolve(config.password.path) }),
-        RESTIC_REPOSITORY2: await ResticUtil.formatRepository(
-          config.repository
-        ),
+        RESTIC_REPOSITORY2: await Restic.formatRepository(config.repository),
       },
       log: data.options.verbose,
     });
@@ -468,7 +464,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     ok(restorePath);
 
-    const restic = new ResticUtil({
+    const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });

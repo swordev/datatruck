@@ -1,5 +1,5 @@
 import { PathsObjectType } from "../../Config/PackageConfig";
-import { exec } from "../process-util";
+import { exec } from "../process";
 
 export async function parsePaths(
   values: (string | PathsObjectType)[],
