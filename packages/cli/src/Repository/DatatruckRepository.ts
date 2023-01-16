@@ -8,6 +8,7 @@ import {
   cpy,
   fastFolderSizeAsync,
   isEmptyDir,
+  isNotFoundError,
   mkdirIfNotExists,
   parsePackageFile,
   pathIterator,
@@ -149,9 +150,15 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return join(this.config.outPath, snapshotName, packageName) + ".meta.json";
   }
 
-  static async parseMetaData(path: string) {
-    const contents = await readFile(path);
-    return JSON.parse(contents.toString()) as MetaDataType;
+  static async parseMetaData(path: string): Promise<MetaDataType | undefined> {
+    let contents: Buffer;
+    try {
+      contents = await readFile(path);
+    } catch (error) {
+      if (isNotFoundError(error)) return;
+      throw error;
+    }
+    return JSON.parse(contents.toString());
   }
 
   static stringifyMetaData(data: MetaDataType) {
@@ -291,6 +298,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
       const metaPath = join(this.config.outPath, snapshotName, "meta.json");
       const meta = await DatatruckRepository.parseMetaData(metaPath);
+
+      if (!meta) continue;
 
       if (taskPatterns && !checkMatch(meta.task, taskPatterns)) continue;
 
