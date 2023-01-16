@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.17.2
+
+### Patch Changes
+
+- [`27b7260`](https://github.com/swordev/datatruck/commit/27b726075a0e81769b841c4ce4c8b508f55f0bde) Thanks [@juanrgm](https://github.com/juanrgm)! - Ignore uncompleted snapshots
+
 ## 0.17.1
 
 ### Patch Changes
