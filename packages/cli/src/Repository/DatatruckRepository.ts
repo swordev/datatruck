@@ -504,12 +504,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         filter: [{ patterns: [packPath] }],
         verbose: data.options.verbose,
         onProgress: async (progress) =>
-          await scanner.progress(
-            progress.type === "start"
-              ? "Starting compressing"
-              : "Compressing file",
-            progress
-          ),
+          await scanner.progress("Compressing file", progress),
       });
     }
 
@@ -527,12 +522,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         includeList: packStream.path.toString(),
         verbose: data.options.verbose,
         onProgress: async (progress) =>
-          await scanner.progress(
-            progress.type === "start"
-              ? "Starting compressing"
-              : "Compressing file",
-            progress
-          ),
+          await scanner.progress("Compressing file", progress),
       });
     }
 
@@ -683,12 +673,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           output: restorePath,
           verbose: data.options.verbose,
           onProgress: async (progress) =>
-            await scanner.progress(
-              progress.type === "start"
-                ? "Starting extracting"
-                : "Extracting file",
-              progress
-            ),
+            await scanner.progress("Extracting file", progress),
         });
       }
     }
