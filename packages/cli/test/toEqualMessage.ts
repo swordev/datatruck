@@ -1,3 +1,5 @@
+import { expect } from "vitest";
+
 expect.extend({
   toEqualMessage(received, expected, custom) {
     let pass = true;
@@ -17,13 +19,14 @@ expect.extend({
   },
 });
 
+interface CustomMatchers<R = unknown> {
+  toEqualMessage(a: unknown, b: string): R;
+}
+
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace jest {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    interface Matchers<R> {
-      toEqualMessage(a: unknown, b: string): R;
-    }
+  namespace Vi {
+    interface Assertion extends CustomMatchers {}
+    interface AsymmetricMatchersContaining extends CustomMatchers {}
   }
 }
 

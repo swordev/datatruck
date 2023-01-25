@@ -4,6 +4,7 @@ import {
   merge,
   push,
 } from "../../src/utils/object";
+import { describe, expect, it } from "vitest";
 
 describe("getErrorProperties", () => {
   it("returns error properties", () => {

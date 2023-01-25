@@ -1,5 +1,6 @@
 import { parsePaths } from "../../../src/utils/datatruck/paths";
 import { platform } from "os";
+import { describe, expect, it } from "vitest";
 
 describe("parsePaths", () => {
   it("returns same input", async () => {

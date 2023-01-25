@@ -9,6 +9,7 @@ import { randomBytes } from "crypto";
 import { mkdir, rmdir } from "fs/promises";
 import { tmpdir } from "os";
 import { join, normalize } from "path";
+import { describe, expect, test } from "vitest";
 
 describe("isTmpDir", () => {
   test("returns false", () => {

@@ -1,4 +1,5 @@
 import { progressPercent } from "../../src/utils/math";
+import { describe, expect, test } from "vitest";
 
 describe("progressPercent", () => {
   test("returns cero", () => {

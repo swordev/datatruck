@@ -10,6 +10,7 @@ import {
   snakeCase,
   ucfirst,
 } from "../../src/utils/string";
+import { describe, expect, it } from "vitest";
 
 describe("checkMatch", () => {
   const subjects = ["", "a", "b", "c/d"];

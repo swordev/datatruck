@@ -9,6 +9,7 @@ import {
   readFiles,
 } from "./util";
 import { rm } from "fs/promises";
+import { expect } from "vitest";
 
 export async function expectSuccessBackup(data: {
   configPath: string;
