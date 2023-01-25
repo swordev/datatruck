@@ -7,7 +7,7 @@
     "watch": "tsc -b -w"
   },
   "dependencies": {
-    "ajv": "^8.11.2",
+    "ajv": "^8.12.0",
     "async": "^3.2.4",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
@@ -28,7 +28,7 @@
   },
   "optionalDependencies": {
     "ts-node": "^10.9.1",
-    "yaml": "^2.2.0"
+    "yaml": "^2.2.1"
   },
   "publishConfig": {
     "directory": "lib"
