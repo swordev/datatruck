@@ -9,7 +9,8 @@ RUN apk add --no-cache \
     mariadb-client \
     mariadb-backup \
     postgresql-client \
-    python3
+    python3 \
+    pigz
 
 ENV NODE_PATH=/usr/local/lib/node_modules
 ARG BIN_PATH=/usr/local/bin/datatruck

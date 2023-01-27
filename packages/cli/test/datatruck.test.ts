@@ -70,19 +70,18 @@ const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
     },
   ] as FileChanges[];
 
-afterAll(async () => {
-  try {
-    await rm(parentTmpDir(), {
-      recursive: true,
-    });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-  }
-});
-
 describe(
   "datatruck",
   () => {
+    afterAll(async () => {
+      try {
+        await rm(parentTmpDir(), {
+          recursive: true,
+        });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    });
     it("returns config", async () => {
       const configPath = await makeConfig({
         repositories: [

@@ -76,6 +76,100 @@ export type ExecResultType = {
   exitCode: number;
 };
 
+export type ParseStreamDataOptions<S extends boolean = boolean> = {
+  save?: S;
+  parseLines?: boolean;
+  log?: LogProcessOptions | boolean;
+  onData?: (data: string) => void;
+};
+
+export function parseStreamData<S extends boolean>(
+  stream: Readable,
+  options: ParseStreamDataOptions<S> = {}
+): Promise<S extends true ? string : undefined> {
+  const log = options.log === true ? {} : options.log;
+  let result: string | undefined;
+
+  if (options.save) result = "";
+
+  return new Promise<any>((resolve, reject) => {
+    const lines = options.parseLines;
+    const onData = (data: Buffer | string) => {
+      if (options.onData) options.onData(data.toString());
+      if (log)
+        logExecStdout({
+          data: lines ? `${data}\n` : data.toString(),
+          stderr: log.toStderr,
+          colorize: log.colorize,
+        });
+      if (options?.save) result += data.toString();
+    };
+    if (lines) {
+      const rl = createInterface({
+        input: stream,
+      });
+      rl.on("line", onData).on("close", () => resolve(result));
+    } else {
+      stream
+        .on("data", onData)
+        .on("error", reject)
+        .once("close", () => resolve(result));
+    }
+  });
+}
+
+type OnExitCode =
+  | OnExitCodeValue
+  | ((code: number) => OnExitCodeValue | void | undefined);
+type OnExitCodeValue = Error | string | number | boolean;
+
+export function waitForClose<O extends boolean, E extends boolean>(
+  p: ChildProcess,
+  options: {
+    strict?: boolean;
+    stdout?: O;
+    stderr?: E;
+    onExitCode?: OnExitCode;
+  } = {}
+): Promise<
+  { exitCode: number } & (O extends true ? { stdout: string } : {}) &
+    (E extends true ? { stderr: string } : {})
+> {
+  return new Promise<any>((resolve, reject) => {
+    let result: any = {
+      exitCode: 1,
+    };
+    if (options.stdout) {
+      result.stdout = "";
+      p.stdout!.on(
+        "data",
+        (data: Buffer) => (result.stdout += data.toString())
+      );
+    }
+    p.once("error", reject).once("close", (exitCode) => {
+      if (exitCode) {
+        let onExitCode = options.onExitCode ?? true;
+        if (typeof onExitCode === "function") {
+          onExitCode = onExitCode(exitCode!)!;
+        }
+        if (typeof onExitCode === "string") {
+          reject(new Error(onExitCode));
+        } else if (typeof onExitCode === "number") {
+          reject(new Error(`Exit code: ${onExitCode}`));
+        } else if (onExitCode instanceof Error) {
+          reject(onExitCode);
+        } else if (onExitCode === false) {
+          resolve({ ...result, exitCode: exitCode! });
+        } else {
+          reject(new Error(`Exit code: ${exitCode}`));
+        }
+      } else {
+        resolve({ ...result, exitCode: exitCode! });
+      }
+    });
+  });
+}
+
 export type LogProcessOptions = {
   envNames?: string[];
   env?: Record<string, any>;
@@ -107,6 +201,115 @@ export async function logProcessExec(
     options.toStderr
   );
 }
+
+export type ProcessOptions<O1 extends boolean, O2 extends boolean> = {
+  $stdout?: Omit<ParseStreamDataOptions<O1>, "log">;
+  $stderr?: Omit<ParseStreamDataOptions<O2>, "log">;
+  $onExitCode?: OnExitCode;
+  $log?:
+    | boolean
+    | {
+        exec?: boolean | LogProcessOptions;
+        stdout?: boolean | LogProcessOptions;
+        stderr?: boolean | LogProcessOptions;
+      };
+};
+
+export function createProcess<O1 extends boolean, O2 extends boolean>(
+  command: string,
+  argv: (string | number)[] = [],
+  options: SpawnOptions & ProcessOptions<O1, O2> = {}
+): ChildProcessByStdio<Writable, Readable, Readable> &
+  PromiseLike<
+    { exitCode: number } & (O1 extends true ? { stdout: string } : {}) &
+      (O2 extends true ? { stderr: string } : {})
+  > {
+  const $log =
+    options.$log === true
+      ? { exec: {}, stdout: {}, stderr: {} }
+      : options.$log || {};
+  if ($log.exec)
+    logProcessExec(command, argv, $log.exec === true ? {} : $log.exec);
+
+  if (typeof options.cwd === "string") {
+    let isDir = false;
+    try {
+      isDir = statSync(options.cwd).isDirectory();
+    } catch (error) {}
+    if (!isDir)
+      throw new Error(
+        `Current working directory does not exist: ${options.cwd}`
+      );
+  }
+
+  const handler = spawn(
+    command,
+    argv.map((v) => (typeof v === "number" ? v.toString() : v)),
+    options ?? {}
+  );
+  const { $stdout, $stderr, $onExitCode } = options;
+
+  async function exec() {
+    const [stdout, stderr, result] = await Promise.all([
+      (!!$log.stdout || !!$stdout) &&
+        parseStreamData(handler.stdout!, {
+          log: $log.stdout,
+          ...$stdout,
+        }),
+      (!!$log.stderr || !!$stderr) &&
+        parseStreamData(handler.stderr!, {
+          log: $log.stderr,
+          ...$stderr,
+        }),
+      waitForClose(handler, {
+        onExitCode: $onExitCode,
+      }),
+    ]);
+    const endResult: {
+      stdout?: string;
+      stderr?: string;
+      exitCode: number;
+    } = {
+      exitCode: result.exitCode,
+    };
+    if (typeof stdout === "string") endResult.stdout = stdout;
+    if (typeof stderr === "string") endResult.stderr = stderr;
+    return endResult as any;
+  }
+  const promise: Promise<any> = {
+    [Symbol.toStringTag]: "process",
+    then: function <TResult1 = any, TResult2 = never>(
+      onfulfilled?:
+        | ((value: any) => TResult1 | PromiseLike<TResult1>)
+        | null
+        | undefined,
+      onrejected?:
+        | ((reason: any) => TResult2 | PromiseLike<TResult2>)
+        | null
+        | undefined
+    ): Promise<TResult1 | TResult2> {
+      return exec().then(onfulfilled, onrejected);
+    },
+    catch: function <TResult = never>(
+      onrejected?:
+        | ((reason: any) => TResult | PromiseLike<TResult>)
+        | null
+        | undefined
+    ): Promise<any> {
+      return exec().catch(onrejected);
+    },
+    finally: function (
+      onfinally?: (() => void) | null | undefined
+    ): Promise<any> {
+      return exec().finally(onfinally);
+    },
+  };
+
+  Object.assign(handler, promise);
+
+  return handler as any;
+}
+
 export async function exec(
   command: string,
   argv: string[] = [],
