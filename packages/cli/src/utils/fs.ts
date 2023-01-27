@@ -86,11 +86,9 @@ export async function isDirEmpty(path: string) {
 }
 
 export async function mkdirIfNotExists(path: string) {
-  try {
-    await mkdir(path, {
-      recursive: true,
-    });
-  } catch (e) {}
+  await mkdir(path, {
+    recursive: true,
+  });
   return path;
 }
 
