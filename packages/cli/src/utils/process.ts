@@ -2,10 +2,16 @@ import { logExec } from "./cli";
 import { checkDir } from "./fs";
 import { progressPercent } from "./math";
 import chalk from "chalk";
-import { SpawnOptions, spawn, ChildProcess } from "child_process";
-import { ReadStream, WriteStream } from "fs";
+import {
+  SpawnOptions,
+  spawn,
+  ChildProcess,
+  ChildProcessByStdio,
+} from "child_process";
+import { ReadStream, statSync, WriteStream } from "fs";
 import { stat } from "fs/promises";
 import { createInterface } from "readline";
+import { Readable, Writable } from "stream";
 
 export type ExecLogSettingsType = {
   colorize?: boolean;
@@ -18,17 +24,24 @@ export type ExecLogSettingsType = {
 
 export interface ExecSettingsInterface {
   exec?: boolean;
-  pipe?: {
-    stream: WriteStream | ReadStream;
-    onWriteProgress?: (data: { totalBytes: number }) => void;
-    onReadProgress?: (data: {
-      totalBytes: number;
-      currentBytes: number;
-      progress: number;
-    }) => void;
-  };
+  pipe?:
+    | {
+        stream: WriteStream;
+        onWriteProgress?: (data: { totalBytes: number }) => void;
+      }
+    | {
+        stream: ReadStream;
+        onReadProgress?: (data: {
+          totalBytes: number;
+          currentBytes: number;
+          progress: number;
+        }) => void;
+      }
+    | {
+        stream: Readable;
+      };
   log?: ExecLogSettingsType | boolean;
-  onSpawn?: (p: ChildProcess) => void;
+  onSpawn?: (p: ChildProcess) => any;
   stdout?: {
     save?: boolean;
     parseLines?: boolean;
@@ -63,6 +76,37 @@ export type ExecResultType = {
   exitCode: number;
 };
 
+export type LogProcessOptions = {
+  envNames?: string[];
+  env?: Record<string, any>;
+  pipe?: Readable | Writable;
+  toStderr?: boolean;
+  colorize?: boolean;
+};
+
+export async function logProcessExec(
+  command: string,
+  argv: any[],
+  options: LogProcessOptions
+) {
+  const logEnv = options.envNames?.reduce((env, key) => {
+    const value = options?.env?.[key];
+    if (typeof value !== "undefined") env[key] = value;
+    return env;
+  }, {} as NodeJS.ProcessEnv);
+  logExec(
+    command,
+    options.pipe
+      ? [
+          ...argv,
+          options.pipe instanceof Readable ? "<" : ">",
+          "path" in options.pipe ? String(options.pipe.path) : "[stream]",
+        ]
+      : argv,
+    logEnv,
+    options.toStderr
+  );
+}
 export async function exec(
   command: string,
   argv: string[] = [],
@@ -79,31 +123,20 @@ export async function exec(
 
   return new Promise<ExecResultType>(async (resolve, reject) => {
     if (log.exec) {
-      const logEnv = log.envNames?.reduce((env, key) => {
-        const value = options?.env?.[key];
-        if (typeof value !== "undefined") env[key] = value;
-        return env;
-      }, {} as NodeJS.ProcessEnv);
-      logExec(
-        command,
-        pipe
-          ? [
-              ...argv,
-              pipe.stream instanceof ReadStream ? "<" : ">",
-              String(pipe.stream.path),
-            ]
-          : argv,
-        logEnv,
-        log.allToStderr
-      );
+      logProcessExec(command, argv, {
+        env: options?.env,
+        envNames: log.envNames,
+        pipe: pipe?.stream,
+        toStderr: log.allToStderr,
+      });
     }
 
     if (typeof options?.cwd === "string" && !(await checkDir(options.cwd)))
-      return reject(
-        new Error(`Current working directory does not exist: ${options.cwd}`)
+      throw new Error(
+        `Current working directory does not exist: ${options.cwd}`
       );
 
-    if (pipe?.onReadProgress && pipe.stream instanceof ReadStream) {
+    if (pipe?.stream instanceof ReadStream && "onReadProgress" in pipe) {
       const fileInfo = await stat(pipe.stream.path);
       const totalBytes = fileInfo.size;
       let currentBytes = 0;
@@ -116,10 +149,9 @@ export async function exec(
         });
       });
     }
-
     const p = spawn(command, argv, options ?? {});
 
-    settings.onSpawn?.(p);
+    await settings.onSpawn?.(p);
 
     let spawnError: Error;
     const spawnData: ExecResultType = {
@@ -187,7 +219,7 @@ export async function exec(
       if (pipe.stream instanceof WriteStream) {
         if (!p.stdout) throw new Error(`stdout is not defined`);
         if (!p.stderr) throw new Error(`stderr is not defined`);
-        if (pipe.onWriteProgress) {
+        if ("onWriteProgress" in pipe && pipe.onWriteProgress) {
           let totalBytes = 0;
           p.stdout.on("data", (chunk: Buffer) => {
             totalBytes += chunk.length;
@@ -201,7 +233,7 @@ export async function exec(
         p.stdout.pipe(pipe.stream, { end: false });
         p.stderr.pipe(pipe.stream, { end: false });
         p.on("close", tryFinish);
-      } else if (pipe.stream instanceof ReadStream) {
+      } else if (pipe.stream instanceof Readable) {
         if (!p.stdin) throw new Error(`stdin is not defined`);
         pipe.stream.pipe(p.stdin);
       }
