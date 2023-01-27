@@ -1,10 +1,12 @@
 import globalData from "../globalData";
+import { progressPercent } from "./math";
 import { rootPath } from "./path";
+import { Progress } from "./progress";
 import { eachLimit } from "async";
 import { randomUUID } from "crypto";
 import fastFolderSize from "fast-folder-size";
-import FastGlob from "fast-glob";
-import { createReadStream, Dirent, Stats } from "fs";
+import FastGlob, { Entry, Options } from "fast-glob";
+import { createReadStream, Dirent, ReadStream, Stats } from "fs";
 import { createWriteStream, WriteStream } from "fs";
 import {
   cp,
@@ -521,4 +523,81 @@ export async function cpy(options: {
   });
 
   return stats;
+}
+
+export async function createFileScanner(options: {
+  glob: Options & {
+    include: string[];
+  };
+  onProgress: (data: Progress) => Promise<void>;
+  disableCounting?: boolean;
+  disableEndProgress?: boolean;
+}) {
+  const object = {
+    total: 0,
+    current: 0,
+    progress: async (
+      description: string,
+      data: {
+        path?: string;
+        current: number;
+        type?: "start" | "end";
+        percent?: number;
+      }
+    ) => {
+      await options.onProgress({
+        relative: {
+          description,
+          payload: data.path,
+          percent: data.percent,
+        },
+        absolute: {
+          total: object.total,
+          current: object.current + data.current,
+          percent: progressPercent(object.total, object.current + data.current),
+        },
+      });
+      if (data.type === "end") {
+        object.current += data.current;
+      }
+    },
+    updateProgress: async (end?: boolean) => {
+      const currentTime = performance.now();
+      const diff = currentTime - lastTime;
+      if (end || diff > 1_000) {
+        await options.onProgress({
+          relative: {
+            description: end ? "Scanned files" : "Scanning files",
+            payload: object.total.toString(),
+          },
+        });
+        lastTime = currentTime;
+      }
+    },
+    start: async (cb?: (entry: Required<Entry>) => any) => {
+      for await (const entry of pathIterator(stream)) {
+        if (!options.disableCounting) object.total++;
+        await object.updateProgress();
+        if (cb) await cb(entry);
+      }
+      if (!options.disableEndProgress) await object.updateProgress(true);
+    },
+  };
+
+  await options.onProgress({
+    relative: {
+      description: "Scanning files",
+    },
+  });
+
+  const stream = FastGlob.stream(options.glob.include, {
+    dot: true,
+    markDirectories: true,
+    stats: true,
+    ...options.glob,
+  });
+
+  let lastTime = performance.now();
+
+  return object;
 }

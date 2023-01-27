@@ -6,17 +6,15 @@ import {
   applyPermissions,
   checkDir,
   cpy,
+  createFileScanner,
   fastFolderSizeAsync,
   isEmptyDir,
   isNotFoundError,
   mkdirIfNotExists,
   parsePackageFile,
-  pathIterator,
   readDir,
   waitForClose,
 } from "../utils/fs";
-import { progressPercent } from "../utils/math";
-import { Progress } from "../utils/progress";
 import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
 import { listZip, unzip, zip } from "../utils/zip";
 import {
@@ -173,86 +171,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await mkdirIfNotExists(this.config.outPath);
   }
 
-  private async createFileScanner(options: {
-    glob: Options & {
-      include: string[];
-    };
-    onProgress: (data: Progress) => Promise<void>;
-    disableCounting?: boolean;
-    disableEndProgress?: boolean;
-  }) {
-    const object = {
-      total: 0,
-      current: 0,
-      progress: async (
-        description: string,
-        data: {
-          path?: string;
-          current: number;
-          type?: "start" | "end";
-          percent?: number;
-        }
-      ) => {
-        await options.onProgress({
-          relative: {
-            description,
-            payload: data.path,
-            percent: data.percent,
-          },
-          absolute: {
-            total: object.total,
-            current: object.current + data.current,
-            percent: progressPercent(
-              object.total,
-              object.current + data.current
-            ),
-          },
-        });
-        if (data.type === "end") {
-          object.current += data.current;
-        }
-      },
-      updateProgress: async (end?: boolean) => {
-        const currentTime = performance.now();
-        const diff = currentTime - lastTime;
-        if (end || diff > 1_000) {
-          await options.onProgress({
-            relative: {
-              description: end ? "Scanned files" : "Scanning files",
-              payload: object.total.toString(),
-            },
-          });
-          lastTime = currentTime;
-        }
-      },
-      start: async (cb?: (entry: Required<Entry>) => any) => {
-        for await (const entry of pathIterator(stream)) {
-          if (!options.disableCounting) object.total++;
-          await object.updateProgress();
-          if (cb) await cb(entry);
-        }
-        if (!options.disableEndProgress) await object.updateProgress(true);
-      },
-    };
-
-    await options.onProgress({
-      relative: {
-        description: "Scanning files",
-      },
-    });
-
-    const stream = fg.stream(options.glob.include, {
-      dot: true,
-      markDirectories: true,
-      stats: true,
-      ...options.glob,
-    });
-
-    let lastTime = performance.now();
-
-    return object;
-  }
-
   override async onPrune(data: PruneDataType) {
     const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
@@ -391,7 +309,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     if (data.options.verbose) logExec(`Writing file lists in ${tmpDir}`);
 
-    const scanner = await this.createFileScanner({
+    const scanner = await createFileScanner({
       glob: {
         include,
         cwd: sourcePath,
@@ -560,7 +478,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     await mkdir(targetPath);
 
-    const scanner = await this.createFileScanner({
+    const scanner = await createFileScanner({
       glob: {
         include: ["**/*"],
         cwd: sourcePath,
@@ -606,7 +524,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const sourcePath = join(this.config.outPath, snapshotName);
 
-    const scanner = await this.createFileScanner({
+    const scanner = await createFileScanner({
       glob: {
         include: ["unpacked/**/*"],
         cwd: sourcePath,
