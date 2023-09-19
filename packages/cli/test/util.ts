@@ -98,6 +98,9 @@ export async function applyFileChanges(
         recursive: true,
       });
     } else {
+      await mkdir(path, {
+        recursive: true,
+      });
       await applyFileChanges(path, change, false);
     }
   }

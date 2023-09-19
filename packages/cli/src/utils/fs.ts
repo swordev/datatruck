@@ -530,65 +530,45 @@ export async function createFileScanner(options: {
     include: string[];
   };
   onProgress: (data: Progress) => Promise<void>;
-  disableCounting?: boolean;
-  disableEndProgress?: boolean;
 }) {
   const object = {
+    disposed: false,
     total: 0,
     current: 0,
-    progress: async (
-      description: string,
-      data: {
-        path?: string;
-        current: number;
-        type?: "start" | "end";
-        percent?: number;
-      }
-    ) => {
+    progress: async (description: string, path?: string) => {
+      if (object.disposed) return;
+      if (path) object.current++;
       await options.onProgress({
         relative: {
           description,
-          payload: data.path,
-          percent: data.percent,
+          payload: path,
         },
         absolute: {
           total: object.total,
-          current: object.current + data.current,
-          percent: progressPercent(object.total, object.current + data.current),
+          current: object.current,
+          percent: progressPercent(object.total, object.current),
         },
       });
-      if (data.type === "end") {
-        object.current += data.current;
-      }
     },
-    updateProgress: async (end?: boolean) => {
-      const currentTime = performance.now();
-      const diff = currentTime - lastTime;
-      if (end || diff > 1_000) {
-        await options.onProgress({
-          relative: {
-            description: end ? "Scanned files" : "Scanning files",
-            payload: object.total.toString(),
-          },
-        });
-        lastTime = currentTime;
-      }
+    end: async () => {
+      if (!object.disposed) await object.progress("Finished");
+      object.disposed = true;
     },
     start: async (cb?: (entry: Required<Entry>) => any) => {
+      let lastTime = performance.now();
+      await object.progress("Scanning files");
       for await (const entry of pathIterator(stream)) {
-        if (!options.disableCounting) object.total++;
-        await object.updateProgress();
-        if (cb) await cb(entry);
+        if (cb) {
+          if (await cb(entry)) object.total++;
+        } else {
+          object.total++;
+        }
+        if (lastTime - performance.now() > 500)
+          await object.progress("Scanning files");
       }
-      if (!options.disableEndProgress) await object.updateProgress(true);
+      await object.progress("Scanned files");
     },
   };
-
-  await options.onProgress({
-    relative: {
-      description: "Scanning files",
-    },
-  });
 
   const stream = FastGlob.stream(options.glob.include, {
     dot: true,
@@ -596,8 +576,6 @@ export async function createFileScanner(options: {
     stats: true,
     ...options.glob,
   });
-
-  let lastTime = performance.now();
 
   return object;
 }

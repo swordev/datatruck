@@ -32,7 +32,7 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Install system dependencies
-        run: sudo apt-get install p7zip restic git -y
+        run: sudo apt-get install restic git -y
       - name: Update restic
         run: sudo restic self-update
       - name: Test

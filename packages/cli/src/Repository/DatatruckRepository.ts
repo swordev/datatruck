@@ -3,20 +3,18 @@ import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import { parsePaths } from "../utils/datatruck/paths";
 import {
-  applyPermissions,
   checkDir,
-  cpy,
   createFileScanner,
+  ensureEmptyDir,
   fastFolderSizeAsync,
   isEmptyDir,
   isNotFoundError,
   mkdirIfNotExists,
   parsePackageFile,
   readDir,
-  waitForClose,
 } from "../utils/fs";
 import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
-import { listZip, unzip, zip } from "../utils/zip";
+import { listTar, extractTar, createTar } from "../utils/tar";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -28,14 +26,10 @@ import {
   CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
-import fg, { Entry, Options } from "fast-glob";
-import { createReadStream, createWriteStream } from "fs";
-import { mkdir, readFile, writeFile, rm, copyFile, opendir } from "fs/promises";
+import { mkdir, readFile, writeFile, rm, opendir, cp } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { join, resolve } from "path";
-import { performance } from "perf_hooks";
-import { createInterface } from "readline";
+import { basename, dirname, join, resolve } from "path";
 
 export type MetaDataType = {
   id: string;
@@ -50,23 +44,19 @@ export type MetaDataType = {
 export type DatatruckRepositoryConfigType = {
   outPath: string;
   compress?: boolean;
-  /**
-   * @default 1
-   */
-  fileCopyConcurrency?: number;
 };
 
-type CompressObjectType = {
-  packs?: {
-    name?: string;
-    include: string[];
-    exclude?: string[];
-    onePackByResult?: boolean;
-  }[];
+type PackObject = {
+  name?: string;
+  compress?: boolean;
+  include: string[];
+  exclude?: string[];
+  onePackByResult?: boolean;
 };
 
 export type DatatruckPackageRepositoryConfigType = {
-  compress?: CompressObjectType | boolean;
+  compress?: boolean;
+  packs?: PackObject[];
 };
 
 export const datatruckRepositoryName = "datatruck";
@@ -86,41 +76,27 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
   additionalProperties: false,
   properties: {
     compress: {
-      anyOf: [
-        {
-          type: "boolean",
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            packs: {
-              type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                required: ["include"],
-                properties: {
-                  name: { type: "string" },
-                  include: makeRef(DefinitionEnum.stringListUtil),
-                  exclude: makeRef(DefinitionEnum.stringListUtil),
-                  onePackByResult: { type: "boolean" },
-                },
-              },
-            },
-          },
-        },
-      ],
+      type: "boolean",
     },
-    fileCopyConcurrency: {
-      type: "integer",
-      minimum: 1,
+    packs: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["include"],
+        properties: {
+          name: { type: "string" },
+          include: makeRef(DefinitionEnum.stringListUtil),
+          exclude: makeRef(DefinitionEnum.stringListUtil),
+          onePackByResult: { type: "boolean" },
+        },
+      },
     },
   },
 };
 
 export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfigType> {
-  static zipBasenameTpl = `.*.dd.zip`;
+  static zipBasenameTpl = `.*.dd.tar.gz`;
 
   static buildSnapshotName(data: {
     snapshotId: string;
@@ -246,24 +222,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return snapshots;
   }
 
-  private normalizeCompressConfig(
-    packageConfig: DatatruckPackageRepositoryConfigType | undefined
-  ): CompressObjectType | undefined {
-    let compress = packageConfig?.compress ?? this.config.compress;
-    if (compress === true || (compress && !Array.isArray(compress.packs))) {
-      return {
-        packs: [
-          {
-            include: ["**"],
-          },
-        ],
-      };
-    } else if (!compress) {
-      return undefined;
-    }
-    return compress;
-  }
-
   override async onBackup(
     data: BackupDataType<DatatruckPackageRepositoryConfigType>
   ) {
@@ -274,175 +232,100 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
     const outPath = resolve(join(this.config.outPath, snapshotName));
     const pkg = data.package;
-
-    await mkdir(outPath, {
-      recursive: true,
-    });
-
     const sourcePath = data.targetPath ?? pkg.path;
 
     ok(sourcePath);
 
-    const compress = this.normalizeCompressConfig(data.packageConfig);
-
-    const include = await parsePaths(pkg.include ?? ["**"], {
-      cwd: sourcePath,
-      verbose: data.options.verbose,
-    });
-
-    const exclude = pkg.exclude
-      ? await parsePaths(pkg.exclude, {
-          cwd: sourcePath,
-          verbose: data.options.verbose,
-        })
-      : undefined;
-
-    const packs = compress?.packs || [];
-    const tmpDir = await this.mkTmpDir("path-lists");
-    const unpackedStream = createWriteStream(join(tmpDir, "unpacked.txt"));
-    const singlePackStream = createWriteStream(join(tmpDir, "single-pack.txt"));
-    const packStreams = Array.from({ length: packs.length }).map((v, i) =>
-      createWriteStream(join(tmpDir, `pack-${i}.txt`))
-    );
-
-    const streams = [unpackedStream, singlePackStream, ...packStreams];
-
-    if (data.options.verbose) logExec(`Writing file lists in ${tmpDir}`);
+    await mkdir(outPath, { recursive: true });
 
     const scanner = await createFileScanner({
-      glob: {
-        include,
-        cwd: sourcePath,
-        ignore: exclude,
-        onlyFiles: false,
-      },
       onProgress: data.onProgress,
-      disableCounting: true,
-    });
-
-    await Promise.all([
-      ...streams.map((p) => waitForClose(p)),
-      (async () => {
-        await scanner.start(async (entry) => {
-          const pathSubject = entry.stats.isDirectory()
-            ? entry.path.slice(0, -1)
-            : entry.path;
-          let stream = unpackedStream;
-          let successPackIndex: number | undefined;
-
-          for (const [packIndex, pack] of packs.entries()) {
-            if (checkPath(pathSubject, pack.include, pack.exclude)) {
-              stream = pack.onePackByResult
-                ? singlePackStream
-                : packStreams[packIndex];
-              successPackIndex = packIndex;
-              break;
-            }
-          }
-
-          const isUnpackedStream = stream === unpackedStream;
-          const isPackStream = stream !== unpackedStream;
-          const isSinglePackStream = stream === singlePackStream;
-          const include = isPackStream
-            ? entry.stats.isDirectory()
-              ? await isEmptyDir(join(sourcePath, entry.path))
-              : true
-            : true;
-
-          if (include) {
-            let value = entry.path;
-            if (isUnpackedStream) {
-              value += `:${entry.stats.uid}:${entry.stats.gid}:${entry.stats.mode}`;
-            } else if (isSinglePackStream) {
-              value += `:${successPackIndex}`;
-            }
-            if (!entry.stats.isDirectory()) scanner.total++;
-            stream.write(`${value}\n`);
-          }
-        });
-
-        for (const stream of streams) {
-          stream.end();
-        }
-      })(),
-    ]);
-
-    const unpackedPath = join(outPath, "unpacked");
-
-    await mkdir(unpackedPath);
-
-    await copyFile(unpackedStream.path, join(outPath, "permissions.txt"));
-
-    // Non pack
-
-    if (data.options.verbose)
-      logExec(
-        `Copying files from ${unpackedStream.path.toString()} to ${unpackedPath}`
-      );
-
-    await cpy({
-      input: {
-        type: "pathList",
-        path: unpackedStream.path.toString(),
-        basePath: sourcePath,
+      glob: {
+        cwd: sourcePath,
+        onlyFiles: false,
+        include: await parsePaths(pkg.include ?? ["**"], {
+          cwd: sourcePath,
+          verbose: data.options.verbose,
+        }),
+        ignore: pkg.exclude
+          ? await parsePaths(pkg.exclude, {
+              cwd: sourcePath,
+              verbose: data.options.verbose,
+            })
+          : undefined,
       },
-      targetPath: unpackedPath,
-      skipNotFoundError: true,
-      concurrency: this.config.fileCopyConcurrency,
-      onProgress: async (progress) =>
-        await scanner.progress(
-          progress.type === "end" ? "Files copied" : "Copying file",
-          progress
-        ),
     });
 
-    // Single pack
+    type $PackObject = PackObject & { includeResult: string[] };
 
-    const singleReader = createInterface({
-      input: createReadStream(singlePackStream.path),
+    const configPacks: $PackObject[] = (data.packageConfig?.packs ?? []).map(
+      (p) => ({
+        ...p,
+        compress:
+          p.compress ?? data.packageConfig?.compress ?? this.config.compress,
+        includeResult: [],
+      })
+    );
+
+    const defaultsPack: $PackObject = {
+      name: "defaults",
+      compress: data.packageConfig?.compress ?? this.config.compress,
+      include: [],
+      includeResult: [],
+    };
+
+    const packs: $PackObject[] = [...configPacks, defaultsPack];
+
+    await scanner.start(async (entry) => {
+      if (
+        entry.dirent.isDirectory() &&
+        !(await isEmptyDir(join(sourcePath, entry.path)))
+      )
+        return false;
+      const pack =
+        configPacks.find((pack) =>
+          checkPath(entry.path, pack.include, pack.exclude)
+        ) || defaultsPack;
+
+      if (pack.onePackByResult) {
+        const subname = basename(entry.path);
+        packs.push({
+          ...pack,
+          name: pack.name ? `${pack.name}-${subname}` : subname,
+          includeResult: [entry.path],
+        });
+      } else {
+        pack.includeResult.push(entry.path);
+      }
+      return true;
     });
 
-    for await (const line of singleReader) {
-      let [packPath, packIndex] = line.split(":");
-      const pack = packs[packIndex as any];
+    let packIndex = 0;
 
-      if (packPath.endsWith("/")) packPath = packPath.slice(0, -1);
+    for (const pack of packs) {
+      const packBasename = [`pack`, (packIndex++).toString(), pack.name]
+        .filter((v) => typeof v === "string")
+        .map((v) => encodeURIComponent(v!.toString().replace(/[\\/]/g, "-")))
+        .join("-");
 
-      const outBasename = (
-        `pack${pack.name ? `-${encodeURIComponent(pack.name)}` : ""}` +
-        `-${encodeURIComponent(packPath.replace(/[\\/]/g, "-"))}` +
-        `.zip`
-      ).slice(0, 255);
+      const ext = pack.compress ? `.tar.gz` : `.tar`;
 
-      const target = join(outPath, outBasename);
-
-      await zip({
-        path: pkg.path as string,
-        output: target,
-        filter: [{ patterns: [packPath] }],
-        verbose: data.options.verbose,
-        onProgress: async (progress) =>
-          await scanner.progress("Compressing file", progress),
-      });
+      if (pack.includeResult.length)
+        await createTar({
+          compress: pack.compress,
+          verbose: data.options.verbose,
+          include: pack.includeResult,
+          path: sourcePath,
+          output: join(outPath, packBasename) + ext,
+          onEntry: async (data) =>
+            await scanner.progress(
+              pack.compress ? "Compressing" : "Packing",
+              data.path
+            ),
+        });
     }
 
-    // Packs
-
-    for (const [packIndex, packStream] of packStreams.entries()) {
-      const pack = packs[packIndex];
-      const target = join(
-        outPath,
-        `pack-${packIndex}${pack.name ? `-${pack.name}` : ""}.zip`
-      );
-      await zip({
-        path: sourcePath,
-        output: target,
-        includeList: packStream.path.toString(),
-        verbose: data.options.verbose,
-        onProgress: async (progress) =>
-          await scanner.progress("Compressing file", progress),
-      });
-    }
+    await scanner.end();
 
     // Meta
 
@@ -476,30 +359,33 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     if (data.options.verbose) logExec(`Copying backup files to ${targetPath}`);
 
-    await mkdir(targetPath);
+    await mkdir(targetPath, { recursive: true });
+    await ensureEmptyDir(targetPath);
 
     const scanner = await createFileScanner({
+      onProgress: data.onProgress,
       glob: {
         include: ["**/*"],
         cwd: sourcePath,
       },
-      onProgress: data.onProgress,
     });
 
-    await scanner.start();
+    const entryPaths: string[] = [];
 
-    await cpy({
-      input: {
-        type: "glob",
-        sourcePath,
-      },
-      targetPath,
-      onProgress: async (progress) =>
-        await scanner.progress(
-          progress.type === "end" ? "Files copied" : "Copying file",
-          progress
-        ),
+    await scanner.start(async (entry) => {
+      entryPaths.push(entry.path);
+      return true;
     });
+
+    for (const entryPath of entryPaths) {
+      const sourceFile = join(sourcePath, entryPath);
+      const targetFile = join(targetPath, entryPath);
+      await scanner.progress("Copying", entryPath);
+      await mkdir(dirname(targetFile), { recursive: true });
+      await cp(sourceFile, targetFile);
+    }
+
+    await scanner.end();
   }
 
   override async onRestore(
@@ -525,75 +411,47 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const sourcePath = join(this.config.outPath, snapshotName);
 
     const scanner = await createFileScanner({
-      glob: {
-        include: ["unpacked/**/*"],
-        cwd: sourcePath,
-      },
       onProgress: data.onProgress,
-      disableEndProgress: true,
+      glob: {
+        cwd: sourcePath,
+        include: ["**/*"],
+      },
     });
 
-    await scanner.start();
+    const tarFiles: string[] = [];
 
-    const it = await opendir(sourcePath);
-    for await (const dirent of it) {
-      const path = join(sourcePath, dirent.name);
-      if (dirent.name === "permissions.txt") {
-        scanner.total++;
-        await scanner.updateProgress();
-      } else if (dirent.name.endsWith(".zip")) {
-        await listZip({
-          path,
+    await scanner.start(async (entry) => {
+      const path = join(sourcePath, entry.name);
+      const isTar = entry.name.endsWith(".tar");
+      const isTarGz = entry.name.endsWith(".tar.gz");
+      if (isTar || isTarGz) {
+        tarFiles.push(path);
+        await listTar({
+          input: path,
           verbose: data.options.verbose,
-          onStream: async (item) => {
-            const isDir = item.Folder === "+";
-            if (!isDir) scanner.total++;
-            await scanner.updateProgress();
+          onEntry: () => {
+            scanner.total++;
           },
         });
       }
-    }
-
-    await scanner.updateProgress(true);
-
-    if (data.options.verbose) logExec(`Copying files to ${restorePath}`);
-
-    await cpy({
-      input: {
-        type: "glob",
-        sourcePath: join(sourcePath, "unpacked"),
-      },
-      targetPath: restorePath,
-      concurrency: this.config.fileCopyConcurrency,
-      onProgress: async (progress) =>
-        await scanner.progress(
-          progress.type === "end" ? "Files copied" : "Copying file",
-          progress
-        ),
+      return false;
     });
 
-    const it2 = await opendir(sourcePath);
-    for await (const dirent of it2) {
-      const path = join(sourcePath, dirent.name);
-      if (dirent.name === "permissions.txt") {
-        if (data.options.verbose) logExec(`Applying permissions (${path})`);
-        await scanner.progress("Applying permissions", {
-          current: 0,
-        });
-        await applyPermissions(restorePath, path);
-        await scanner.progress("Permissions applied", {
-          current: 1,
-          type: "end",
-        });
-      } else if (dirent.name.endsWith(".zip")) {
-        await unzip({
-          input: path,
-          output: restorePath,
-          verbose: data.options.verbose,
-          onProgress: async (progress) =>
-            await scanner.progress("Extracting file", progress),
-        });
-      }
+    if (data.options.verbose) logExec(`Unpacking files to ${restorePath}`);
+
+    for (const tarFile of tarFiles) {
+      await extractTar({
+        input: tarFile,
+        output: restorePath,
+        verbose: data.options.verbose,
+        onEntry: async (data) =>
+          await scanner.progress(
+            tarFile.endsWith(".tar.gz") ? "Extracting" : "Unpacking",
+            data.path
+          ),
+      });
     }
+
+    await scanner.end();
   }
 }

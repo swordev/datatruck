@@ -30,7 +30,11 @@ const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
     { file1: "contents2" },
     { file1: false },
     {
-      folder1: {},
+      folder1: {
+        ...(type === "git" && {
+          empty: "",
+        }),
+      },
     },
     {
       folder1: {
@@ -336,7 +340,7 @@ describe(
       }
     );
 
-    it.each(repositoryTypes)("snapshots", async (type) => {
+    it.each(repositoryTypes)("snapshots of %s", async (type) => {
       const fileChanger = await createFileChanger();
       const configPath = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],

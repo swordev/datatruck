@@ -8,7 +8,7 @@ import {
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { createProcess, exec } from "../utils/process";
-import { unzip } from "../utils/zip";
+import { extractTar } from "../utils/tar";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { createReadStream, createWriteStream } from "fs";
@@ -342,17 +342,17 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
         absolute,
       });
 
-      await unzip({
+      await extractTar({
         input: join(restorePath, zipFile),
         output: restorePath,
         verbose: this.verbose,
-        async onProgress(item) {
+        async onEntry(item) {
           await data.onProgress({
             absolute,
             relative: {
               payload: item.path,
               format: "amount",
-              percent: item.percent,
+              percent: item.progress.percent,
             },
           });
         },
