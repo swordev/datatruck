@@ -5,5 +5,5 @@
     "emitDecoratorMetadata": true
   },
   "exclude": ["**/temp/", "**/.*/", "**/lib", "**/node_modules"],
-  "extends": "@tsconfig/node16"
+  "extends": "@tsconfig/node18"
 }

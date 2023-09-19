@@ -1,13 +1,13 @@
-// @ts-check
-const ncu = require("npm-check-updates");
-/** @type {ncu.RunOptions} */
-const options = {
-  root: true,
+/** @type {import("npm-check-updates").RunOptions} */
+module.exports = {
   workspaces: true,
-  target: (dep) => {
-    if (dep === "chalk" || dep === "commander" || dep === "pretty-bytes")
-      return "patch";
-    return "latest";
+  root: true,
+  dep: "dev,optional,prod,bundle",
+  target: (name) => {
+    if (["chalk", "pretty-bytes"].includes(name)) {
+      return "minor";
+    } else {
+      return "latest";
+    }
   },
 };
-module.exports = options;

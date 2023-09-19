@@ -16,8 +16,8 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   repositoryVault = new ObjectVault<RestoreSessionRepositoryEntity>();
   taskVault = new ObjectVault<RestoreSessionTaskEntity>();
 
-  protected lastProgressDate: number | undefined;
-  protected lastRelativeProgressDescription: string | null | undefined;
+  declare protected lastProgressDate: number | undefined;
+  declare protected lastRelativeProgressDescription: string | null | undefined;
 
   findId(data: { packageName: string }) {
     return this.sessionVault.getId([data.packageName]);
