@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.20.0
+
+### Minor Changes
+
+- [`13f9331`](https://github.com/swordev/datatruck/commit/13f933191f56f93e2eee0467e272998520b36195) Thanks [@juanrgm](https://github.com/juanrgm)! - Replace node-tar by tar
+
 ## 0.19.0
 
 ### Minor Changes
