@@ -6,14 +6,6 @@ export function serialize(message: string, data?: Object) {
   return message;
 }
 
-export function ucfirst(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-export function lcfirst(value: string) {
-  return value.charAt(0).toLowerCase() + value.slice(1);
-}
-
 export function snakeCase(value: string, char = "_") {
   return value.replace(/[A-Z]/g, (letter) => `${char}${letter.toLowerCase()}`);
 }

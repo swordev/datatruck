@@ -17,7 +17,7 @@ import {
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
-import { isDirEmpty, isTmpDir, mkdirIfNotExists, rmTmpDir } from "../utils/fs";
+import { isEmptyDir, isTmpDir, mkdirIfNotExists, rmTmpDir } from "../utils/fs";
 import { push } from "../utils/object";
 import { exec } from "../utils/process";
 import { IfRequireKeys } from "../utils/ts";
@@ -132,8 +132,8 @@ export class RestoreAction<TRequired extends boolean = true> {
               packageTaskName: ss.packageTaskName,
               tags: ss.tags,
               repositoryName: repository.name,
-            } as SnapshotType)
-        )
+            }) as SnapshotType
+        ),
       );
     }
 
@@ -227,7 +227,7 @@ export class RestoreAction<TRequired extends boolean = true> {
 
       await mkdirIfNotExists(pkg.restorePath);
 
-      if (!(await isDirEmpty(pkg.restorePath)))
+      if (!(await isEmptyDir(pkg.restorePath)))
         throw new AppError(`Restore path is not empty: ${pkg.restorePath}`);
 
       if (this.options.verbose) logExec(`restorePath=${pkg.restorePath}`);

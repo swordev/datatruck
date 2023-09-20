@@ -1,5 +1,5 @@
 import { logExec } from "./cli";
-import { checkDir } from "./fs";
+import { existsDir } from "./fs";
 import { progressPercent } from "./math";
 import chalk from "chalk";
 import {
@@ -334,7 +334,7 @@ export async function exec(
       });
     }
 
-    if (typeof options?.cwd === "string" && !(await checkDir(options.cwd)))
+    if (typeof options?.cwd === "string" && !(await existsDir(options.cwd)))
       throw new Error(
         `Current working directory does not exist: ${options.cwd}`
       );

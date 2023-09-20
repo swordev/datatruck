@@ -1,8 +1,8 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import {
-  checkDir,
-  checkFile,
+  existsDir,
+  existsFile,
   cpy,
   ensureEmptyDir,
   forEachFile,
@@ -316,7 +316,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     const configPath = join(targetPath, "repo.config");
 
-    if (await checkFile(configPath)) {
+    if (await existsFile(configPath)) {
       await copyFile(configPath, join(restorePath, ".git", "config"));
       await incrementProgress();
     }
@@ -325,7 +325,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     for (const name of ["untracked", "modified", "ignored"]) {
       const sourcePath = join(targetPath, `repo.${name}`);
-      if (await checkDir(sourcePath)) {
+      if (await existsDir(sourcePath)) {
         if (data.options.verbose)
           logExec(`Copying ${name} files to ${restorePath}`);
         await cpy({

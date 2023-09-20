@@ -13,13 +13,13 @@ import {
   readdir,
   readFile,
   stat,
-  writeFile,
   mkdir,
   utimes,
   chmod,
   chown,
   opendir,
   rm,
+  writeFile,
 } from "fs/promises";
 import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
@@ -50,41 +50,12 @@ type EntryObject = {
   stats: Stats;
 };
 
-export async function applyPermissions(
-  baseDir: string,
-  permissionsPath: string
-) {
-  const singleReader = createInterface({
-    input: createReadStream(permissionsPath),
-  });
-
-  for await (const line of singleReader) {
-    const [rpath, rawUid, rawGui, rawMode] = line.split(":");
-    const path = join(baseDir, rpath);
-    if (!path.startsWith(baseDir)) {
-      throw new Error(
-        `Entry path is out of the base dir: (${path}, ${baseDir})`
-      );
-    }
-    const uid = Number(rawUid);
-    const guid = Number(rawGui);
-    await chown(path, uid, guid);
-    const mode = Number(rawMode);
-    await chmod(path, mode);
-  }
-}
-
-export function pathIterator(stream: AsyncIterable<string | Buffer>) {
+function pathIterator(stream: AsyncIterable<string | Buffer>) {
   return stream as any as AsyncIterable<EntryObject>;
 }
 
 export function isLocalDir(path: string) {
   return /^[\/\.]|([A-Z]:)/i.test(path);
-}
-
-export async function isDirEmpty(path: string) {
-  const files = await readDir(path);
-  return !files.length;
 }
 
 export async function mkdirIfNotExists(path: string) {
@@ -95,24 +66,25 @@ export async function mkdirIfNotExists(path: string) {
 }
 
 export async function ensureEmptyDir(path: string) {
-  if (!(await isDirEmpty(path))) throw new Error(`Dir is not empty: ${path}`);
+  if (!(await isEmptyDir(path))) throw new Error(`Dir is not empty: ${path}`);
+}
+
+export async function safeStat(path: string) {
+  try {
+    return await stat(path);
+  } catch (e) {}
 }
 
 export async function existsDir(path: string) {
-  try {
-    const info = await stat(path);
-    return info.isDirectory();
-  } catch (e) {
-    return false;
-  }
+  return (await safeStat(path))?.isDirectory() ?? false;
+}
+
+export async function existsFile(path: string) {
+  return (await safeStat(path))?.isFile() ?? false;
 }
 
 export async function writeJSONFile<T = any>(path: string, json: T) {
   await writeFile(path, JSON.stringify(json));
-}
-
-export async function readdirIfExists(path: string) {
-  return await readDir(path, true);
 }
 
 export const parseFileExtensions = ["json", "js", "ts", "yaml", "yml"];
@@ -161,15 +133,6 @@ export async function findFile(
   }
   if (typeof path !== "string") throw new Error(errorMessage);
   return path;
-}
-
-export async function existsFile(path: string) {
-  try {
-    const info = await stat(path);
-    return info.isFile();
-  } catch (e) {
-    return false;
-  }
 }
 
 export function parentTmpDir() {
@@ -240,22 +203,6 @@ export async function readPartialFile(
   });
 }
 
-export async function checkFile(path: string) {
-  try {
-    return (await stat(path)).isFile();
-  } catch (e) {
-    return false;
-  }
-}
-
-export async function checkDir(path: string) {
-  try {
-    return (await stat(path)).isDirectory();
-  } catch (e) {
-    return false;
-  }
-}
-
 export async function readDir(path: string, optional?: boolean) {
   try {
     return await readdir(path);
@@ -276,7 +223,7 @@ export async function readDir(path: string, optional?: boolean) {
 export async function forEachFile(
   dirPath: string,
   cb: (path: string, dir: boolean) => void,
-  includeDir?: boolean
+  includeDir?: boolean,
 ) {
   const files = await readDir(dirPath);
   for (const file of files) {

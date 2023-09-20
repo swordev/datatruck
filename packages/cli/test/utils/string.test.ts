@@ -2,13 +2,11 @@ import {
   checkMatch,
   formatDateTime,
   formatUri,
-  lcfirst,
   makePathPatterns,
   parseStringList,
   render,
   serialize,
   snakeCase,
-  ucfirst,
 } from "../../src/utils/string";
 import { describe, expect, it } from "vitest";
 
@@ -65,12 +63,6 @@ describe("formatUri", () => {
         path: "/path1",
       })
     ).toBe("https://guest:secret@localhost:443/path1");
-  });
-});
-
-describe("lcfirst", () => {
-  it("returns first lower", () => {
-    expect(lcfirst("HEllo")).toBe("hEllo");
   });
 });
 
@@ -131,11 +123,5 @@ describe("serialize", () => {
 describe("snakeCase", () => {
   it("returns input in snake case format", () => {
     expect(snakeCase("getId")).toBe("get_id");
-  });
-});
-
-describe("ucfirst", () => {
-  it("returns first lower", () => {
-    expect(ucfirst("heLlo")).toBe("HeLlo");
   });
 });

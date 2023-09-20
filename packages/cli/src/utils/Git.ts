@@ -1,4 +1,4 @@
-import { checkDir, isLocalDir, readDir } from "./fs";
+import { existsDir, isLocalDir, readDir } from "./fs";
 import { exec, ExecSettingsInterface } from "./process";
 
 export class Git {
@@ -24,7 +24,7 @@ export class Git {
   async canBeInit(repo: string) {
     return (
       isLocalDir(repo) &&
-      (!(await checkDir(repo)) || !(await readDir(repo)).length)
+      (!(await existsDir(repo)) || !(await readDir(repo)).length)
     );
   }
 

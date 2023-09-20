@@ -2,7 +2,7 @@ import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import { resolveDatabaseName } from "../utils/datatruck/config";
-import { checkDir, readDir } from "../utils/fs";
+import { existsDir, readDir } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
@@ -152,7 +152,7 @@ export abstract class SqlDumpTaskAbstract<
 
     ok(typeof outputPath === "string");
 
-    if (!(await checkDir(outputPath)))
+    if (!(await existsDir(outputPath)))
       await mkdir(outputPath, { recursive: true });
 
     if (!this.config.oneFileByTable) {

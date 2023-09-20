@@ -3,7 +3,7 @@ import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import { parsePaths } from "../utils/datatruck/paths";
 import {
-  checkDir,
+  existsDir,
   createFileScanner,
   ensureEmptyDir,
   fastFolderSizeAsync,
@@ -156,16 +156,16 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const snapshotPath = join(this.config.outPath, snapshotName);
 
     if (data.options.verbose) logExec(`Deleting ${snapshotPath}`);
-    if (await checkDir(snapshotPath))
+    if (await existsDir(snapshotPath))
       await rm(snapshotPath, {
         recursive: true,
       });
   }
 
   override async onSnapshots(data: SnapshotsDataType) {
-    if (!(await checkDir(this.config.outPath)))
+    if (!(await existsDir(this.config.outPath)))
       throw new Error(
-        `Repository (${this.repository.name}) out path does not exist: ${this.config.outPath}`
+        `Repository (${this.repository.name}) out path does not exist: ${this.config.outPath}`,
       );
     const snapshotNames = await readDir(this.config.outPath);
     const snapshots: SnapshotResultType[] = [];
