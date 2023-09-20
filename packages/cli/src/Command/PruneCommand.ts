@@ -178,7 +178,7 @@ export class PruneCommand extends CommandAbstract<
 
     if (!this.options.confirm && !this.options.dryRun) {
       const answer = await confirm(
-        `Delete ${pruneResult.prune}/${pruneResult.total} snapshots?`
+        `Delete ${pruneResult.prune}/${pruneResult.total} snapshots?`,
       );
       if (answer) await prune.confirm(pruneResult.snapshots);
     }

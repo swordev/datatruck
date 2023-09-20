@@ -19,7 +19,7 @@ export type FilterByLastOptionsType = {
 export function filterByLast<TItem extends { date: string }>(
   items: TItem[],
   options: FilterByLastOptionsType,
-  reasons?: Record<number, string[]>
+  reasons?: Record<number, string[]>,
 ) {
   const filters: {
     [name in keyof typeof options]: {

@@ -99,7 +99,7 @@ export const mariadbTaskDefinition: JSONSchema7 = {
 };
 
 function normalizeConfig(
-  input: Pick<MariadbTaskConfigType, "compress" | "parallel">
+  input: Pick<MariadbTaskConfigType, "compress" | "parallel">,
 ) {
   let parallel = input.parallel ?? "auto";
   let cores = cpus().length;
@@ -280,7 +280,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
         {
           log: this.verbose,
           stderr: { onData: () => {} },
-        }
+        },
       );
     }
   }
@@ -296,11 +296,11 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     const removeFiles: string[] = [];
     let files: string[] = [];
     const reloadFiles = async (
-      data: { removeFile?: string } = {}
+      data: { removeFile?: string } = {},
     ): Promise<string[]> => {
       if (data.removeFile) removeFiles.push(data.removeFile);
       return (files = (await readDir(restorePath)).filter(
-        (v) => !removeFiles.includes(v)
+        (v) => !removeFiles.includes(v),
       ));
     };
 
@@ -406,7 +406,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
               });
             },
           },
-        }
+        },
       );
 
       xbStream.pipe(p1.stdin, { end: true });
@@ -433,7 +433,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
         {
           log: this.verbose,
           stderr: { onData: () => {} },
-        }
+        },
       );
     }
 

@@ -41,7 +41,7 @@ export type PruneResultType = {
 export class PruneAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, PruneActionsOptionsType>
+    readonly options: IfRequireKeys<TRequired, PruneActionsOptionsType>,
   ) {}
 
   async confirm(snapshots: PruneResultType["snapshots"]) {
@@ -50,7 +50,7 @@ export class PruneAction<TRequired extends boolean = true> {
     for (const snapshot of snapshots) {
       if (!snapshot.exclusionReasons?.length) {
         const repoInstance = RepositoryFactory(
-          repository[snapshot.repositoryName]
+          repository[snapshot.repositoryName],
         );
         await repoInstance.onPrune({
           snapshot: snapshot,
@@ -63,7 +63,7 @@ export class PruneAction<TRequired extends boolean = true> {
   async exec() {
     const snapshotsAction = new SnapshotsAction<false>(
       this.config,
-      this.options
+      this.options,
     );
     const snapshots = await snapshotsAction.exec("prune");
     const snapshotsDeleted: PruneResultType["snapshots"] = [];
@@ -90,7 +90,7 @@ export class PruneAction<TRequired extends boolean = true> {
             const [firstSnapshot] = groupedSnapshots;
             const packageName = firstSnapshot.packageName;
             const config = this.config.packages.find(
-              (pkg) => pkg.name === packageName
+              (pkg) => pkg.name === packageName,
             );
             const prunePolicy = config?.prunePolicy ?? {};
             return {
@@ -104,7 +104,7 @@ export class PruneAction<TRequired extends boolean = true> {
             };
           }
         : inputFilter,
-      reasons
+      reasons,
     );
 
     const result: PruneResultType = {

@@ -16,14 +16,14 @@ export class DataFormat<TItem extends Record<string, unknown>> {
         labels: string[];
         handler: (item: TItem) => (string | number | null | undefined)[];
       };
-    }
+    },
   ) {}
 
   protected formatToJson() {
     return JSON.stringify(
       this.options.json
         ? this.options.items.map(this.options.json)
-        : this.options.items
+        : this.options.items,
     );
   }
 
@@ -37,7 +37,7 @@ export class DataFormat<TItem extends Record<string, unknown>> {
         breakLength: Infinity,
         compact: false,
       },
-      this.options.items
+      this.options.items,
     );
   }
 
@@ -58,7 +58,7 @@ export class DataFormat<TItem extends Record<string, unknown>> {
     format: FormatType,
     options?: {
       tpl?: Record<string, () => string>;
-    }
+    },
   ) {
     if (format === "table") {
       return this.formatToTable();
@@ -77,7 +77,7 @@ export class DataFormat<TItem extends Record<string, unknown>> {
       if (!(name in tpl)) {
         const tplNames = Object.keys(tpl).join(", ");
         throw new AppError(
-          `Template name not found: ${name} (valid names: ${tplNames})`
+          `Template name not found: ${name} (valid names: ${tplNames})`,
         );
       }
       return tpl[name]();

@@ -68,7 +68,7 @@ export type LogMapType = {
 export function CommandFactory<TCommand extends keyof OptionsMapType>(
   type: TCommand,
   globalOptions: GlobalOptionsType<false>,
-  options: OptionsMapType[TCommand]
+  options: OptionsMapType[TCommand],
 ) {
   const constructor = CommandConstructorFactory(type);
   return new constructor(globalOptions, options as any);
@@ -77,13 +77,13 @@ export function CommandFactory<TCommand extends keyof OptionsMapType>(
 export async function exec<TCommand extends keyof OptionsMapType>(
   type: TCommand,
   globalOptions: GlobalOptionsType<false>,
-  options: OptionsMapType[TCommand]
+  options: OptionsMapType[TCommand],
 ) {
   return await CommandFactory(type, globalOptions, options).onExec();
 }
 
 export function makeParseLog<TCommand extends keyof LogMapType>(
-  type: TCommand
+  type: TCommand,
 ) {
   const data: unknown[] = [];
   const consoleLog = console.log;

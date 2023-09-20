@@ -59,10 +59,13 @@ const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
             ...Array.from({ length: 20 })
               .fill(0)
               .map((v, i) => `file_${i}`)
-              .reduce((result, name) => {
-                result[name] = `filename: ${name}`;
-                return result;
-              }, {} as Record<string, string>),
+              .reduce(
+                (result, name) => {
+                  result[name] = `filename: ${name}`;
+                  return result;
+                },
+                {} as Record<string, string>,
+              ),
           },
         },
       },
@@ -131,8 +134,8 @@ describe(
             outputFormat: "json",
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       expect(parseConfigLog()).toMatchObject([
@@ -159,8 +162,8 @@ describe(
             outputFormat: "json",
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       expect(parseConfigLog()).toMatchObject([
@@ -193,8 +196,8 @@ describe(
             config: configPath,
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
@@ -208,7 +211,7 @@ describe(
             fileChanger,
             changes,
             backupIndex: ++backupIndex,
-          })
+          }),
         );
       }
 
@@ -237,8 +240,8 @@ describe(
           {
             keepLast: 1,
             confirm: true,
-          }
-        )
+          },
+        ),
       ).toBe(0);
 
       const parseSnapshotsLog = makeParseLog(CommandEnum.snapshots);
@@ -251,8 +254,8 @@ describe(
             outputFormat: "json",
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       const snapshots = parseSnapshotsLog();
@@ -291,8 +294,8 @@ describe(
               config: configPath,
               verbose: 1,
             },
-            {}
-          )
+            {},
+          ),
         ).toBe(0);
 
         const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
@@ -306,7 +309,7 @@ describe(
               fileChanger,
               changes,
               backupIndex: ++backupIndex,
-            })
+            }),
           );
         }
 
@@ -337,7 +340,7 @@ describe(
             },
           });
         }
-      }
+      },
     );
 
     it.each(repositoryTypes)("snapshots of %s", async (type) => {
@@ -367,8 +370,8 @@ describe(
             config: configPath,
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       await expectSuccessBackup({
@@ -388,8 +391,8 @@ describe(
             outputFormat: "json",
             verbose: 1,
           },
-          {}
-        )
+          {},
+        ),
       ).toBe(0);
 
       const snapshots = parseSnapshotsLog();
@@ -405,5 +408,5 @@ describe(
   },
   {
     timeout: 300_000,
-  }
+  },
 );

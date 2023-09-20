@@ -38,7 +38,7 @@ export type SnapshotExtendedType = {
 export class SnapshotsAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, SnapshotsActionOptionsType>
+    readonly options: IfRequireKeys<TRequired, SnapshotsActionOptionsType>,
   ) {}
 
   async exec(sourceAction?: RepositoryConfigEnabledActionType) {
@@ -61,7 +61,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
 
       const packageNames = this.options.packageConfig
         ? this.options.packageNames?.filter((name) =>
-            configPackageNames.includes(name)
+            configPackageNames.includes(name),
           ) || configPackageNames
         : this.options.packageNames;
 
@@ -79,7 +79,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
             shortId: ss.id.slice(0, 8),
             repositoryName: repo.name,
             repositoryType: repo.type,
-          } as SnapshotExtendedType)
+          }) as SnapshotExtendedType,
       );
       result.push(...extentedItems);
     }

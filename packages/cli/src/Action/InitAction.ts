@@ -12,7 +12,7 @@ export type InitActionOptionsType = {
 export class InitAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, InitActionOptionsType>
+    readonly options: IfRequireKeys<TRequired, InitActionOptionsType>,
   ) {}
 
   async exec() {

@@ -20,7 +20,7 @@ export function renderSpinner(counter: number) {
 export function renderProgressBar(
   progress: number,
   size = 10,
-  subprogress?: number
+  subprogress?: number,
 ) {
   const completeChar = "\u2588";
   const incompleteChar = "\u2591";
@@ -56,7 +56,7 @@ export function logVars(data: Record<string, any>) {
     }
     const value = data[key];
     console.info(
-      `${chalk.cyan(key)}${chalk.grey(":")} ${chalk.white(value ?? "")}`
+      `${chalk.cyan(key)}${chalk.grey(":")} ${chalk.white(value ?? "")}`,
     );
   }
 }
@@ -65,13 +65,15 @@ export function logExec(
   command: string,
   argv: string[] = [],
   env?: NodeJS.ProcessEnv,
-  logToStderr?: boolean
+  logToStderr?: boolean,
 ) {
   const envText = env
     ? Object.keys(env)
         .reduce((items, key) => {
           items.push(
-            `${chalk.cyan(key)}${chalk.grey("=")}${chalk.white(env[key] ?? "")}`
+            `${chalk.cyan(key)}${chalk.grey("=")}${chalk.white(
+              env[key] ?? "",
+            )}`,
           );
           return items;
         }, [] as string[])
@@ -79,7 +81,7 @@ export function logExec(
     : "";
 
   const text = `+ ${envText ? envText + " " : ""}${chalk.yellow(
-    `${command} ${argv.join(" ")}`
+    `${command} ${argv.join(" ")}`,
   )}`;
 
   logToStderr ? process.stderr.write(`${text}\n`) : console.info(text);
@@ -87,7 +89,7 @@ export function logExec(
 
 export function resultColumn(
   error: Error | null | string,
-  state?: "started" | "ended"
+  state?: "started" | "ended",
 ) {
   return error ? "❌" : state === "started" ? " ? " : "✅";
 }
@@ -119,7 +121,7 @@ export type OptionsType<T1, T2 extends { [K in keyof T1]: unknown }> = {
 
 export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
   object: T1,
-  options: OptionsType<T1, T2>
+  options: OptionsType<T1, T2>,
 ) {
   const result: T2 = {} as any;
   for (const key in options) {
@@ -168,7 +170,7 @@ export function confirm(message: string) {
       function (answer) {
         result = /^\s*y(es)?\s*$/i.test(answer);
         rl.close();
-      }
+      },
     );
     rl.on("close", () => {
       resolve(result);

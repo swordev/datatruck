@@ -48,12 +48,12 @@ export class RestoreAction<TRequired extends boolean = true> {
 
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, RestoreActionOptionsType>
+    readonly options: IfRequireKeys<TRequired, RestoreActionOptionsType>,
   ) {}
 
   protected assocConfigs(
     packages: PackageConfigType[],
-    snapshots: SnapshotType[]
+    snapshots: SnapshotType[],
   ): [SnapshotType, PackageConfigType | null][] {
     return snapshots.map((snapshot) => {
       const pkg =
@@ -65,7 +65,7 @@ export class RestoreAction<TRequired extends boolean = true> {
   protected async init(
     session: RestoreSessionManager,
     snapshotId: string,
-    snapshots: SnapshotAndConfigType[]
+    snapshots: SnapshotAndConfigType[],
   ) {
     await session.initDrivers();
 
@@ -132,7 +132,7 @@ export class RestoreAction<TRequired extends boolean = true> {
               packageTaskName: ss.packageTaskName,
               tags: ss.tags,
               repositoryName: repository.name,
-            }) as SnapshotType
+            }) as SnapshotType,
         ),
       );
     }
@@ -154,7 +154,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     pkg: PackageConfigType,
     task: TaskAbstract<any>,
     snapshot: SnapshotType,
-    targetPath: string | undefined
+    targetPath: string | undefined,
   ) {
     const taskId = session.findTaskId({
       packageName: pkg.name,
@@ -207,7 +207,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
     snapshot: SnapshotType,
-    targetPath: string | undefined
+    targetPath: string | undefined,
   ) {
     const repositoryId = session.findRepositoryId({
       packageName: pkg.name,
@@ -239,7 +239,7 @@ export class RestoreAction<TRequired extends boolean = true> {
         packageConfig: pkg.repositoryConfigs?.find(
           (config) =>
             config.type === repo.type &&
-            (!config.names || config.names.includes(repo.name))
+            (!config.names || config.names.includes(repo.name)),
         )?.config,
         options: this.options,
         snapshot: snapshot,
@@ -261,7 +261,7 @@ export class RestoreAction<TRequired extends boolean = true> {
           {},
           {
             log: this.options.verbose,
-          }
+          },
         );
     } catch (error) {
       push(this.repoErrors, pkg.name, (repoError = error as Error));
@@ -341,7 +341,7 @@ export class RestoreAction<TRequired extends boolean = true> {
         pkg,
         repo,
         snapshot,
-        targetPath
+        targetPath,
       );
 
       if (taskInstance) {

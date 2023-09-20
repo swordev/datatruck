@@ -12,7 +12,7 @@ import {
 } from "../Repository/ResticRepository";
 
 export function RepositoryFactory(
-  repository: RepositoryConfigType
+  repository: RepositoryConfigType,
 ): RepositoryAbstract<any> {
   const type = repository.type;
   if (type === gitRepositoryName) {

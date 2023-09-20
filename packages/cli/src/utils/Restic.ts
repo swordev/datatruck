@@ -48,14 +48,14 @@ export class Restic {
     readonly options: {
       log?: boolean;
       env: Record<string, string>;
-    }
+    },
   ) {}
 
   static async formatRepository(input: RepositoryType, hidePassword?: boolean) {
     if (input.backend === "local") {
       if (typeof input.path !== "string")
         throw new Error(
-          `Invalid path at "${input.name}" repository: ${input.path}`
+          `Invalid path at "${input.name}" repository: ${input.path}`,
         );
       return resolve(input.path);
     }
@@ -72,14 +72,14 @@ export class Restic {
 
     return `${input.backend}:${formatUri(
       { ...input, password: input.password as string },
-      hidePassword
+      hidePassword,
     )}`;
   }
 
   async exec(
     args: string[],
     settings?: ExecSettingsInterface,
-    options?: { cwd?: string }
+    options?: { cwd?: string },
   ) {
     return await exec(
       "restic",
@@ -106,7 +106,7 @@ export class Restic {
             }
           : {},
         ...(settings ?? {}),
-      }
+      },
     );
   }
 
@@ -189,7 +189,7 @@ export class Restic {
       ],
       {
         stdout: { save: true },
-      }
+      },
     );
     return JSON.parse(result.stdout);
   }
@@ -250,7 +250,7 @@ export class Restic {
         },
         {
           cwd: options.cwd,
-        }
+        },
       );
 
     try {
@@ -259,7 +259,7 @@ export class Restic {
       if (
         options.allowEmptySnapshot &&
         (error as NodeJS.ErrnoException).message.includes(
-          "unable to save snapshot: snapshot is empty"
+          "unable to save snapshot: snapshot is empty",
         )
       ) {
         if (options.createEmptyDir) {
@@ -342,7 +342,7 @@ export class Restic {
               },
             }),
           },
-        }
+        },
       );
     } finally {
       clearTimeout(progressTimeout);

@@ -174,7 +174,7 @@ export class SnapshotsCommand extends CommandAbstract<
             ssids: () => items.map((i) => i.shortId).join(),
             pkgNames: () => items.map((i) => i.packageName).join(),
           },
-        })
+        }),
       );
 
     return 0;

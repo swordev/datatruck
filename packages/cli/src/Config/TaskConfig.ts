@@ -45,7 +45,7 @@ export const taskConfigDefinition: JSONSchema7 = {
           },
         },
         else: false,
-      } as JSONSchema7)
+      }) as JSONSchema7,
   ),
 };
 

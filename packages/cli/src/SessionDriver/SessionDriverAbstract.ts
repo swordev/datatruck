@@ -81,7 +81,7 @@ export type SessionDriverOptions = {
 };
 
 export abstract class SessionDriverAbstract<
-  TOptions extends SessionDriverOptions = SessionDriverOptions
+  TOptions extends SessionDriverOptions = SessionDriverOptions,
 > {
   constructor(readonly options: TOptions) {}
   async onInit() {}
@@ -89,6 +89,6 @@ export abstract class SessionDriverAbstract<
   async onEnd(data?: Record<string, any>) {}
   abstract onRead(
     data: ReadDataType,
-    entity: EntityEnum
+    entity: EntityEnum,
   ): Promise<ReadResultType[]>;
 }

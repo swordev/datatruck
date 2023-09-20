@@ -65,7 +65,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     tag: Pick<
       SnapshotTagObjectType,
       SnapshotTagEnum.PACKAGE | SnapshotTagEnum.ID
-    >
+    >,
   ) {
     return `${GitRepository.refPrefix}/${tag.package}/${tag.id}`;
   }
@@ -162,7 +162,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     await git.clone({ repo: this.config.repo });
 
     const tagNames = data.options.ids?.map(
-      (id) => `${GitRepository.refPrefix}/*/${id}*`
+      (id) => `${GitRepository.refPrefix}/*/${id}*`,
     ) || [`${GitRepository.refPrefix}/*`];
     const tags = await git.getTags(tagNames);
 
@@ -198,7 +198,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
   override async onBackup(
-    data: BackupDataType<GitPackageRepositoryConfigType>
+    data: BackupDataType<GitPackageRepositoryConfigType>,
   ) {
     const pkg = data.package;
     const sourcePath = data.targetPath ?? pkg.path;
@@ -296,12 +296,12 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     });
   }
   override onCopyBackup(
-    data: CopyBackupType<GitRepositoryConfigType>
+    data: CopyBackupType<GitRepositoryConfigType>,
   ): Promise<void> {
     throw new Error("Method not implemented.");
   }
   override async onRestore(
-    data: RestoreDataType<GitPackageRepositoryConfigType>
+    data: RestoreDataType<GitPackageRepositoryConfigType>,
   ) {
     const restorePath = data.targetPath ?? data.package.restorePath;
 

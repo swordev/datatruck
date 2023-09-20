@@ -11,7 +11,7 @@ import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(
   config: ConfigType,
-  repositoryName: string
+  repositoryName: string,
 ) {
   const repo = config.repositories.find((v) => v.name === repositoryName);
   if (!repo) throw new AppError(`Repository '${repositoryName}' not found`);
@@ -20,7 +20,7 @@ export function findRepositoryOrFail(
 
 export function filterRepository(
   repository: RepositoryConfigType,
-  action?: RepositoryConfigEnabledActionType
+  action?: RepositoryConfigEnabledActionType,
 ) {
   const enabled = repository.enabled ?? true;
   if (typeof enabled === "boolean") return enabled;
@@ -36,7 +36,7 @@ export function filterPackages(
     repositoryNames?: string[];
     repositoryTypes?: string[];
     sourceAction?: RepositoryConfigEnabledActionType;
-  }
+  },
 ) {
   const packagePatterns = makePathPatterns(options.packageNames);
   const taskNamePatterns = makePathPatterns(options.packageTaskNames);
@@ -74,7 +74,7 @@ type ResolvePackagePathParamsType = ResolvePackageParamsType & {
 
 export function resolvePackagePath(
   value: string,
-  params: ResolvePackagePathParamsType
+  params: ResolvePackagePathParamsType,
 ) {
   return render(value, {
     ...params,
@@ -91,7 +91,7 @@ type ResolveDatabaseNameParamsType = ResolvePackageParamsType & {
 
 export function resolveDatabaseName(
   value: string,
-  params: ResolveDatabaseNameParamsType
+  params: ResolveDatabaseNameParamsType,
 ) {
   return render(value, params);
 }
@@ -104,7 +104,7 @@ type ResolvePackageParamsType = {
 
 export function resolvePackage(
   pkg: PackageConfigType,
-  params: ResolvePackageParamsType
+  params: ResolvePackageParamsType,
 ) {
   pkg = Object.assign({}, pkg);
   const pkgParams = {
@@ -114,11 +114,11 @@ export function resolvePackage(
   };
   if (pkg.include)
     pkg.include = pkg.include.map((v) =>
-      typeof v === "string" ? render(v, pkgParams) : v
+      typeof v === "string" ? render(v, pkgParams) : v,
     );
   if (pkg.exclude)
     pkg.exclude = pkg.exclude.map((v) =>
-      typeof v === "string" ? render(v, pkgParams) : v
+      typeof v === "string" ? render(v, pkgParams) : v,
     );
   if (pkg.path) pkg.path = resolvePackagePath(pkg.path, pkgParams);
   if (pkg.restorePath)
@@ -131,7 +131,7 @@ export function resolvePackage(
 
 export function resolvePackages(
   packages: PackageConfigType[],
-  params: ResolvePackageParamsType
+  params: ResolvePackageParamsType,
 ) {
   return packages.map((pkg) => resolvePackage(pkg, params));
 }

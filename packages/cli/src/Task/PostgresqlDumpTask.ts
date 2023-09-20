@@ -75,7 +75,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
         stdout: {
           save: true,
         },
-      }
+      },
     );
   }
 
@@ -96,7 +96,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
   override async onExportTables(
     tableNames: string[],
     output: string,
-    onProgress: (progress: { totalBytes: number }) => void
+    onProgress: (progress: { totalBytes: number }) => void,
   ) {
     const stream = createWriteStream(output);
 
@@ -118,7 +118,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
             toExitCode: true,
           },
           log: this.verbose,
-        }
+        },
       ),
     ]);
   }
@@ -134,7 +134,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
       undefined,
       {
         log: this.verbose,
-      }
+      },
     );
   }
 }

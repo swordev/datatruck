@@ -124,7 +124,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
       },
       {
         log: this.verbose,
-      }
+      },
     );
 
     // Config
@@ -205,7 +205,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
                 }
               });
             },
-          }
+          },
         );
       } finally {
         await new Promise((resolve) => stream.end(resolve));
@@ -282,7 +282,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     const incrementProgress = async (
       description?: string,
       item?: string,
-      count = true
+      count = true,
     ) => {
       await data.onProgress({
         absolute: {
@@ -307,7 +307,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
       },
       {
         log: this.verbose,
-      }
+      },
     );
 
     await incrementProgress();
@@ -339,7 +339,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
             await incrementProgress(
               progress.type === "end" ? "Files copied" : "Copying file",
               progress.path,
-              !progress.type
+              !progress.type,
             ),
         });
       }

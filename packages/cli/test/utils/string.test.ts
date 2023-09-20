@@ -28,7 +28,7 @@ describe("checkMatch", () => {
 describe("formatDateTime", () => {
   it("returns valid date", () => {
     expect(
-      /^\d{4}-\d{2}-\d{2}/.test(formatDateTime("2020-01-01 00:00:00"))
+      /^\d{4}-\d{2}-\d{2}/.test(formatDateTime("2020-01-01 00:00:00")),
     ).toBe(true);
   });
 });
@@ -38,7 +38,7 @@ describe("formatUri", () => {
     expect(
       formatUri({
         path: "/var/data",
-      })
+      }),
     ).toBe("/var/data");
   });
 
@@ -48,7 +48,7 @@ describe("formatUri", () => {
         protocol: "http",
         host: "localhost",
         path: "/var/data",
-      })
+      }),
     ).toBe("http://localhost/var/data");
   });
 
@@ -61,7 +61,7 @@ describe("formatUri", () => {
         host: "localhost",
         port: 443,
         path: "/path1",
-      })
+      }),
     ).toBe("https://guest:secret@localhost:443/path1");
   });
 });
@@ -84,7 +84,7 @@ describe("render", () => {
       render("{var1}-{var2}", {
         var1: "hello",
         var2: "world",
-      })
+      }),
     ).toBe("hello-world");
   });
 
@@ -92,7 +92,7 @@ describe("render", () => {
     expect(
       render("{var1}-{var1}", {
         var1: "hello",
-      })
+      }),
     ).toBe("hello-hello");
   });
 
@@ -100,7 +100,7 @@ describe("render", () => {
     expect(() =>
       render("{var1}-{var2}", {
         var1: "hello",
-      })
+      }),
     ).toThrowError();
   });
   it("escapes special char", () => {
@@ -115,7 +115,7 @@ describe("serialize", () => {
 
   it("returns simple message + data", () => {
     expect(serialize("hello", { value: "world" })).toBe(
-      `hello (${JSON.stringify({ value: "world" }, null, 2)})`
+      `hello (${JSON.stringify({ value: "world" }, null, 2)})`,
     );
   });
 });

@@ -185,7 +185,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       if (
         data.options.ids &&
         !data.options.ids.some((id) =>
-          snapshotNameData.snapshotShortId.startsWith(id.slice(0, 8))
+          snapshotNameData.snapshotShortId.startsWith(id.slice(0, 8)),
         )
       )
         continue;
@@ -223,7 +223,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async onBackup(
-    data: BackupDataType<DatatruckPackageRepositoryConfigType>
+    data: BackupDataType<DatatruckPackageRepositoryConfigType>,
   ) {
     const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
@@ -264,7 +264,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         compress:
           p.compress ?? data.packageConfig?.compress ?? this.config.compress,
         includeResult: [],
-      })
+      }),
     );
 
     const defaultsPack: $PackObject = {
@@ -284,7 +284,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         return false;
       const pack =
         configPacks.find((pack) =>
-          checkPath(entry.path, pack.include, pack.exclude)
+          checkPath(entry.path, pack.include, pack.exclude),
         ) || defaultsPack;
 
       if (pack.onePackByResult) {
@@ -320,7 +320,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           onEntry: async (data) =>
             await scanner.progress(
               pack.compress ? "Compressing" : "Packing",
-              data.path
+              data.path,
             ),
         });
     }
@@ -345,7 +345,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async onCopyBackup(
-    data: CopyBackupType<DatatruckRepositoryConfigType>
+    data: CopyBackupType<DatatruckRepositoryConfigType>,
   ): Promise<void> {
     const snapshotName = DatatruckRepository.buildSnapshotName({
       snapshotId: data.snapshot.id,
@@ -354,7 +354,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
     const sourcePath = resolve(join(this.config.outPath, snapshotName));
     const targetPath = resolve(
-      join(data.mirrorRepositoryConfig.outPath, snapshotName)
+      join(data.mirrorRepositoryConfig.outPath, snapshotName),
     );
 
     if (data.options.verbose) logExec(`Copying backup files to ${targetPath}`);
@@ -389,7 +389,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async onRestore(
-    data: RestoreDataType<DatatruckPackageRepositoryConfigType>
+    data: RestoreDataType<DatatruckPackageRepositoryConfigType>,
   ) {
     const relRestorePath = data.targetPath ?? data.package.restorePath;
     ok(relRestorePath);
@@ -447,7 +447,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         onEntry: async (data) =>
           await scanner.progress(
             tarFile.endsWith(".tar.gz") ? "Extracting" : "Unpacking",
-            data.path
+            data.path,
           ),
       });
     }

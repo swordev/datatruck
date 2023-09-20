@@ -12,7 +12,7 @@ export function snakeCase(value: string, char = "_") {
 
 export function render(
   subject: string,
-  vars: Record<string, string | undefined>
+  vars: Record<string, string | undefined>,
 ) {
   return subject.replace(/{([\w/]*)}/g, function (match, name) {
     if (!name.length) {

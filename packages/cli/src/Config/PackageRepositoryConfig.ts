@@ -44,7 +44,7 @@ export const packageRepositoryConfigDefinition: JSONSchema7 = {
           },
         },
         else: false,
-      } as JSONSchema7)
+      }) as JSONSchema7,
   ),
 };
 

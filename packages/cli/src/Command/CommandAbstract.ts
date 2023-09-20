@@ -13,22 +13,22 @@ export type GlobalOptionsType<TResolved = false> = {
 
 export type CommandConstructorType<
   TUnresolvedOptions,
-  TOptions extends SimilarObject<TUnresolvedOptions>
+  TOptions extends SimilarObject<TUnresolvedOptions>,
 > = {
   new (
     globalOptions: GlobalOptionsType<true>,
-    options: TOptions
+    options: TOptions,
   ): CommandAbstract<TUnresolvedOptions, TOptions>;
 };
 
 export abstract class CommandAbstract<
   TUnresolvedOptions,
-  TOptions extends SimilarObject<TUnresolvedOptions>
+  TOptions extends SimilarObject<TUnresolvedOptions>,
 > {
   readonly options: TOptions;
   constructor(
     readonly globalOptions: GlobalOptionsType<true>,
-    options: TUnresolvedOptions
+    options: TUnresolvedOptions,
   ) {
     this.options = parseOptions(options, this.onOptions());
   }

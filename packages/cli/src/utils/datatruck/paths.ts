@@ -6,7 +6,7 @@ export async function parsePaths(
   options: {
     cwd?: string;
     verbose?: boolean;
-  }
+  },
 ) {
   let paths: string[] = [];
   for (const value of values) {
@@ -17,14 +17,18 @@ export async function parsePaths(
         value.command,
         value.args,
         { cwd: options.cwd },
-        { log: options.verbose, stderr: { save: true }, stdout: { save: true } }
+        {
+          log: options.verbose,
+          stderr: { save: true },
+          stdout: { save: true },
+        },
       );
       const spawnFiles = [spawnResult.stderr, spawnResult.stdout].flatMap(
         (text) =>
           text
             .split(/\r?\n/)
             .map((v) => v.trim())
-            .filter((v) => !!v.length)
+            .filter((v) => !!v.length),
       );
       paths.push(...spawnFiles);
     }

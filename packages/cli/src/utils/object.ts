@@ -38,17 +38,17 @@ type GroupByKeyParamType<TItem> =
 
 export function groupBy<TItem>(
   items: TItem[],
-  keyOrCb: GroupByKeyParamType<TItem>
+  keyOrCb: GroupByKeyParamType<TItem>,
 ): Record<string, TItem[]>;
 export function groupBy<TItem>(
   items: TItem[],
   keyOrCb: GroupByKeyParamType<TItem>,
-  single: true
+  single: true,
 ): Record<string, TItem>;
 export function groupBy<TItem>(
   items: TItem[],
   keyOrCb: GroupByKeyParamType<TItem>,
-  single?: true
+  single?: true,
 ) {
   const keyCb: (item: TItem) => string =
     typeof keyOrCb === "function"
@@ -65,17 +65,23 @@ export function groupBy<TItem>(
       : JSON.stringify(keys);
 
   if (single) {
-    return items.reduce((result, item) => {
-      const resultKey = stringify(keyCb(item));
-      result[resultKey] = item;
-      return result;
-    }, {} as Record<string, TItem>);
+    return items.reduce(
+      (result, item) => {
+        const resultKey = stringify(keyCb(item));
+        result[resultKey] = item;
+        return result;
+      },
+      {} as Record<string, TItem>,
+    );
   } else {
-    return items.reduce((result, item) => {
-      const resultKey = stringify(keyCb(item));
-      if (!result[resultKey]) result[resultKey] = [];
-      result[resultKey].push(item);
-      return result;
-    }, {} as Record<string, TItem[]>);
+    return items.reduce(
+      (result, item) => {
+        const resultKey = stringify(keyCb(item));
+        if (!result[resultKey]) result[resultKey] = [];
+        result[resultKey].push(item);
+        return result;
+      },
+      {} as Record<string, TItem[]>,
+    );
   }
 }

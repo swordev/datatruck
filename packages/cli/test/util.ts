@@ -12,7 +12,7 @@ import { expect } from "vitest";
 
 export async function makeRepositoryConfig(
   type: RepositoryConfigTypeType,
-  name: string = type
+  name: string = type,
 ) {
   if (type === "datatruck") {
     return makeDatatruckRepositoryConfig(name);
@@ -25,7 +25,7 @@ export async function makeRepositoryConfig(
   }
 }
 export async function makeDatatruckRepositoryConfig(
-  name: string = "datatruck"
+  name: string = "datatruck",
 ) {
   return {
     type: "datatruck",
@@ -83,7 +83,7 @@ export type FileChangerResult = {
 export async function applyFileChanges(
   dir: string,
   changes: FileChanges,
-  returnFiles = true
+  returnFiles = true,
 ) {
   for (const name in changes) {
     const change = changes[name];
@@ -154,11 +154,11 @@ export async function readFiles(dir: string) {
 export async function expectSameFiles(
   files1: FileMap,
   files2: FileMap,
-  errorMessage: string
+  errorMessage: string,
 ) {
   expect(Object.keys(files1).sort().join("\n")).toEqualMessage(
     Object.keys(files2).sort().join("\n"),
-    errorMessage
+    errorMessage,
   );
 
   for (const name1 in files1) {

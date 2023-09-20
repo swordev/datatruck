@@ -102,7 +102,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
       if (this.lastColumns && columns !== this.lastColumns && truncated)
         process.stdout.write(`${clearCommand}\n`);
       process.stdout.write(
-        `${clearCommand}${truncatedLine}${hideCursorCommand}`
+        `${clearCommand}${truncatedLine}${hideCursorCommand}`,
       );
       this.lastColumns = columns;
     }
@@ -114,7 +114,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
   protected renderSpinner(text: string) {
     return text.replace(
       "{spinner}",
-      grey(this.tty ? renderSpinner(this.prints) : "?")
+      grey(this.tty ? renderSpinner(this.prints) : "?"),
     );
   }
 
@@ -143,8 +143,8 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
         renderProgressBar(
           absolute.percent ?? 0,
           10,
-          relative.percent ?? undefined
-        )
+          relative.percent ?? undefined,
+        ),
       );
     }
 

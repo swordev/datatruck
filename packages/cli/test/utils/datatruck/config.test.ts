@@ -58,7 +58,7 @@ describe("filterPackages", () => {
     expect(
       filterPackages(config, {
         packageNames: ["a"],
-      })
+      }),
     ).toMatchObject([
       {
         name: "a",
@@ -70,7 +70,7 @@ describe("filterPackages", () => {
     expect(
       filterPackages(config, {
         packageNames: ["*"],
-      })
+      }),
     ).toMatchObject([
       {
         name: "a",
@@ -85,7 +85,7 @@ describe("filterPackages", () => {
     expect(
       filterPackages(config, {
         repositoryNames: ["main1"],
-      })
+      }),
     ).toMatchObject([
       {
         name: "a",
@@ -97,7 +97,7 @@ describe("filterPackages", () => {
     expect(
       filterPackages(config, {
         repositoryTypes: ["restic"],
-      })
+      }),
     ).toMatchObject([
       {
         name: "b",
@@ -144,7 +144,7 @@ describe("findRepositoryOrFail", () => {
 
   it("returns repository config", () => {
     expect(findRepositoryOrFail(config, "a")).toMatchObject(
-      config.repositories[0]
+      config.repositories[0],
     );
   });
 });
@@ -160,8 +160,8 @@ describe("resolvePackage", () => {
           action: "backup",
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatchObject({
       name: "a",
     });
@@ -179,8 +179,8 @@ describe("resolvePackage", () => {
           action: "backup",
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatchObject({
       name: "a",
       path: "backup-a-1",
@@ -200,8 +200,8 @@ describe("resolvePackage", () => {
           action: "backup",
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatchObject({
       name: "a",
       path: "backup-a-1",
@@ -223,8 +223,8 @@ describe("resolvePackages", () => {
           action: "backup",
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatchObject([
       {
         name: "a",
@@ -246,8 +246,8 @@ describe("resolvePackages", () => {
           action: "backup",
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatchObject([
       {
         name: "a",
@@ -269,8 +269,8 @@ describe("resolvePackagePath", () => {
           snapshotId: "1",
           path: "path",
           snapshotDate: "2022-01-01 00:00:00",
-        }
-      )
+        },
+      ),
     ).toMatch("backup-a-1-path");
   });
 
@@ -300,7 +300,7 @@ describe("resolvePackagePath", () => {
         snapshotId: "1",
         snapshotDate: "2022-01-01 00:00:00",
         path: undefined,
-      })
+      }),
     ).toThrowError();
   });
 });
@@ -316,8 +316,8 @@ describe("resolveDatabaseName", () => {
           snapshotId: "1",
           snapshotDate: "2022-01-01 00:00:00",
           database: "db",
-        }
-      )
+        },
+      ),
     ).toMatch("backup-a-1-db");
   });
 
@@ -329,7 +329,7 @@ describe("resolveDatabaseName", () => {
         snapshotId: "1",
         snapshotDate: "2022-01-01 00:00:00",
         database: "a",
-      })
+      }),
     ).toThrowError();
   });
 });

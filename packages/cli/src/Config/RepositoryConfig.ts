@@ -64,7 +64,7 @@ export const repositoryConfigDefinition: JSONSchema7 = {
           },
         },
         else: false,
-      } as JSONSchema7)
+      }) as JSONSchema7,
   ),
 };
 

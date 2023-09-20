@@ -17,14 +17,14 @@ export type ConfigActionOptionsType = {
 
 export class ConfigAction<TRequired extends boolean = true> {
   constructor(
-    readonly options: IfRequireKeys<TRequired, ConfigActionOptionsType>
+    readonly options: IfRequireKeys<TRequired, ConfigActionOptionsType>,
   ) {}
 
   static validate(config: ConfigType) {
     const validate = new Ajv().compile(schema);
     if (!validate(config))
       throw new AppError(
-        "Json schema error: " + JSON.stringify(validate.errors, null, 2)
+        "Json schema error: " + JSON.stringify(validate.errors, null, 2),
       );
   }
 
@@ -44,11 +44,11 @@ export class ConfigAction<TRequired extends boolean = true> {
         for (const mirrorRepoName of repo.mirrorRepoNames) {
           if (!repos[mirrorRepoName])
             throw new AppError(
-              `Mirror repository name not found: ${mirrorRepoName}`
+              `Mirror repository name not found: ${mirrorRepoName}`,
             );
           if (repos[mirrorRepoName].type !== repo.type)
             throw new AppError(
-              `Mirror repository type is incompatible: ${mirrorRepoName}`
+              `Mirror repository type is incompatible: ${mirrorRepoName}`,
             );
           if (mirrorRepoNames.includes(mirrorRepoName))
             throw new AppError(`Mirror repository is already used`);
@@ -103,7 +103,7 @@ export class ConfigAction<TRequired extends boolean = true> {
       this.options.path,
       "datatruck.config",
       parseFileExtensions,
-      "Config path not found"
+      "Config path not found",
     );
     const config: ConfigType = await parseFile(path, "config");
     ConfigAction.validate(config);

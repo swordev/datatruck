@@ -69,7 +69,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
         stdout: {
           save: true,
         },
-      }
+      },
     );
     return result.stdout
       .split(/\n/g)
@@ -98,7 +98,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
         (!this.config.includeDatabases ||
           isMatch(databaseName, this.config.includeDatabases)) &&
         (!this.config.excludeDatabases ||
-          !isMatch(databaseName, this.config.excludeDatabases))
+          !isMatch(databaseName, this.config.excludeDatabases)),
     );
 
     await mkdirIfNotExists(targetPath);
@@ -106,10 +106,10 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
     for (const databaseName of databaseNames) {
       const databasePath = join(
         targetPath,
-        `${databaseName}${MssqlTask.SUFFIX}`
+        `${databaseName}${MssqlTask.SUFFIX}`,
       );
       await this.exec(
-        `BACKUP DATABASE [${databaseName}] TO DISK='${databasePath}' WITH FORMAT`
+        `BACKUP DATABASE [${databaseName}] TO DISK='${databasePath}' WITH FORMAT`,
       );
     }
   }
@@ -141,7 +141,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
         throw new AppError(`Target database already exists: ${databaseName}`);
 
       await this.exec(
-        `RESTORE DATABASE [${databaseName}] FROM disk='${databasePath}'`
+        `RESTORE DATABASE [${databaseName}] FROM disk='${databasePath}'`,
       );
     }
   }

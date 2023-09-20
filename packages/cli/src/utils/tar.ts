@@ -80,7 +80,7 @@ export async function createTar(options: CreateTarOptions) {
         return true;
       },
     },
-    options.include
+    options.include,
   );
 
   const outStream = createWriteStream(options.output);

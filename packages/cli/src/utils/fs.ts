@@ -116,7 +116,7 @@ export async function findFile(
   sourcePath: string,
   baseName: string,
   extensions: string[],
-  errorMessage = "Path not found"
+  errorMessage = "Path not found",
 ) {
   const info = await stat(sourcePath);
   let path: string | undefined;
@@ -175,7 +175,7 @@ export async function mkTmpDir(prefix: string, id?: string) {
 
 export async function readPartialFile(
   path: string,
-  positions: [number, number?]
+  positions: [number, number?],
 ) {
   let result: string = "";
 
@@ -442,13 +442,13 @@ export async function cpy(options: {
     await eachLimit(
       stream,
       options.concurrency ?? 1,
-      async (entryPath) => await task(entryPath, input.sourcePath)
+      async (entryPath) => await task(entryPath, input.sourcePath),
     );
   } else if (input.type === "stream") {
     await eachLimit(
       input.value as any as string[],
       options.concurrency ?? 1,
-      async (entryPath) => await task(entryPath, input.basePath)
+      async (entryPath) => await task(entryPath, input.basePath),
     );
   } else if (input.type === "pathList") {
     const stream = createInterface({

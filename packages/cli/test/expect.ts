@@ -27,8 +27,8 @@ export async function expectSuccessBackup(data: {
         config: data.configPath,
         verbose: 1,
       },
-      {}
-    )
+      {},
+    ),
   ).toEqualMessage(0, messageError);
 
   const parseLog = makeParseLog(CommandEnum.snapshots);
@@ -43,8 +43,8 @@ export async function expectSuccessBackup(data: {
       },
       {
         last: "1",
-      }
-    )
+      },
+    ),
   ).toEqualMessage(0, messageError);
 
   const snapshot = parseLog()[0];
@@ -69,8 +69,8 @@ export async function expectSuccessRestore(data: {
         outputFormat: "json",
         verbose: 1,
       },
-      data.restoreOptions
-    )
+      data.restoreOptions,
+    ),
   ).toEqualMessage(0, messageError);
 
   const restorePath = `${data.fileChanger.path}-restore-${data.restoreOptions.id}`;

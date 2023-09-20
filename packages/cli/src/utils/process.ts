@@ -85,7 +85,7 @@ export type ParseStreamDataOptions<S extends boolean = boolean> = {
 
 export function parseStreamData<S extends boolean>(
   stream: Readable,
-  options: ParseStreamDataOptions<S> = {}
+  options: ParseStreamDataOptions<S> = {},
 ): Promise<S extends true ? string : undefined> {
   const log = options.log === true ? {} : options.log;
   let result: string | undefined;
@@ -130,7 +130,7 @@ export function waitForClose<O extends boolean, E extends boolean>(
     stdout?: O;
     stderr?: E;
     onExitCode?: OnExitCode;
-  } = {}
+  } = {},
 ): Promise<
   { exitCode: number } & (O extends true ? { stdout: string } : {}) &
     (E extends true ? { stderr: string } : {})
@@ -143,7 +143,7 @@ export function waitForClose<O extends boolean, E extends boolean>(
       result.stdout = "";
       p.stdout!.on(
         "data",
-        (data: Buffer) => (result.stdout += data.toString())
+        (data: Buffer) => (result.stdout += data.toString()),
       );
     }
     p.once("error", reject).once("close", (exitCode) => {
@@ -181,7 +181,7 @@ export type LogProcessOptions = {
 export async function logProcessExec(
   command: string,
   argv: any[],
-  options: LogProcessOptions
+  options: LogProcessOptions,
 ) {
   const logEnv = options.envNames?.reduce((env, key) => {
     const value = options?.env?.[key];
@@ -198,7 +198,7 @@ export async function logProcessExec(
         ]
       : argv,
     logEnv,
-    options.toStderr
+    options.toStderr,
   );
 }
 
@@ -218,7 +218,7 @@ export type ProcessOptions<O1 extends boolean, O2 extends boolean> = {
 export function createProcess<O1 extends boolean, O2 extends boolean>(
   command: string,
   argv: (string | number)[] = [],
-  options: SpawnOptions & ProcessOptions<O1, O2> = {}
+  options: SpawnOptions & ProcessOptions<O1, O2> = {},
 ): ChildProcessByStdio<Writable, Readable, Readable> &
   PromiseLike<
     { exitCode: number } & (O1 extends true ? { stdout: string } : {}) &
@@ -238,14 +238,14 @@ export function createProcess<O1 extends boolean, O2 extends boolean>(
     } catch (error) {}
     if (!isDir)
       throw new Error(
-        `Current working directory does not exist: ${options.cwd}`
+        `Current working directory does not exist: ${options.cwd}`,
       );
   }
 
   const handler = spawn(
     command,
     argv.map((v) => (typeof v === "number" ? v.toString() : v)),
-    options ?? {}
+    options ?? {},
   );
   const { $stdout, $stderr, $onExitCode } = options;
 
@@ -286,7 +286,7 @@ export function createProcess<O1 extends boolean, O2 extends boolean>(
       onrejected?:
         | ((reason: any) => TResult2 | PromiseLike<TResult2>)
         | null
-        | undefined
+        | undefined,
     ): Promise<TResult1 | TResult2> {
       return exec().then(onfulfilled, onrejected);
     },
@@ -294,12 +294,12 @@ export function createProcess<O1 extends boolean, O2 extends boolean>(
       onrejected?:
         | ((reason: any) => TResult | PromiseLike<TResult>)
         | null
-        | undefined
+        | undefined,
     ): Promise<any> {
       return exec().catch(onrejected);
     },
     finally: function (
-      onfinally?: (() => void) | null | undefined
+      onfinally?: (() => void) | null | undefined,
     ): Promise<any> {
       return exec().finally(onfinally);
     },
@@ -314,7 +314,7 @@ export async function exec(
   command: string,
   argv: string[] = [],
   options: SpawnOptions | null = null,
-  settings: ExecSettingsInterface = {}
+  settings: ExecSettingsInterface = {},
 ) {
   const pipe = settings.pipe;
   let log: ExecLogSettingsType = {};
@@ -336,7 +336,7 @@ export async function exec(
 
     if (typeof options?.cwd === "string" && !(await existsDir(options.cwd)))
       throw new Error(
-        `Current working directory does not exist: ${options.cwd}`
+        `Current working directory does not exist: ${options.cwd}`,
       );
 
     if (pipe?.stream instanceof ReadStream && "onReadProgress" in pipe) {
@@ -385,17 +385,17 @@ export async function exec(
             `Exit code ${spawnData.exitCode}: ${spawnData.stderr
               .split(/\r?\n/g)
               .filter((v) => !!v.length)
-              .join(" | ")}`
+              .join(" | ")}`,
           );
         } else {
           exitCodeError = new Error(
-            `Exit code: ${spawnData.exitCode} (${command} ${argv.join(" ")})`
+            `Exit code: ${spawnData.exitCode} (${command} ${argv.join(" ")})`,
           );
         }
 
         const exitCodeErrorResult = settings.onExitCodeError?.(
           spawnData,
-          exitCodeError
+          exitCodeError,
         );
 
         if (exitCodeErrorResult instanceof Error) {

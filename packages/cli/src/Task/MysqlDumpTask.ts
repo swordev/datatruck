@@ -69,7 +69,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
         stdout: {
           save: true,
         },
-      }
+      },
     );
   }
 
@@ -89,7 +89,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
   override async onExportTables(
     tableNames: string[],
     output: string,
-    onProgress: (progress: { totalBytes: number }) => void
+    onProgress: (progress: { totalBytes: number }) => void,
   ) {
     const stream = createWriteStream(output);
 
@@ -120,7 +120,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
           stderr: {
             toExitCode: true,
           },
-        }
+        },
       ),
     ]);
 
@@ -140,7 +140,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
     const successFooter = footerContents
       .split(/\r?\n/)
       .some((line) =>
-        line.trim().toLowerCase().startsWith("-- dump completed")
+        line.trim().toLowerCase().startsWith("-- dump completed"),
       );
 
     if (!successFooter)
@@ -178,7 +178,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
           stderr: {
             toExitCode: true,
           },
-        }
+        },
       ),
     ]);
   }
@@ -205,7 +205,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
         stderr: {
           toExitCode: true,
         },
-      }
+      },
     );
   }
 }

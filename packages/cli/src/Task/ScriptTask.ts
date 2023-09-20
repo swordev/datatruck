@@ -71,12 +71,12 @@ export const scriptTaskDefinition: JSONSchema7 = {
               properties: {
                 config: makeRef(
                   DefinitionEnum.scriptTask,
-                  stepTypes[name as keyof typeof stepTypes]
+                  stepTypes[name as keyof typeof stepTypes],
                 ),
               },
             },
             else: false,
-          } as JSONSchema7)
+          }) as JSONSchema7,
       ),
     },
     processStepConfig: {
@@ -135,7 +135,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
   }
 
   protected getVars(
-    data: BackupDataType | RestoreDataType
+    data: BackupDataType | RestoreDataType,
   ): Record<string, string | undefined> {
     return {
       DTT_SNAPSHOT_ID: data.snapshot.id,
@@ -152,7 +152,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
       env?: Record<string, string | undefined>;
       vars: Record<string, string | undefined>;
       verbose?: boolean;
-    }
+    },
   ) {
     const steps = Array.isArray(input) ? input : [input];
     for (const step of steps) {
@@ -170,7 +170,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
           },
           {
             log: options.verbose,
-          }
+          },
         );
       } else if (step.type === "node") {
         const tempDir = await this.mkTmpDir("script-task-node-step");
@@ -179,7 +179,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
           scriptPath,
           Array.isArray(step.config.code)
             ? step.config.code.join("\n")
-            : step.config.code
+            : step.config.code,
         );
         await exec(
           "node",
@@ -194,7 +194,7 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
           },
           {
             log: options.verbose,
-          }
+          },
         );
       } else {
         throw new Error(`Invalid step type: ${(step as any).type}`);

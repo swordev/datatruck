@@ -30,13 +30,13 @@ export abstract class TaskAbstract<TConfig = any> {
     return dir;
   }
   async onBeforeBackup(
-    data: Omit<BackupDataType, "onProgress" | "targetPath">
+    data: Omit<BackupDataType, "onProgress" | "targetPath">,
   ): Promise<{ targetPath?: string } | undefined> {
     return undefined;
   }
   async onBackup(data: BackupDataType) {}
   async onBeforeRestore(
-    data: Omit<RestoreDataType, "onProgress" | "targetPath">
+    data: Omit<RestoreDataType, "onProgress" | "targetPath">,
   ): Promise<{ targetPath?: string } | undefined> {
     return undefined;
   }

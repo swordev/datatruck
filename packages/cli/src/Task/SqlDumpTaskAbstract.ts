@@ -106,7 +106,7 @@ function parseSqlFile(fileName: string): SqlFile | undefined {
 }
 
 export abstract class SqlDumpTaskAbstract<
-  TConfig extends SqlDumpTaskConfigType
+  TConfig extends SqlDumpTaskConfigType,
 > extends TaskAbstract<TConfig> {
   protected verbose?: boolean;
   async fetchPassword() {
@@ -132,7 +132,7 @@ export abstract class SqlDumpTaskAbstract<
   abstract onExportTables(
     tableNames: string[],
     output: string,
-    onProgress: (data: { totalBytes: number }) => void
+    onProgress: (data: { totalBytes: number }) => void,
   ): Promise<void>;
   abstract onExportStoredPrograms(output: string): Promise<void>;
   abstract onImport(path: string, database: string): Promise<void>;
@@ -158,7 +158,7 @@ export abstract class SqlDumpTaskAbstract<
     if (!this.config.oneFileByTable) {
       const outPath = join(
         outputPath,
-        serializeSqlFile({ database: this.config.database })
+        serializeSqlFile({ database: this.config.database }),
       );
       await data.onProgress({
         relative: {
@@ -190,7 +190,7 @@ export abstract class SqlDumpTaskAbstract<
         });
         const outPath = join(
           outputPath,
-          serializeSqlFile({ table: tableName })
+          serializeSqlFile({ table: tableName }),
         );
         await this.onExportTables([tableName], outPath, async (progress) => {
           await data.onProgress({
@@ -270,7 +270,7 @@ export abstract class SqlDumpTaskAbstract<
 
     if (errorTables.length) {
       throw new AppError(
-        `Target table already exists: ${errorTables.join(", ")}`
+        `Target table already exists: ${errorTables.join(", ")}`,
       );
     }
 

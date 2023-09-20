@@ -16,8 +16,8 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   repositoryVault = new ObjectVault<RestoreSessionRepositoryEntity>();
   taskVault = new ObjectVault<RestoreSessionTaskEntity>();
 
-  declare protected lastProgressDate: number | undefined;
-  declare protected lastRelativeProgressDescription: string | null | undefined;
+  protected declare lastProgressDate: number | undefined;
+  protected declare lastRelativeProgressDescription: string | null | undefined;
 
   findId(data: { packageName: string }) {
     return this.sessionVault.getId([data.packageName]);
@@ -88,7 +88,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   }
 
   async initTask(
-    input: Pick<RestoreSessionTaskEntity, "sessionId" | "taskName">
+    input: Pick<RestoreSessionTaskEntity, "sessionId" | "taskName">,
   ) {
     return await this.alter({
       action: ActionEnum.Init,
@@ -111,7 +111,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
     input: Pick<
       RestoreSessionRepositoryEntity,
       "sessionId" | "repositoryName" | "repositoryType"
-    >
+    >,
   ) {
     return await this.alter({
       action: ActionEnum.Init,
@@ -233,7 +233,7 @@ export class RestoreSessionManager extends SessionManagerAbstract {
   }
 
   async endRepository(
-    input: Pick<RestoreSessionRepositoryEntity, "id" | "error">
+    input: Pick<RestoreSessionRepositoryEntity, "id" | "error">,
   ) {
     const object = this.repositoryVault.get(input.id);
     return await this.alter({

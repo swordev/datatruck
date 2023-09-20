@@ -6,7 +6,7 @@ export class Git {
     readonly options: {
       dir: string;
       log?: boolean;
-    }
+    },
   ) {}
 
   async exec(args: string[], settings?: ExecSettingsInterface, cwd?: boolean) {
@@ -17,7 +17,7 @@ export class Git {
       {
         log: this.options.log,
         ...(settings ?? {}),
-      }
+      },
     );
   }
 
@@ -60,7 +60,7 @@ export class Git {
         stdout: { save: true },
         onExitCodeError: () => false,
       },
-      options.repo ? false : true
+      options.repo ? false : true,
     );
     return result.stdout
       .split(/\r?\n/g)
@@ -88,19 +88,22 @@ export class Git {
     const result = await this.exec(["tag", "-n", ...(names ?? [])], {
       stdout: { save: true },
     });
-    return result.stdout.split(/\r?\n/).reduce((result, value) => {
-      value = value.trim();
-      if (!value.length) return result;
-      let separatorIndex = value.indexOf(" ");
-      if (separatorIndex === -1) separatorIndex = value.length;
-      const name = value.slice(0, separatorIndex);
-      const message = value.slice(separatorIndex + 1);
-      result.push({
-        name: name,
-        message: message ?? null,
-      });
-      return result;
-    }, [] as { name: string; message?: string }[]);
+    return result.stdout.split(/\r?\n/).reduce(
+      (result, value) => {
+        value = value.trim();
+        if (!value.length) return result;
+        let separatorIndex = value.indexOf(" ");
+        if (separatorIndex === -1) separatorIndex = value.length;
+        const name = value.slice(0, separatorIndex);
+        const message = value.slice(separatorIndex + 1);
+        result.push({
+          name: name,
+          message: message ?? null,
+        });
+        return result;
+      },
+      [] as { name: string; message?: string }[],
+    );
   }
 
   async addTag(name: string, message?: string) {

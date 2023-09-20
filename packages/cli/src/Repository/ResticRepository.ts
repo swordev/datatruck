@@ -185,8 +185,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         ...(data.options.ids?.map((id) =>
           ResticRepository.buildSnapshotTag(
             id.length === 8 ? SnapshotTagEnum.SHORT_ID : SnapshotTagEnum.ID,
-            id
-          )
+            id,
+          ),
         ) ?? []),
       ],
     });
@@ -225,7 +225,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async onBackup(
-    data: BackupDataType<ResticPackageRepositoryConfigType>
+    data: BackupDataType<ResticPackageRepositoryConfigType>,
   ) {
     const restic = new Restic({
       env: await this.buildEnv(),
@@ -253,7 +253,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       const tmpDir = await this.mkTmpDir("restic-exclude");
       const ignoredContents = fastglobToGitIgnore(exclude, sourcePath).join(
-        "\n"
+        "\n",
       );
       gitignorePath = join(tmpDir, "ignored.txt");
 
@@ -295,14 +295,14 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     if (
       data.options.tags?.some((tag) =>
-        tag.startsWith(ResticRepository.refPrefix)
+        tag.startsWith(ResticRepository.refPrefix),
       )
     )
       throw new AppError(`Tag prefix is not allowed`);
 
     const packageTag = ResticRepository.buildSnapshotTag(
       SnapshotTagEnum.PACKAGE,
-      data.package.name
+      data.package.name,
     );
 
     await data.onProgress({
@@ -346,22 +346,22 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         ResticRepository.buildSnapshotTag(SnapshotTagEnum.ID, data.snapshot.id),
         ResticRepository.buildSnapshotTag(
           SnapshotTagEnum.SHORT_ID,
-          data.snapshot.id.slice(0, 8)
+          data.snapshot.id.slice(0, 8),
         ),
         ResticRepository.buildSnapshotTag(
           SnapshotTagEnum.DATE,
-          data.snapshot.date
+          data.snapshot.date,
         ),
         ResticRepository.buildSnapshotTag(
           SnapshotTagEnum.VERSION,
-          nodePkg.version
+          nodePkg.version,
         ),
         packageTag,
         ...(data.package.task?.name
           ? [
               ResticRepository.buildSnapshotTag(
                 SnapshotTagEnum.TASK,
-                data.package.task?.name
+                data.package.task?.name,
               ),
             ]
           : []),
@@ -387,17 +387,17 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
               absolute: {
                 total: Math.max(
                   lastProgress?.absolute?.total || 0,
-                  streamData.total_files || 0
+                  streamData.total_files || 0,
                 ),
                 current: Math.max(
                   lastProgress?.absolute?.current || 0,
-                  streamData.files_done ?? 0
+                  streamData.files_done ?? 0,
                 ),
                 percent: showProgressBar
                   ? Number((streamData.percent_done * 100).toFixed(2))
                   : 0,
               },
-            })
+            }),
           );
         } else if (streamData.message_type === "summary") {
           resticSnapshotId = streamData.snapshot_id;
@@ -414,7 +414,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     const sizeTag = ResticRepository.buildSnapshotTag(
       SnapshotTagEnum.SIZE,
-      resticTotalBytes.toString()
+      resticTotalBytes.toString(),
     );
 
     await restic.exec(["tag", "--add", sizeTag, resticSnapshotId]);
@@ -429,7 +429,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async onCopyBackup(
-    data: CopyBackupType<ResticRepositoryConfigType>
+    data: CopyBackupType<ResticRepositoryConfigType>,
   ): Promise<void> {
     const config = data.mirrorRepositoryConfig;
 
@@ -458,7 +458,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async onRestore(
-    data: RestoreDataType<ResticPackageRepositoryConfigType>
+    data: RestoreDataType<ResticPackageRepositoryConfigType>,
   ) {
     const restorePath = data.targetPath ?? data.package.restorePath;
 

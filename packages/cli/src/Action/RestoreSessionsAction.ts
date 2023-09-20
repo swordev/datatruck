@@ -10,7 +10,10 @@ export type RestoreSessionsActionOptionsType = ReadDataType & {
 export class RestoreSessionsAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, RestoreSessionsActionOptionsType>
+    readonly options: IfRequireKeys<
+      TRequired,
+      RestoreSessionsActionOptionsType
+    >,
   ) {}
 
   async exec(manager: RestoreSessionManager) {

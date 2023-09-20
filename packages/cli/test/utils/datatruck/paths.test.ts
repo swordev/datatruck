@@ -17,8 +17,8 @@ describe("parsePaths", () => {
             args: ["file1"],
           },
         ],
-        {}
-      )
+        {},
+      ),
     ).toMatchObject(["file1"]);
   });
 
@@ -33,8 +33,8 @@ describe("parsePaths", () => {
               args: ["file1\\nfile2"],
             },
           ],
-          {}
-        )
+          {},
+        ),
       ).toMatchObject(["file1", "file2"]);
     });
 
@@ -50,8 +50,8 @@ describe("parsePaths", () => {
           },
           "file3",
         ],
-        {}
-      )
+        {},
+      ),
     ).toMatchObject(["file1", "file2", "file3"]);
   });
 });

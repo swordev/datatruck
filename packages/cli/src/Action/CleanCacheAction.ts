@@ -8,7 +8,7 @@ export type CleanCacheActionOptionsType = {
 
 export class CleanCacheAction<TRequired extends boolean = true> {
   constructor(
-    readonly options: IfRequireKeys<TRequired, CleanCacheActionOptionsType>
+    readonly options: IfRequireKeys<TRequired, CleanCacheActionOptionsType>,
   ) {}
   async exec() {
     const path = parentTmpDir();

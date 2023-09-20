@@ -46,7 +46,7 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
   private buildUpdateStm(
     tableName: string,
     values: Record<string, any>,
-    pkColumnName = "id"
+    pkColumnName = "id",
   ) {
     const set = Object.keys(values)
       .filter((v) => v !== pkColumnName)
@@ -71,12 +71,12 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
     const sessionMeta = EntityDecoratorHandler(
       type === EntityEnum.BackupSession
         ? BackupSessionEntity
-        : RestoreSessionEntity
+        : RestoreSessionEntity,
     );
     const sessionRepositoryMeta = EntityDecoratorHandler(
       type === EntityEnum.BackupSession
         ? BackupSessionRepositoryEntity
-        : RestoreSessionRepositoryEntity
+        : RestoreSessionRepositoryEntity,
     );
 
     const sessionTable = makeTableSelector<
@@ -98,7 +98,7 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
     if (type === EntityEnum.BackupSession && data.tags)
       data.tags.map(
         (tag) =>
-          `(',' || ${sessionTable("tags" as any)} || ',') LIKE '%,${tag},%' `
+          `(',' || ${sessionTable("tags" as any)} || ',') LIKE '%,${tag},%' `,
       );
 
     let query = `
@@ -183,15 +183,18 @@ export class SqliteSessionDriver extends SessionDriverAbstract {
       }
       stm = this.buildUpdateStm(tableName, object);
     }
-    const params = Object.keys(object).reduce((result, name) => {
-      result[`:${name}`] = (object as any)[name];
-      return result;
-    }, {} as Record<string, unknown>);
+    const params = Object.keys(object).reduce(
+      (result, name) => {
+        result[`:${name}`] = (object as any)[name];
+        return result;
+      },
+      {} as Record<string, unknown>,
+    );
 
     try {
       const result = await this.exec(
         stm,
-        async () => await this.db.run(stm, params)
+        async () => await this.db.run(stm, params),
       );
 
       if (

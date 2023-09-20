@@ -34,7 +34,7 @@ describe("groupBy", () => {
 
   it("shoulds group by 'a' callback key", () => {
     expect(
-      groupBy([{ a: 1 }, { a: 1 }, { a: 2 }], (v) => v.a.toString())
+      groupBy([{ a: 1 }, { a: 1 }, { a: 2 }], (v) => v.a.toString()),
     ).toMatchObject({
       1: [
         {
@@ -70,8 +70,8 @@ describe("merge", () => {
               x: 2,
             },
           },
-        }
-      )
+        },
+      ),
     ).toMatchObject({
       a: {
         b: {

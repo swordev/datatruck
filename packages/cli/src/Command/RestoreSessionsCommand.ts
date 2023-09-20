@@ -97,7 +97,7 @@ export class RestoreSessionsCommand extends CommandAbstract<
             ssids: () => items.map((i) => i.snapshotId.slice(0, 8)).join(),
             pkgNames: () => items.map((i) => i.packageName).join(),
           },
-        })
+        }),
       );
 
     return 0;

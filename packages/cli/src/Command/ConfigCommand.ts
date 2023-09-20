@@ -81,7 +81,7 @@ export class ConfigCommand extends CommandAbstract<
           tpl: {
             pkgNames: () => summaryConfig.map((i) => i.packageName).join(),
           },
-        })
+        }),
       );
 
     return 0;

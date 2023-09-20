@@ -66,7 +66,7 @@ function makeCommandAction<T>(command: CommandEnum) {
           ...globalOptions,
           config: config.data,
         },
-        options as any
+        options as any,
       ).onExec();
     } catch (e) {
       const error = e as Error;
@@ -97,18 +97,18 @@ program.option("-v,--verbose", "Verbose", (_, previous) => previous + 1, 0);
 program.option(
   "-c,--config <path>",
   "Config path",
-  process.env["DATATRUCK_CONFIG"] ?? (cwd.endsWith(sep) ? cwd : `${cwd}${sep}`)
+  process.env["DATATRUCK_CONFIG"] ?? (cwd.endsWith(sep) ? cwd : `${cwd}${sep}`),
 );
 program.option(
   "--progress <value>",
   "Progress type (auto, plain, tty)",
-  "auto"
+  "auto",
 );
 program.option("--progress-interval <ms>", "Progress interval", Number, 1000);
 program.option(
   "-o,--output-format <format>",
   "Output format (json, pjson, yaml, table, custom=$, tpl=name)",
-  "table" as FormatType
+  "table" as FormatType,
 );
 
 makeCommand(CommandEnum.config).alias("c");
@@ -123,7 +123,7 @@ makeCommand(CommandEnum.cleanCache).alias("cc");
 
 export function buildArgs<TCommand extends keyof OptionsMapType>(
   input: TCommand,
-  options: OptionsMapType[TCommand]
+  options: OptionsMapType[TCommand],
 ) {
   const optionsArray = Object.keys(options).flatMap((name) => [
     `--${snakeCase(name, "-")}`,
@@ -156,7 +156,7 @@ export function parseArgs(args: string[]) {
 
 export async function exec<TCommand extends keyof OptionsMapType>(
   input: TCommand,
-  options: OptionsMapType[TCommand]
+  options: OptionsMapType[TCommand],
 ) {
   const argv = buildArgs(input, options);
   return parseArgs(argv);

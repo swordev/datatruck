@@ -11,7 +11,7 @@ export function EntityDecorator(data: EntityDecoratorDataType) {
 export function EntityDecoratorHandler(
   constructor: Function & {
     __entity__?: EntityDecoratorDataType;
-  }
+  },
 ) {
   return {
     get: () => constructor.__entity__ as EntityDecoratorDataType,

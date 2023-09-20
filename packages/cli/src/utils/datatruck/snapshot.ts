@@ -9,7 +9,7 @@ export function groupAndFilter<TSnapshot extends SnapshotResultType>(
   filter?:
     | FilterByLastOptionsType
     | ((groupedSnapshots: TSnapshot[]) => FilterByLastOptionsType),
-  reasons?: Record<number, string[]>
+  reasons?: Record<number, string[]>,
 ) {
   const grouped = groupByKey?.length
     ? groupBy(snapshots, groupByKey as any)
@@ -26,8 +26,8 @@ export function groupAndFilter<TSnapshot extends SnapshotResultType>(
         ...filterByLast(
           grouped[key],
           typeof filter === "function" ? filter(grouped[key]) : filter,
-          groupReasons
-        )
+          groupReasons,
+        ),
       );
       if (groupReasons && reasons) {
         for (const groupItemIndex in groupReasons) {
