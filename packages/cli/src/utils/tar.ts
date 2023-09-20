@@ -191,7 +191,10 @@ export async function createTar(options: CreateTarOptions) {
       "--force-local",
       ...(compress && compress.cores > 1
         ? [
-            `-I="pigz --recursive ${[
+            "-I",
+            `"${[
+              "pigz",
+              "-r",
               !!compress.level && `-${compress.level}`,
               `-p ${compress.cores}`,
             ]
@@ -260,7 +263,7 @@ export async function extractTar(options: ExtractOptions) {
       toLocalPath(options.output),
       "--force-local",
       ...(decompress && decompress.cores > 1
-        ? [`-I="pigz -p ${decompress.cores}`]
+        ? ["-I", `"pigz -p ${decompress.cores}"`]
         : []),
     ],
     {},
