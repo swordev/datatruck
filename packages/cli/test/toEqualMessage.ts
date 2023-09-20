@@ -23,11 +23,9 @@ interface CustomMatchers<R = unknown> {
   toEqualMessage(a: unknown, b: string): R;
 }
 
-declare global {
-  namespace Vi {
-    interface Assertion extends CustomMatchers {}
-    interface AsymmetricMatchersContaining extends CustomMatchers {}
-  }
+declare module "vitest" {
+  interface Assertion extends CustomMatchers {}
+  interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
 
 export {};
