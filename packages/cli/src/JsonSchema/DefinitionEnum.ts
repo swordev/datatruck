@@ -20,6 +20,7 @@ export enum DefinitionEnum {
   stringListUtil = "stringlist-util",
   prunePolicy = "prune-policy",
   pathsObject = "paths-object",
+  compressUtil = "compress-util",
 }
 
 export function makeRef(type: DefinitionEnum, subType?: string) {

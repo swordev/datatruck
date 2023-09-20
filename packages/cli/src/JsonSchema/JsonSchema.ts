@@ -26,6 +26,7 @@ import { mysqlDumpTaskDefinition } from "../Task/MysqlDumpTask";
 import { postgresqlDumpTaskDefinition } from "../Task/PostgresqlDumpTask";
 import { scriptTaskDefinition } from "../Task/ScriptTask";
 import { sqlDumpTaskDefinition } from "../Task/SqlDumpTaskAbstract";
+import { compressDefinition } from "../utils/tar";
 import { DefinitionEnum, makeRef } from "./DefinitionEnum";
 import { JSONSchema7 } from "json-schema";
 
@@ -57,6 +58,7 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.config]: configDefinition,
   [DefinitionEnum.prunePolicy]: prunePolicyConfigDefinition,
   [DefinitionEnum.pathsObject]: pathsObjectDefinition,
+  [DefinitionEnum.compressUtil]: compressDefinition,
 };
 
 for (const key in definitions) {

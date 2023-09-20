@@ -344,7 +344,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
 
       await extractTar({
         input: join(restorePath, zipFile),
-        uncompress: true,
+        decompress: true,
         output: restorePath,
         verbose: this.verbose,
         async onEntry(item) {

@@ -15,7 +15,7 @@ import {
   createWriteStreamPool,
 } from "../utils/fs";
 import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
-import { listTar, extractTar, createTar } from "../utils/tar";
+import { listTar, extractTar, createTar, CompressOptions } from "../utils/tar";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -44,19 +44,19 @@ export type MetaDataType = {
 
 export type DatatruckRepositoryConfigType = {
   outPath: string;
-  compress?: boolean;
+  compress?: boolean | CompressOptions;
 };
 
 type PackObject = {
   name?: string;
-  compress?: boolean;
+  compress?: boolean | CompressOptions;
   include: string[];
   exclude?: string[];
   onePackByResult?: boolean;
 };
 
 export type DatatruckPackageRepositoryConfigType = {
-  compress?: boolean;
+  compress?: boolean | CompressOptions;
   packs?: PackObject[];
 };
 
@@ -68,7 +68,9 @@ export const datatruckRepositoryDefinition: JSONSchema7 = {
   additionalProperties: false,
   properties: {
     outPath: { type: "string" },
-    compress: { type: "boolean" },
+    compress: {
+      anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
+    },
   },
 };
 
@@ -77,7 +79,7 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
   additionalProperties: false,
   properties: {
     compress: {
-      type: "boolean",
+      anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
     },
     packs: {
       type: "array",
@@ -87,6 +89,9 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
         required: ["include"],
         properties: {
           name: { type: "string" },
+          compress: {
+            anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
+          },
           include: makeRef(DefinitionEnum.stringListUtil),
           exclude: makeRef(DefinitionEnum.stringListUtil),
           onePackByResult: { type: "boolean" },
@@ -452,7 +457,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       await extractTar({
         input: tarFile,
         output: restorePath,
-        uncompress: tarFile.endsWith(".tar.gz"),
+        decompress: tarFile.endsWith(".tar.gz"),
         verbose: data.options.verbose,
         onEntry: async (data) =>
           await scanner.progress(
