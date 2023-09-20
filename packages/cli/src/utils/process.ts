@@ -44,7 +44,7 @@ export interface ExecSettingsInterface {
   onSpawn?: (p: ChildProcess) => any;
   stdout?: {
     save?: boolean;
-    parseLines?: boolean;
+    parseLines?: boolean | "skip-empty";
     onData?: (data: string) => void;
   };
   stderr?: {
@@ -382,14 +382,16 @@ export async function exec(
           | undefined;
         if (settings.stderr?.toExitCode) {
           exitCodeError = new Error(
-            `Exit code ${spawnData.exitCode}: ${spawnData.stderr
+            `Exit code ${spawnData.exitCode}: ${command} ${argv.join(
+              " ",
+            )} | ${spawnData.stderr
               .split(/\r?\n/g)
               .filter((v) => !!v.length)
               .join(" | ")}`,
           );
         } else {
           exitCodeError = new Error(
-            `Exit code: ${spawnData.exitCode} (${command} ${argv.join(" ")})`,
+            `Exit code ${spawnData.exitCode}: ${command} ${argv.join(" ")}`,
           );
         }
 
@@ -445,15 +447,21 @@ export async function exec(
     if (log.stdout || settings.stdout) {
       if (!p.stdout) throw new Error(`stdout is not defined`);
       const parseLines = settings.stdout?.parseLines;
-      const onData = (data: string | Buffer) => {
+      const skipEmptyLines = parseLines === "skip-empty";
+      const onData = (inData: string | Buffer) => {
+        let data = inData.toString();
+        if (parseLines) {
+          if (skipEmptyLines && !data.trim().length) return;
+          data = `${inData}\n`;
+        }
         if (log.stdout)
           logExecStdout({
-            data: parseLines ? `${data}\n` : data.toString(),
+            data,
             stderr: log.allToStderr,
             colorize: log.colorize,
           });
-        if (settings.stdout?.save) spawnData.stdout += data.toString();
-        if (settings.stdout?.onData) settings.stdout.onData(data.toString());
+        if (settings.stdout?.save) spawnData.stdout += data;
+        if (settings.stdout?.onData) settings.stdout.onData(inData.toString());
       };
       if (parseLines) {
         const rl = createInterface({
@@ -461,7 +469,11 @@ export async function exec(
         });
         rl.on("line", onData);
         rl.on("close", tryFinish);
-      } else {
+      } else if (
+        log.stdout ||
+        settings.stdout?.save ||
+        settings.stdout?.onData
+      ) {
         p.stdout.on("data", onData);
       }
     }

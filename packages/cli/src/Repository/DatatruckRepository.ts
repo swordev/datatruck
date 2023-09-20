@@ -12,6 +12,7 @@ import {
   mkdirIfNotExists,
   parsePackageFile,
   readDir,
+  createWriteStreamPool,
 } from "../utils/fs";
 import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
 import { listTar, extractTar, createTar } from "../utils/tar";
@@ -26,7 +27,7 @@ import {
   CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
-import { mkdir, readFile, writeFile, rm, opendir, cp } from "fs/promises";
+import { mkdir, readFile, writeFile, rm, cp } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, dirname, join, resolve } from "path";
@@ -256,25 +257,26 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       },
     });
 
-    type $PackObject = PackObject & { includeResult: string[] };
-
-    const configPacks: $PackObject[] = (data.packageConfig?.packs ?? []).map(
+    const configPacks: PackObject[] = (data.packageConfig?.packs ?? []).map(
       (p) => ({
         ...p,
         compress:
           p.compress ?? data.packageConfig?.compress ?? this.config.compress,
-        includeResult: [],
       }),
     );
 
-    const defaultsPack: $PackObject = {
+    const defaultsPack: PackObject = {
       name: "defaults",
       compress: data.packageConfig?.compress ?? this.config.compress,
       include: [],
-      includeResult: [],
     };
 
-    const packs: $PackObject[] = [...configPacks, defaultsPack];
+    const packs: PackObject[] = [...configPacks, defaultsPack];
+    const defaultsPackIndex = packs.findIndex((p) => p === defaultsPack);
+    const stream = createWriteStreamPool({
+      path: await this.mkTmpDir("files"),
+      onStreamPath: (key) => `files-${key}.txt`,
+    });
 
     await scanner.start(async (entry) => {
       if (
@@ -282,39 +284,45 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         !(await isEmptyDir(join(sourcePath, entry.path)))
       )
         return false;
-      const pack =
-        configPacks.find((pack) =>
-          checkPath(entry.path, pack.include, pack.exclude),
-        ) || defaultsPack;
+
+      let packIndex = configPacks.findIndex((pack) =>
+        checkPath(entry.path, pack.include, pack.exclude),
+      );
+
+      if (packIndex === -1) packIndex = defaultsPackIndex;
+
+      const pack = packs[packIndex];
 
       if (pack.onePackByResult) {
         const subname = basename(entry.path);
         packs.push({
           ...pack,
           name: pack.name ? `${pack.name}-${subname}` : subname,
-          includeResult: [entry.path],
         });
-      } else {
-        pack.includeResult.push(entry.path);
+        packIndex = packs.length - 1;
       }
+      stream.writeLine(packIndex, entry.path);
       return true;
     });
+
+    await stream.end();
 
     let packIndex = 0;
 
     for (const pack of packs) {
-      const packBasename = [`pack`, (packIndex++).toString(), pack.name]
+      const packBasename = [`pack`, packIndex.toString(), pack.name]
         .filter((v) => typeof v === "string")
         .map((v) => encodeURIComponent(v!.toString().replace(/[\\/]/g, "-")))
         .join("-");
 
       const ext = pack.compress ? `.tar.gz` : `.tar`;
+      const includeList = stream.path(packIndex);
 
-      if (pack.includeResult.length)
+      if (includeList)
         await createTar({
           compress: pack.compress,
           verbose: data.options.verbose,
-          include: pack.includeResult,
+          includeList,
           path: sourcePath,
           output: join(outPath, packBasename) + ext,
           onEntry: async (data) =>
@@ -323,6 +331,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
               data.path,
             ),
         });
+      packIndex++;
     }
 
     await scanner.end();
@@ -443,6 +452,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       await extractTar({
         input: tarFile,
         output: restorePath,
+        uncompress: tarFile.endsWith(".tar.gz"),
         verbose: data.options.verbose,
         onEntry: async (data) =>
           await scanner.progress(

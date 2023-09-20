@@ -92,9 +92,6 @@ importers:
       sqlite3:
         specifier: ^5.1.6
         version: 5.1.6
-      tar:
-        specifier: ^6.2.0
-        version: 6.2.0
     optionalDependencies:
       ts-node:
         specifier: ^10.9.1
@@ -112,9 +109,6 @@ importers:
       '@types/micromatch':
         specifier: ^4.0.2
         version: 4.0.2
-      '@types/tar':
-        specifier: ^6.1.6
-        version: 6.1.6
       json-schema:
         specifier: ^0.4.0
         version: 0.4.0
@@ -2122,13 +2116,6 @@ packages:
 
   /@types/strip-json-comments@0.0.30:
     resolution: {integrity: sha512-7NQmHra/JILCd1QqpSzl8+mJRc8ZHz3uDm8YV1Ks9IhK0epEiTw8aIErbvH9PI+6XbqhyIQy3462nEsn7UVzjQ==}
-    dev: true
-
-  /@types/tar@6.1.6:
-    resolution: {integrity: sha512-HQ06kiiDXz9uqtmE9ksQUn1ovcPr1gGV9EgaCWo6FGYKD0onNBCetBzL0kfcS8Kbj1EFxJWY9jL2W4ZvvtGI8Q==}
-    dependencies:
-      '@types/node': 20.6.2
-      minipass: 4.0.0
     dev: true
 
   /@types/treeify@1.0.0:

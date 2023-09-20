@@ -526,3 +526,90 @@ export async function createFileScanner(options: {
 
   return object;
 }
+
+type StreamItem = {
+  key: string;
+  stream: WriteStream;
+  finished: boolean;
+  error?: Error;
+  written?: boolean;
+};
+
+export function createWriteStreamPool(options: {
+  path: string;
+  onStreamPath?: (key: string) => string;
+}) {
+  const pool: Record<string, StreamItem> = {};
+  const create = (key: string) => {
+    const item: StreamItem = {
+      key,
+      stream: createWriteStream(
+        join(
+          options.path,
+          options.onStreamPath ? options.onStreamPath(key) : key,
+        ),
+      ),
+      finished: false,
+    };
+    item.stream
+      .once("error", (error) => {
+        item.finished = true;
+        item.error = error;
+      })
+      .once("close", () => (item.finished = true));
+
+    return (pool[item.key] = item);
+  };
+  return {
+    pool,
+    path(key: string | number) {
+      const item = pool[key];
+      if (!item) return;
+      if (typeof item.stream.path !== "string")
+        throw new Error(`Stream path is not defined: ${key}`);
+      return item.stream.path;
+    },
+    writeLine(key: string | number, v: string) {
+      const item = pool[key] || create(key.toString());
+      if (item.finished) {
+        return false;
+      } else if (item.written) {
+        return item.stream.write(`\n${v}`);
+      } else {
+        item.written = true;
+        return item.stream.write(`${v}`);
+      }
+    },
+    async end() {
+      const items = Object.values(pool);
+      for (const item of items) if (!item.finished) item.stream.end();
+      const itemWithErrors = items.filter((v) => v.error);
+      if (itemWithErrors.length) {
+        const keys = itemWithErrors.map((item) => item.key);
+        throw new AggregateError(
+          itemWithErrors.map((item) => item.error!),
+          `Streams faileds: ${keys.join(", ")}`,
+        );
+      }
+      await Promise.all(
+        items
+          .filter((item) => !item.finished)
+          .map((item) => waitForClose(item.stream)),
+      );
+    },
+  };
+}
+
+export function countFileLines(path: string) {
+  let lines = 0;
+  const rl = createInterface({
+    input: createReadStream(path),
+  });
+  return new Promise<number>((resolve, reject) => {
+    rl.on("line", (line) => {
+      if (!line.length) lines++;
+    });
+    rl.on("close", () => resolve(lines));
+    rl.on("error", reject);
+  });
+}

@@ -1,6 +1,7 @@
+import { mkTmpDir, tmpDir } from "../../src/utils/fs";
 import { createTar, listTar, extractTar } from "../../src/utils/tar";
 import { createFileChanger } from "../util";
-import { rm } from "fs/promises";
+import { rm, writeFile } from "fs/promises";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 
@@ -36,11 +37,17 @@ describe("tar", () => {
       "folder1/file2",
       "folder2/file3",
     ];
+
+    const includeDirPath = await mkTmpDir("test");
+    const includeList = join(includeDirPath, "files.txt");
+
+    await writeFile(includeList, ["notfound", ...include].join("\n"));
+
     await createTar({
       path: join(path, "source"),
       compress: true,
       verbose,
-      include,
+      includeList,
       output: tarPath,
       onEntry(data) {
         if (data.path) createProgress.push({ path: data.path });

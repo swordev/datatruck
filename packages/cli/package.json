@@ -18,14 +18,12 @@
     "micromatch": "^4.0.5",
     "pretty-bytes": "^5.6.0",
     "sqlite": "^5.0.1",
-    "sqlite3": "^5.1.6",
-    "tar": "^6.2.0"
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",
     "@types/json-schema": "^7.0.13",
     "@types/micromatch": "^4.0.2",
-    "@types/tar": "^6.1.6",
     "json-schema": "^0.4.0"
   },
   "optionalDependencies": {

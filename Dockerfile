@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     mariadb-backup \
     postgresql-client \
     python3 \
+    tar \
     pigz
 
 ENV NODE_PATH=/usr/local/lib/node_modules
