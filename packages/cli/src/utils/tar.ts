@@ -204,6 +204,10 @@ export async function createTar(options: CreateTarOptions) {
         : []),
     ],
     {
+      ...(compress &&
+        compress.cores > 1 && {
+          shell: true,
+        }),
       env: {
         ...process.env,
         ...env,
@@ -266,7 +270,12 @@ export async function extractTar(options: ExtractOptions) {
         ? ["-I", `"pigz -p ${decompress.cores}"`]
         : []),
     ],
-    {},
+    {
+      ...(decompress &&
+        decompress.cores > 1 && {
+          shell: true,
+        }),
+    },
     {
       log: options.verbose,
       stderr: {
