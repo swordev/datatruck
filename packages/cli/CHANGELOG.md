@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.21.0
+
+### Minor Changes
+
+- [`211c914`](https://github.com/swordev/datatruck/commit/211c914e42b97213e81163511778b84b1ae2e9af) Thanks [@juanrgm](https://github.com/juanrgm)! - Use multi core for tar
+
 ## 0.20.0
 
 ### Minor Changes
