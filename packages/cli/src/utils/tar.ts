@@ -1,5 +1,5 @@
 import { logExec } from "./cli";
-import { countFileLines, ensureEmptyDir } from "./fs";
+import { countFileLines, existsDir } from "./fs";
 import { progressPercent } from "./math";
 import { exec } from "./process";
 import { mkdir } from "fs/promises";
@@ -249,10 +249,10 @@ export async function extractTar(options: ExtractOptions) {
     options.total ??
     (await listTar({ input: options.input, verbose: options.verbose }));
 
-  if (options.verbose) logExec("mkdir", ["-p", options.output]);
-
-  await mkdir(options.output, { recursive: true });
-  await ensureEmptyDir(options.output);
+  if (!(await existsDir(options.output))) {
+    if (options.verbose) logExec("mkdir", ["-p", options.output]);
+    await mkdir(options.output, { recursive: true });
+  }
 
   const decompress = await ifX(options.decompress, async (decompress) => ({
     ...decompress,
