@@ -108,7 +108,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
       exec(
         "pg_dump",
         [
-          ...(await this.buildConnectionArgs()),
+          ...(await this.buildConnectionArgs(this.config.database)),
           ...(tableNames?.flatMap((v) => ["-t", v]) ?? []),
         ],
         null,

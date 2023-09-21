@@ -20,14 +20,14 @@ export const mysqlDumpTaskDefinition: JSONSchema7 = {
 };
 
 export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> {
-  async buildConnectionArgs(database: boolean = true) {
+  async buildConnectionArgs(database?: string) {
     const password = await this.fetchPassword();
     return [
       `--host=${this.config.hostname}`,
       ...(this.config.port ? [`--port=${this.config.port}`] : []),
       `--user=${this.config.username}`,
       `--password=${password ?? ""}`,
-      ...(database && this.config.database ? [this.config.database] : []),
+      ...(database ? [database] : []),
     ];
   }
   override async onDatabaseIsEmpty(name: string) {
@@ -101,7 +101,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
       await exec(
         "mysqldump",
         [
-          ...(await this.buildConnectionArgs()),
+          ...(await this.buildConnectionArgs(this.config.database)),
           "--lock-tables=false",
           "--skip-add-drop-table=false",
           ...tableNames,
@@ -157,7 +157,7 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
       await exec(
         "mysqldump",
         [
-          ...(await this.buildConnectionArgs()),
+          ...(await this.buildConnectionArgs(this.config.database)),
           "--lock-tables=false",
           "--routines",
           "--events",
@@ -184,28 +184,23 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
   }
 
   override async onImport(path: string, database: string) {
-    await exec(
-      "mysql",
-      [...(await this.buildConnectionArgs(false)), database],
-      null,
-      {
-        pipe: {
-          stream: createReadStream(path),
-          onReadProgress: (data) => {
-            if (this.verbose)
-              logExecStdout({
-                data: JSON.stringify(data),
-                colorize: true,
-                stderr: true,
-                lineSalt: true,
-              });
-          },
-        },
-        log: this.verbose,
-        stderr: {
-          toExitCode: true,
+    await exec("mysql", await this.buildConnectionArgs(database), null, {
+      pipe: {
+        stream: createReadStream(path),
+        onReadProgress: (data) => {
+          if (this.verbose)
+            logExecStdout({
+              data: JSON.stringify(data),
+              colorize: true,
+              stderr: true,
+              lineSalt: true,
+            });
         },
       },
-    );
+      log: this.verbose,
+      stderr: {
+        toExitCode: true,
+      },
+    });
   }
 }
