@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.21.1
+
+### Patch Changes
+
+- [`0d863e8`](https://github.com/swordev/datatruck/commit/0d863e86d6deb30b79a45171f01d7cf4604250dd) Thanks [@juanrgm](https://github.com/juanrgm)! - Avoid listing tar twice
+
+- [`5045457`](https://github.com/swordev/datatruck/commit/5045457f3cd9512b27d29049fc37ba418ed95e0a) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix tar extracting
+
+- [`8f0bd77`](https://github.com/swordev/datatruck/commit/8f0bd77267a92da7eee05adc3bb85dee0ba97391) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `sql-dump` tasks
+
 ## 0.21.0
 
 ### Minor Changes
