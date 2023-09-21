@@ -482,9 +482,9 @@ export async function createFileScanner(options: {
     disposed: false,
     total: 0,
     current: 0,
-    progress: async (description: string, path?: string) => {
+    progress: async (description: string, path?: string, increment = true) => {
       if (object.disposed) return;
-      if (path) object.current++;
+      if (path && increment) object.current++;
       await options.onProgress({
         relative: {
           description,
@@ -529,6 +529,7 @@ export async function createFileScanner(options: {
 
 type StreamItem = {
   key: string;
+  lines: number;
   stream: WriteStream;
   finished: boolean;
   error?: Error;
@@ -543,6 +544,7 @@ export function createWriteStreamPool(options: {
   const create = (key: string) => {
     const item: StreamItem = {
       key,
+      lines: 0,
       stream: createWriteStream(
         join(
           options.path,
@@ -569,14 +571,20 @@ export function createWriteStreamPool(options: {
         throw new Error(`Stream path is not defined: ${key}`);
       return item.stream.path;
     },
+    lines(key: string | number) {
+      const item = pool[key];
+      return item?.lines;
+    },
     writeLine(key: string | number, v: string) {
       const item = pool[key] || create(key.toString());
       if (item.finished) {
         return false;
       } else if (item.written) {
+        item.lines++;
         return item.stream.write(`\n${v}`);
       } else {
         item.written = true;
+        item.lines++;
         return item.stream.write(`${v}`);
       }
     },

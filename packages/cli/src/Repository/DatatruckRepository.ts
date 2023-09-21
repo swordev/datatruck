@@ -40,6 +40,7 @@ export type MetaDataType = {
   tags: string[];
   version: string;
   size: number;
+  tarStats?: Record<string, { files: number }>;
 };
 
 export type DatatruckRepositoryConfigType = {
@@ -313,29 +314,34 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await stream.end();
 
     let packIndex = 0;
+    const tarStats: NonNullable<MetaDataType["tarStats"]> = {};
 
     for (const pack of packs) {
-      const packBasename = [`pack`, packIndex.toString(), pack.name]
-        .filter((v) => typeof v === "string")
-        .map((v) => encodeURIComponent(v!.toString().replace(/[\\/]/g, "-")))
-        .join("-");
+      const packBasename =
+        [`pack`, packIndex.toString(), pack.name]
+          .filter((v) => typeof v === "string")
+          .map((v) => encodeURIComponent(v!.toString().replace(/[\\/]/g, "-")))
+          .join("-") + (pack.compress ? `.tar.gz` : `.tar`);
 
-      const ext = pack.compress ? `.tar.gz` : `.tar`;
       const includeList = stream.path(packIndex);
 
-      if (includeList)
+      if (includeList) {
+        tarStats[packBasename] = {
+          files: stream.lines(packIndex)!,
+        };
         await createTar({
           compress: pack.compress,
           verbose: data.options.verbose,
           includeList,
           path: sourcePath,
-          output: join(outPath, packBasename) + ext,
+          output: join(outPath, packBasename),
           onEntry: async (data) =>
             await scanner.progress(
               pack.compress ? "Compressing" : "Packing",
               data.path,
             ),
         });
+      }
       packIndex++;
     }
 
@@ -353,6 +359,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       task: data.package.task?.name,
       version: nodePkg.version,
       size: await fastFolderSizeAsync(outPath),
+      tarStats,
     };
     if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
     await writeFile(metaPath, DatatruckRepository.stringifyMetaData(meta));
@@ -423,6 +430,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
 
     const sourcePath = join(this.config.outPath, snapshotName);
+    const metaPath = join(sourcePath, "meta.json");
+    const meta = await DatatruckRepository.parseMetaData(metaPath);
 
     const scanner = await createFileScanner({
       onProgress: data.onProgress,
@@ -433,6 +442,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
 
     const tarFiles: string[] = [];
+    const tarStats = meta?.tarStats || {};
 
     await scanner.start(async (entry) => {
       const path = join(sourcePath, entry.name);
@@ -440,13 +450,20 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       const isTarGz = entry.name.endsWith(".tar.gz");
       if (isTar || isTarGz) {
         tarFiles.push(path);
-        await listTar({
-          input: path,
-          verbose: data.options.verbose,
-          onEntry: () => {
-            scanner.total++;
-          },
-        });
+        if (typeof tarStats[entry.name]?.files === "number") {
+          scanner.total += tarStats[entry.name].files;
+        } else {
+          scanner.progress("Scanning", entry.name, false);
+          const selfTarStats = (tarStats[entry.name] = { files: 0 });
+          await listTar({
+            input: path,
+            verbose: data.options.verbose,
+            onEntry: () => {
+              scanner.total++;
+              selfTarStats.files++;
+            },
+          });
+        }
       }
       return false;
     });
@@ -454,7 +471,9 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     if (data.options.verbose) logExec(`Unpacking files to ${restorePath}`);
 
     for (const tarFile of tarFiles) {
+      const entryName = basename(tarFile);
       await extractTar({
+        total: tarStats[entryName].files,
         input: tarFile,
         output: restorePath,
         decompress: tarFile.endsWith(".tar.gz"),

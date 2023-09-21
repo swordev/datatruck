@@ -216,21 +216,23 @@ export async function createTar(options: CreateTarOptions) {
     {
       log: options.verbose ? { envNames: Object.keys(env) } : false,
       stderr: { toExitCode: true },
-      stdout: {
-        parseLines: "skip-empty",
-        onData: (line) => {
-          current++;
-          const path = vendor === "bsdtar" ? line.slice(2) : line;
-          options.onEntry?.({
-            path,
-            progress: {
-              total,
-              current,
-              percent: progressPercent(total, current),
+      stdout: options.onEntry
+        ? {
+            parseLines: "skip-empty",
+            onData: (line) => {
+              current++;
+              const path = vendor === "bsdtar" ? line.slice(2) : line;
+              options.onEntry?.({
+                path,
+                progress: {
+                  total,
+                  current,
+                  percent: progressPercent(total, current),
+                },
+              });
             },
-          });
-        },
-      },
+          }
+        : undefined,
     },
   );
 }
@@ -281,20 +283,22 @@ export async function extractTar(options: ExtractOptions) {
       stderr: {
         toExitCode: true,
       },
-      stdout: {
-        parseLines: "skip-empty",
-        onData: (path) => {
-          current++;
-          options.onEntry?.({
-            path,
-            progress: {
-              total,
-              current,
-              percent: progressPercent(total, current),
+      stdout: options.onEntry
+        ? {
+            parseLines: "skip-empty",
+            onData: (path) => {
+              current++;
+              options.onEntry?.({
+                path,
+                progress: {
+                  total,
+                  current,
+                  percent: progressPercent(total, current),
+                },
+              });
             },
-          });
-        },
-      },
+          }
+        : undefined,
     },
   );
 }
