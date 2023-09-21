@@ -184,23 +184,35 @@ export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> 
   }
 
   override async onImport(path: string, database: string) {
-    await exec("mysql", await this.buildConnectionArgs(database), null, {
-      pipe: {
-        stream: createReadStream(path),
-        onReadProgress: (data) => {
-          if (this.verbose)
-            logExecStdout({
-              data: JSON.stringify(data),
-              colorize: true,
-              stderr: true,
-              lineSalt: true,
-            });
+    await exec(
+      "mysql",
+      [
+        `--init-command=SET ${[
+          "autocommit=0",
+          "unique_checks=0",
+          "foreign_key_checks=0",
+        ].join(",")};`,
+        ...(await this.buildConnectionArgs(database)),
+      ],
+      null,
+      {
+        pipe: {
+          stream: createReadStream(path),
+          onReadProgress: (data) => {
+            if (this.verbose)
+              logExecStdout({
+                data: JSON.stringify(data),
+                colorize: true,
+                stderr: true,
+                lineSalt: true,
+              });
+          },
+        },
+        log: this.verbose,
+        stderr: {
+          toExitCode: true,
         },
       },
-      log: this.verbose,
-      stderr: {
-        toExitCode: true,
-      },
-    });
+    );
   }
 }
