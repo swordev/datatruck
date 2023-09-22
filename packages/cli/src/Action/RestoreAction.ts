@@ -168,9 +168,12 @@ export class RestoreAction<TRequired extends boolean = true> {
     let error: Error | undefined;
 
     if (this.repoErrors[pkg.name]?.length) {
-      error = new AppError("Repository failed");
+      error = AppError.create("Repository failed", this.repoErrors[pkg.name]);
     } else if (this.taskErrors[pkg.name]?.length) {
-      error = new AppError("Previous task failed");
+      error = AppError.create(
+        "Previous task failed",
+        this.taskErrors[pkg.name],
+      );
     } else {
       try {
         await task.onRestore({

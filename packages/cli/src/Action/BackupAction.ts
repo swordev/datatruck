@@ -109,7 +109,7 @@ export class BackupAction<TRequired extends boolean = true> {
     let error: Error | undefined;
 
     if (this.taskErrors[key]?.length) {
-      error = new AppError("Previous task failed");
+      error = AppError.create("Previous task failed", this.taskErrors[key]);
     } else {
       try {
         await task.onBackup({
@@ -161,7 +161,7 @@ export class BackupAction<TRequired extends boolean = true> {
     let repoInstance: RepositoryAbstract<any> | undefined;
 
     if (this.taskErrors[pkg.name]?.length) {
-      error = new AppError("Task failed");
+      error = AppError.create("Task failed", this.taskErrors[pkg.name]);
     } else {
       try {
         repoInstance = RepositoryFactory(repo);
@@ -217,7 +217,7 @@ export class BackupAction<TRequired extends boolean = true> {
     let repoInstance: RepositoryAbstract<any> | undefined;
 
     if (this.taskErrors[pkg.name]?.length) {
-      error = new AppError("Task failed");
+      error = AppError.create("Task failed", this.taskErrors[pkg.name]);
     } else {
       try {
         repoInstance = RepositoryFactory(repo);
@@ -250,18 +250,18 @@ export class BackupAction<TRequired extends boolean = true> {
   }
 
   protected getError(pkg: PackageConfigType) {
-    const taskErrors = this.taskErrors[pkg.name]?.length;
-    const repoErrors = this.repoErrors[pkg.name]?.length;
-
-    if (taskErrors && repoErrors) {
-      return new AppError("Task and repository failed");
-    } else if (taskErrors && !repoErrors) {
-      return new AppError("Task failed");
-    } else if (!taskErrors && repoErrors) {
-      return new AppError("Repository failed");
-    } else {
-      return null;
-    }
+    const taskErrors = this.taskErrors[pkg.name] || [];
+    const repoErrors = this.repoErrors[pkg.name] || [];
+    const errors = [...taskErrors, ...repoErrors];
+    if (!errors.length) return;
+    return AppError.create(
+      taskErrors.length && repoErrors.length
+        ? "Task and repository failed"
+        : taskErrors.length && !repoErrors.length
+        ? "Task failed"
+        : "Repository failed",
+      errors,
+    );
   }
 
   protected splitRepositories(repositoryNames: string[]) {
