@@ -38,7 +38,7 @@ export class BackupAction<TRequired extends boolean = true> {
     readonly options: IfRequireKeys<
       TRequired,
       BackupActionOptionsType
-    > = {} as any
+    > = {} as any,
   ) {}
 
   protected async init(session: BackupSessionManager) {
@@ -94,7 +94,7 @@ export class BackupAction<TRequired extends boolean = true> {
     pkg: PackageConfigType,
     task: TaskAbstract<any>,
     snapshot: SnapshotType,
-    targetPath: string | undefined
+    targetPath: string | undefined,
   ) {
     const taskId = session.findTaskId({
       packageName: pkg.name,
@@ -146,7 +146,7 @@ export class BackupAction<TRequired extends boolean = true> {
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
     snapshot: SnapshotType,
-    targetPath: string | undefined
+    targetPath: string | undefined,
   ) {
     const repositoryId = session.findRepositoryId({
       packageName: pkg.name,
@@ -171,7 +171,7 @@ export class BackupAction<TRequired extends boolean = true> {
           packageConfig: pkg.repositoryConfigs?.find(
             (config) =>
               config.type === repo.type &&
-              (!config.names || config.names.includes(repo.name))
+              (!config.names || config.names.includes(repo.name)),
           )?.config,
           options: this.options,
           snapshot: snapshot,
@@ -202,7 +202,7 @@ export class BackupAction<TRequired extends boolean = true> {
     pkg: PackageConfigType,
     repo: RepositoryConfigType,
     mirrorRepo: RepositoryConfigType,
-    snapshot: SnapshotType
+    snapshot: SnapshotType,
   ) {
     const repositoryId = session.findRepositoryId({
       packageName: pkg.name,
@@ -276,7 +276,7 @@ export class BackupAction<TRequired extends boolean = true> {
           (mirrorRepoName) => {
             allMirrorRepoNames.push(mirrorRepoName);
             return repoNames.includes(mirrorRepoName);
-          }
+          },
         );
     }
 
@@ -320,13 +320,13 @@ export class BackupAction<TRequired extends boolean = true> {
           pkg,
           taskInstance,
           snapshot,
-          (targetPath = result?.targetPath)
+          (targetPath = result?.targetPath),
         );
         taskTmpDirs.push(...taskResult.tmpDirs);
       }
 
       const { repoNames, mirrors } = this.splitRepositories(
-        pkg.repositoryNames ?? []
+        pkg.repositoryNames ?? [],
       );
 
       for (const repoName of repoNames) {
@@ -336,7 +336,7 @@ export class BackupAction<TRequired extends boolean = true> {
           pkg,
           repo,
           snapshot,
-          targetPath
+          targetPath,
         );
         if (!this.options.verbose) await rmTmpDir(tmpDirs);
       }
@@ -356,7 +356,7 @@ export class BackupAction<TRequired extends boolean = true> {
           pkg,
           repo,
           mirrorRepo,
-          snapshot
+          snapshot,
         );
         if (!this.options.verbose) await rmTmpDir(tmpDirs);
       }
