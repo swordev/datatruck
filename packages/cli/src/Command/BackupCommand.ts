@@ -89,7 +89,7 @@ export class BackupCommand extends CommandAbstract<
     });
 
     const result = await backup.exec(sessionManager);
-    if (result.errors) {
+    if (result.errors.length) {
       return 1;
     } else if (!result.total) {
       throw new AppError("None package config found");

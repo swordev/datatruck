@@ -315,7 +315,7 @@ export class RestoreAction<TRequired extends boolean = true> {
 
     await this.init(session, this.options.snapshotId, snapshotAndConfigs);
 
-    let sessionErrors = 0;
+    const errors: Error[] = [];
 
     for (const [snapshot, pkg] of snapshotAndConfigs) {
       ok(pkg);
@@ -363,10 +363,10 @@ export class RestoreAction<TRequired extends boolean = true> {
         id,
         error: error?.message,
       });
-      if (error) sessionErrors++;
+      if (error) errors.push(error);
     }
 
     await session.endDrivers();
-    return !sessionErrors;
+    return { errors };
   }
 }

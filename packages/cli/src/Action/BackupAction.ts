@@ -294,7 +294,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
   async exec(session: BackupSessionManager) {
     const [snapshot, packages] = await this.init(session);
-    let errors = 0;
+    const errors: Error[] = [];
 
     for (const pkg of packages) {
       const id = session.findId({
@@ -363,7 +363,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
       const error = this.getError(pkg);
 
-      if (error) errors++;
+      if (error) errors.push(error);
       await session.end({
         id: id,
         error: error?.message,
@@ -376,7 +376,7 @@ export class BackupAction<TRequired extends boolean = true> {
 
     return {
       total: packages.length,
-      errors: errors,
+      errors,
     };
   }
 }

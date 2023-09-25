@@ -90,6 +90,6 @@ export class RestoreCommand extends CommandAbstract<
 
     const result = await restore.exec(sessionManager);
 
-    return result ? 0 : 1;
+    return result.errors.length ? 1 : 0;
   }
 }
