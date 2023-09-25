@@ -14,9 +14,17 @@ jobs:
         image: mariadb:10.4
         env:
           MYSQL_ROOT_PASSWORD: root
+        volumes:
+          - /var/lib/mysql-files:/var/lib/mysql-files
         ports:
           - 127.0.0.1:3307:3306
     steps:
+      - name: Configure MariaDB
+        run: |
+          CONTAINER_ID=${{ job.services.mariadb.id }}
+          docker exec $CONTAINER_ID sh -c 'echo [mysqld] > /etc/mysql/mariadb.conf.d/settings.cnf'
+          docker exec $CONTAINER_ID sh -c 'echo "secure_file_priv=/var/lib/mysql-files" >> /etc/mysql/mariadb.conf.d/settings.cnf'
+          docker kill --signal=SIGHUP $CONTAINER_ID
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
