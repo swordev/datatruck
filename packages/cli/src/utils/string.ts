@@ -92,11 +92,7 @@ export function makePathPatterns(values: string[] | undefined) {
   });
 }
 
-export function checkPath(
-  path: string,
-  include?: string[],
-  exclude?: string[],
-) {
+export function match(path: string, include?: string[], exclude?: string[]) {
   return (
     (!include || isMatch(path, include, { dot: true })) &&
     (!exclude || !isMatch(path, exclude, { dot: true }))
@@ -108,7 +104,7 @@ export function endsWith(input: string, patterns: string[]) {
 }
 
 export function createMatchFilter(include?: string[], exclude?: string[]) {
-  return (input: string) => checkPath(input, include, exclude);
+  return (input: string) => match(input, include, exclude);
 }
 
 export function checkMatch(subject: string | undefined, patterns: string[]) {

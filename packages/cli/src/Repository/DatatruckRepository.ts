@@ -14,7 +14,7 @@ import {
   readDir,
   createWriteStreamPool,
 } from "../utils/fs";
-import { checkMatch, checkPath, makePathPatterns } from "../utils/string";
+import { checkMatch, match, makePathPatterns } from "../utils/string";
 import { listTar, extractTar, createTar, CompressOptions } from "../utils/tar";
 import {
   RepositoryAbstract,
@@ -292,7 +292,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         return false;
 
       let packIndex = configPacks.findIndex((pack) =>
-        checkPath(entry.path, pack.include, pack.exclude),
+        match(entry.path, pack.include, pack.exclude),
       );
 
       if (packIndex === -1) packIndex = defaultsPackIndex;
