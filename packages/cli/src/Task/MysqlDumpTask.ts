@@ -15,7 +15,7 @@ import {
 } from "./SqlDumpTaskAbstract";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
-import { mkdir, readdir, rename, rm } from "fs/promises";
+import { chmod, mkdir, readdir, rename, rm } from "fs/promises";
 import { join } from "path";
 
 export const mysqlDumpTaskName = "mysql-dump";
@@ -85,8 +85,12 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
             `tmp-dtt-backup-${data.snapshot.id.slice(0, 8)}-${tableName}`,
           );
 
-          if (data.options.verbose) logExec("mkdir", [tableSharedPath]);
+          if (data.options.verbose) {
+            logExec("mkdir", ["-p", tableSharedPath]);
+            logExec("chmod", ["777", tableSharedPath]);
+          }
           await mkdir(tableSharedPath, { recursive: true });
+          await chmod(tableSharedPath, 0o777);
           try {
             await sql.csvDump({
               sharedPath: tableSharedPath,

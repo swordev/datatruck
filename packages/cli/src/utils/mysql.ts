@@ -4,7 +4,7 @@ import { exec, logExecStdout } from "./process";
 import { createMatchFilter, splitLines, undefIfEmpty } from "./string";
 import { randomBytes } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
-import { rm } from "fs/promises";
+import { chmod, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -241,6 +241,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
     const outFileVar = JSON.stringify(outFile.replaceAll("\\", "/"));
     try {
       await mkdirIfNotExists(dir);
+      await chmod(dir, 0o777);
       await run(`SELECT 1 INTO OUTFILE ${outFileVar}`);
       const exists = await existsFile(outFile);
       if (!exists)
