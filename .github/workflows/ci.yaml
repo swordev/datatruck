@@ -6,13 +6,12 @@ on:
 env:
   NODE_VERSION: 18
   PNPM_VERSION: 8
-  MARIADB_VERSION: 10.4
 jobs:
   release:
     runs-on: ubuntu-latest
     services:
       mariadb:
-        image: mariadb:${{ env.MARIADB_VERSION }}
+        image: mariadb:10.4
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
