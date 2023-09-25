@@ -6,9 +6,17 @@ on:
 env:
   NODE_VERSION: 18
   PNPM_VERSION: 8
+  MARIADB_VERSION: 10.4
 jobs:
   release:
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:${{ env.MARIADB_VERSION }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 127.0.0.1:3307:3306
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3

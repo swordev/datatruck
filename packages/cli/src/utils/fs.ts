@@ -59,9 +59,7 @@ export function isLocalDir(path: string) {
 }
 
 export async function mkdirIfNotExists(path: string) {
-  await mkdir(path, {
-    recursive: true,
-  });
+  if (!(await existsDir(path))) await mkdir(path, { recursive: true });
   return path;
 }
 
@@ -620,4 +618,14 @@ export function countFileLines(path: string) {
     rl.on("close", () => resolve(lines));
     rl.on("error", reject);
   });
+}
+
+export async function fetchData<T>(
+  input: T,
+  onPath?: (input: Exclude<T, string>) => string | undefined,
+) {
+  if (typeof input === "string") return input;
+  const path = onPath?.(input as any);
+  if (typeof path === "string") return (await readFile(path)).toString();
+  return null;
 }

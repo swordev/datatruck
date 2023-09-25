@@ -8,7 +8,7 @@ import { exec } from "../utils/process";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { mkdir, readFile } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
+import { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
 
@@ -24,6 +24,9 @@ export type SqlDumpTaskConfigType = {
   port?: number;
   database: string;
   username: string;
+  /**
+   * @default true
+   */
   storedPrograms?: boolean;
   targetDatabase?: TargetDatabaseType;
   includeTables?: string[];
@@ -31,45 +34,49 @@ export type SqlDumpTaskConfigType = {
   oneFileByTable?: boolean;
 };
 
-export const sqlDumpTaskDefinition: JSONSchema7 = {
-  type: "object",
-  required: ["password", "hostname", "username", "database"],
-  additionalProperties: false,
-  properties: {
-    password: {
-      anyOf: [
-        {
-          type: "string",
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["path"],
-          properties: {
-            path: { type: "string" },
+export const sqlDumpTaskDefinition = (
+  props: Record<string, JSONSchema7Definition> = {},
+) =>
+  ({
+    type: "object",
+    required: ["password", "hostname", "username", "database"],
+    additionalProperties: false,
+    properties: {
+      ...props,
+      password: {
+        anyOf: [
+          {
+            type: "string",
           },
-        },
-      ],
-    },
-    hostname: { type: "string" },
-    port: { type: "integer" },
-    username: { type: "string" },
-    database: { type: "string" },
-    targetDatabase: {
-      type: "object",
-      required: ["name"],
-      properties: {
-        name: { type: "string" },
-        charset: { type: "string" },
-        collate: { type: "string" },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["path"],
+            properties: {
+              path: { type: "string" },
+            },
+          },
+        ],
       },
+      hostname: { type: "string" },
+      port: { type: "integer" },
+      username: { type: "string" },
+      database: { type: "string" },
+      targetDatabase: {
+        type: "object",
+        required: ["name"],
+        properties: {
+          name: { type: "string" },
+          charset: { type: "string" },
+          collate: { type: "string" },
+        },
+      },
+      storedPrograms: { type: "boolean" },
+      includeTables: makeRef(DefinitionEnum.stringListUtil),
+      excludeTables: makeRef(DefinitionEnum.stringListUtil),
+      oneFileByTable: { type: "boolean" },
     },
-    storedPrograms: { type: "boolean" },
-    includeTables: makeRef(DefinitionEnum.stringListUtil),
-    excludeTables: makeRef(DefinitionEnum.stringListUtil),
-    oneFileByTable: { type: "boolean" },
-  },
-};
+  }) as JSONSchema7;
 
 type SqlFile = {
   fileName: string;

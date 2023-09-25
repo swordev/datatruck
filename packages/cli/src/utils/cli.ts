@@ -84,7 +84,7 @@ export function logExec(
     `${command} ${argv.join(" ")}`,
   )}`;
 
-  logToStderr && process.env.VITEST !== "true"
+  logToStderr /* && process.env.VITEST !== "true"*/
     ? process.stderr.write(`${text}\n`)
     : console.info(text);
 }

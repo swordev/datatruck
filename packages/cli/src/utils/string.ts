@@ -92,13 +92,23 @@ export function makePathPatterns(values: string[] | undefined) {
   });
 }
 
-export function checkPath(path: string, include: string[], exclude?: string[]) {
+export function checkPath(
+  path: string,
+  include?: string[],
+  exclude?: string[],
+) {
   return (
-    isMatch(path, include, {
-      dot: true,
-    }) &&
+    (!include || isMatch(path, include, { dot: true })) &&
     (!exclude || !isMatch(path, exclude, { dot: true }))
   );
+}
+
+export function endsWith(input: string, patterns: string[]) {
+  return patterns.some((pattern) => input.endsWith(pattern));
+}
+
+export function createMatchFilter(include?: string[], exclude?: string[]) {
+  return (input: string) => checkPath(input, include, exclude);
 }
 
 export function checkMatch(subject: string | undefined, patterns: string[]) {
@@ -114,4 +124,20 @@ export function formatDateTime(datetime: string) {
     .replace("T", " ")
     .split(".");
   return result;
+}
+
+export function splitLines(input: string, satinize = true) {
+  const lines = input.split(/\r?\n/);
+  return satinize
+    ? input.split(/\r?\n/).reduce((result, value) => {
+        value = value.trim();
+        if (value.length) result.push(value);
+
+        return result;
+      }, [] as string[])
+    : lines;
+}
+
+export function undefIfEmpty(input: string) {
+  return input.length ? input : undefined;
 }

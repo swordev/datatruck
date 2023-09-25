@@ -50,7 +50,7 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.resticPackageRepository]: resticPackageRepositoryDefinition,
   [DefinitionEnum.gitTask]: gitTaskDefinition,
   [DefinitionEnum.scriptTask]: scriptTaskDefinition,
-  [DefinitionEnum.sqlDumpTask]: sqlDumpTaskDefinition,
+  [DefinitionEnum.sqlDumpTask]: sqlDumpTaskDefinition(),
   [DefinitionEnum.mariadbTask]: mariadbTaskDefinition,
   [DefinitionEnum.mssqlTask]: mssqlTaskDefinition,
   [DefinitionEnum.mysqlDumpTask]: mysqlDumpTaskDefinition,

@@ -1,218 +1,287 @@
 import { AppError } from "../Error/AppError";
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { readPartialFile } from "../utils/fs";
-import { exec, logExecStdout } from "../utils/process";
+import { logExec } from "../utils/cli";
 import {
-  SqlDumpTaskAbstract,
+  ResolveDatabaseNameParamsType,
+  resolveDatabaseName,
+} from "../utils/datatruck/config";
+import { readDir } from "../utils/fs";
+import { progressPercent } from "../utils/math";
+import { createMysqlCli } from "../utils/mysql";
+import { endsWith } from "../utils/string";
+import {
   SqlDumpTaskConfigType,
   TargetDatabaseType,
+  sqlDumpTaskDefinition,
 } from "./SqlDumpTaskAbstract";
-import { createWriteStream } from "fs";
-import { createReadStream } from "fs";
-import { JSONSchema7 } from "json-schema";
+import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
+import { ok } from "assert";
+import { mkdir, readdir, rename, rm } from "fs/promises";
+import { join } from "path";
 
 export const mysqlDumpTaskName = "mysql-dump";
 
-export type MysqlDumpTaskConfigType = {} & SqlDumpTaskConfigType;
+export type MysqlDumpTaskConfigType = {
+  /**
+   * @default "sql"
+   */
+  dataFormat?: "csv" | "sql";
+  csvSharedPath?: string;
+} & SqlDumpTaskConfigType;
 
-export const mysqlDumpTaskDefinition: JSONSchema7 = {
-  allOf: [makeRef(DefinitionEnum.sqlDumpTask)],
+export const mysqlDumpTaskDefinition = sqlDumpTaskDefinition({
+  dataFormat: { enum: ["csv", "sql"] },
+  csvSharedPath: { type: "string" },
+});
+
+const suffix = {
+  database: ".database.sql",
+  stored: ".stored-programs.sql",
+  table: ".table.sql",
+  tableData: ".table-data.csv",
+  tableSchema: ".table-schema.sql",
 };
 
-export class MysqlDumpTask extends SqlDumpTaskAbstract<MysqlDumpTaskConfigType> {
-  async buildConnectionArgs(database?: string) {
-    const password = await this.fetchPassword();
-    return [
-      `--host=${this.config.hostname}`,
-      ...(this.config.port ? [`--port=${this.config.port}`] : []),
-      `--user=${this.config.username}`,
-      `--password=${password ?? ""}`,
-      ...(database ? [database] : []),
-    ];
-  }
-  override async onDatabaseIsEmpty(name: string) {
-    const [total] = await this.fetchValues(`
-      SELECT
-        COUNT(*) AS total 
-      FROM
-        information_schema.tables
-      WHERE
-        table_schema = '${name}'
-    `);
-    return Number(total) ? false : true;
-  }
-
-  override async onCreateDatabase(database: TargetDatabaseType) {
-    const query = `
-      CREATE DATABASE IF NOT EXISTS \`${database.name}\`
-      CHARACTER SET ${database.charset ?? "utf8"}
-      COLLATE ${database.charset ?? "utf8_general_ci"}
-    `;
-    await this.onExecQuery(query);
-  }
-
-  override async onExecQuery(query: string) {
-    return await exec(
-      "mysql",
-      [
-        ...(await this.buildConnectionArgs()),
-        "-e",
-        query.replace(/\s{1,}/g, " "),
-        "-N",
-      ],
-      undefined,
-      {
-        log: this.verbose,
-        stderr: {
-          toExitCode: true,
-        },
-        stdout: {
-          save: true,
-        },
-      },
+export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
+  override async onBackup(data: BackupDataType) {
+    const sql = createMysqlCli({
+      ...this.config,
+      verbose: data.options.verbose,
+    });
+    const tableNames = await sql.fetchTableNames(
+      this.config.database,
+      this.config.includeTables,
+      this.config.excludeTables,
     );
+
+    const outputPath = data.package.path;
+    ok(typeof outputPath === "string");
+
+    const dataFormat = this.config.dataFormat ?? "sql";
+
+    await mkdir(outputPath, { recursive: true });
+
+    const sharedDir =
+      dataFormat === "csv"
+        ? await sql.initSharedDir(this.config.csvSharedPath)
+        : undefined;
+
+    if (this.config.oneFileByTable || sharedDir) {
+      let current = 0;
+      for (const tableName of tableNames) {
+        await data.onProgress({
+          relative: {
+            description: "Exporting",
+            payload: tableName,
+          },
+          absolute: {
+            total: tableNames.length,
+            current,
+            percent: progressPercent(tableNames.length, current),
+          },
+        });
+        if (sharedDir) {
+          const tableSharedPath = join(
+            sharedDir,
+            `tmp-dtt-backup-${data.snapshot.id.slice(0, 8)}-${tableName}`,
+          );
+
+          if (data.options.verbose) logExec("mkdir", [tableSharedPath]);
+          await mkdir(tableSharedPath, { recursive: true });
+          try {
+            await sql.csvDump({
+              sharedPath: tableSharedPath,
+              items: [tableName],
+              database: this.config.database,
+            });
+            const files = await readdir(tableSharedPath);
+            const schemaFile = `${tableName}.sql`;
+            const dataFile = `${tableName}.txt`;
+            const successCsvDump =
+              files.length === 2 &&
+              files.every((file) => file === schemaFile || file === dataFile);
+            if (!successCsvDump)
+              throw new AppError(`Invalid csv dump files: ${files.join(", ")}`);
+            await rename(
+              join(tableSharedPath, schemaFile),
+              join(outputPath, `${tableName}${suffix.tableSchema}`),
+            );
+            await rename(
+              join(tableSharedPath, dataFile),
+              join(outputPath, `${tableName}${suffix.tableData}`),
+            );
+          } finally {
+            await rm(tableSharedPath, { recursive: true });
+          }
+        } else {
+          const outPath = join(outputPath, `${tableName}${suffix.table}`);
+          await sql.dump({
+            output: outPath,
+            items: [tableName],
+            database: this.config.database,
+            onProgress(progress) {
+              data.onProgress({
+                relative: {
+                  description: "Exporting",
+                  payload: tableName,
+                  current: progress.totalBytes,
+                  format: "size",
+                },
+                absolute: {
+                  total: tableNames.length,
+                  current,
+                  percent: progressPercent(tableNames.length, current),
+                },
+              });
+            },
+          });
+        }
+        current++;
+      }
+    } else {
+      await data.onProgress({
+        relative: { description: "Exporting" },
+      });
+      await sql.dump({
+        output: join(outputPath, `${this.config.database}${suffix.database}`),
+        items: tableNames,
+        database: this.config.database,
+        onProgress: (progress) =>
+          data.onProgress({
+            absolute: {
+              description: "Exporting in single file",
+              current: progress.totalBytes,
+              format: "size",
+            },
+          }),
+      });
+    }
+
+    if (this.config.storedPrograms ?? true) {
+      await data.onProgress({
+        relative: { description: "Exporting stored programs" },
+      });
+      await sql.dump({
+        database: this.config.database,
+        output: join(outputPath, `${this.config.database}${suffix.stored}`),
+        onlyStoredPrograms: true,
+      });
+    }
   }
-
-  override async onFetchTableNames(database: string) {
-    return await this.fetchValues(`
-      SELECT
-        table_name 
-      FROM
-        information_schema.tables
-      WHERE
-        table_schema = '${database}'
-      ORDER BY
-        table_name
-	`);
-  }
-
-  override async onExportTables(
-    tableNames: string[],
-    output: string,
-    onProgress: (progress: { totalBytes: number }) => void,
-  ) {
-    const stream = createWriteStream(output);
-
-    await Promise.all([
-      new Promise<void>((resolve, reject) => {
-        stream.on("close", resolve);
-        stream.on("error", reject);
-      }),
-      await exec(
-        "mysqldump",
-        [
-          ...(await this.buildConnectionArgs(this.config.database)),
-          "--lock-tables=false",
-          "--skip-add-drop-table=false",
-          ...tableNames,
-        ],
-        null,
-        {
-          pipe: {
-            stream,
-            onWriteProgress: onProgress,
-          },
-          log: {
-            exec: this.verbose,
-            stderr: this.verbose,
-            allToStderr: true,
-          },
-          stderr: {
-            toExitCode: true,
-          },
-        },
-      ),
-    ]);
-
-    const headerContents = await readPartialFile(output, [0, 100]);
-    const footerContents = await readPartialFile(output, [-100]);
-
-    const successHeader = headerContents.split(/\r?\n/).some((line) => {
-      const firstLine = line.trim().toLowerCase();
-      return (
-        firstLine.startsWith("-- mysql dump") ||
-        firstLine.startsWith("-- mariadb dump")
-      );
+  override async onRestore(data: RestoreDataType) {
+    const sql = createMysqlCli({
+      ...this.config,
+      verbose: data.options.verbose,
     });
 
-    if (!successHeader) throw new AppError("No start line found");
+    const restorePath = data.package.restorePath;
+    ok(typeof restorePath === "string");
 
-    const successFooter = footerContents
-      .split(/\r?\n/)
-      .some((line) =>
-        line.trim().toLowerCase().startsWith("-- dump completed"),
+    const params: ResolveDatabaseNameParamsType = {
+      packageName: data.package.name,
+      snapshotId: data.options.snapshotId,
+      snapshotDate: data.snapshot.date,
+      action: "restore",
+      database: undefined,
+    };
+
+    const database: TargetDatabaseType = {
+      name: resolveDatabaseName(this.config.database, params),
+    };
+
+    if (this.config.targetDatabase)
+      database.name = resolveDatabaseName(this.config.targetDatabase.name, {
+        ...params,
+        database: database.name,
+      });
+
+    const suffixes = Object.values(suffix);
+    const files = (await readDir(restorePath)).filter((f) =>
+      endsWith(f, suffixes),
+    );
+
+    // Database check
+
+    if (
+      files.some((f) => f.endsWith(suffix.database)) &&
+      !(await sql.isDatabaseEmpty(database.name))
+    )
+      throw new AppError(`Target database is not empty: ${database.name}`);
+
+    // Table check
+
+    const restoreTables = [
+      ...new Set(
+        ...files
+          .filter((f) =>
+            endsWith(f, [suffix.table, suffix.tableSchema, suffix.tableData]),
+          )
+          .map((f) => f.split(".")[0]),
+      ),
+    ];
+    const serverTables = await sql.fetchTableNames(database.name);
+    const errorTables = restoreTables.filter((v) => serverTables.includes(v));
+
+    if (errorTables.length)
+      throw new AppError(
+        `Target table already exists: ${errorTables.join(", ")}`,
       );
 
-    if (!successFooter)
-      throw new AppError("No end line found (incomplete backup)");
-  }
+    // Data check
 
-  override async onExportStoredPrograms(output: string) {
-    const stream = createWriteStream(output);
-    await Promise.all([
-      new Promise<void>((resolve, reject) => {
-        stream.on("close", resolve);
-        stream.on("error", reject);
-      }),
-      await exec(
-        "mysqldump",
-        [
-          ...(await this.buildConnectionArgs(this.config.database)),
-          "--lock-tables=false",
-          "--routines",
-          "--events",
-          "--skip-triggers",
-          "--no-create-info",
-          "--no-data",
-          "--no-create-db",
-          "--skip-opt",
-        ],
-        null,
-        {
-          pipe: { stream: stream },
-          log: {
-            exec: this.verbose,
-            stderr: this.verbose,
-            allToStderr: true,
-          },
-          stderr: {
-            toExitCode: true,
-          },
-        },
-      ),
-    ]);
-  }
+    const dataFiles = files.filter((f) => f.endsWith(suffix.tableData));
+    const sharedDir = dataFiles.length
+      ? await sql.initSharedDir(this.config.csvSharedPath)
+      : undefined;
 
-  override async onImport(path: string, database: string) {
-    await exec(
-      "mysql",
-      [
-        `--init-command=SET ${[
-          "autocommit=0",
-          "unique_checks=0",
-          "foreign_key_checks=0",
-        ].join(",")};`,
-        ...(await this.buildConnectionArgs(database)),
-      ],
-      null,
-      {
-        pipe: {
-          stream: createReadStream(path),
-          onReadProgress: (data) => {
-            if (this.verbose)
-              logExecStdout({
-                data: JSON.stringify(data),
-                colorize: true,
-                stderr: true,
-                lineSalt: true,
-              });
-          },
+    await sql.createDatabase(database);
+
+    if (data.options.verbose) logExec("readdir", [restorePath]);
+
+    let current = 0;
+    for (const file of files.filter((f) => !f.endsWith(suffix.tableData))) {
+      const path = join(restorePath, file);
+      data.onProgress({
+        relative: {
+          description: "Importing",
+          payload: file,
         },
-        log: this.verbose,
-        stderr: {
-          toExitCode: true,
+        absolute: {
+          total: files.length,
+          current: current,
+          percent: progressPercent(files.length, current),
         },
-      },
-    );
+      });
+      await sql.importFile(path, database.name);
+      current++;
+    }
+
+    for (const file of dataFiles) {
+      const filePath = join(restorePath, file);
+      const tableName = file.slice(0, suffix.tableData.length * -1);
+
+      data.onProgress({
+        relative: {
+          description: "Importing",
+          payload: file,
+        },
+        absolute: {
+          total: files.length,
+          current: current,
+          percent: progressPercent(files.length, current),
+        },
+      });
+
+      const sharedFilePath = join(
+        sharedDir!,
+        `tmp-dtt-restore-${data.snapshot.id.slice(0, 8)}-${tableName}.data.csv`,
+      );
+      try {
+        await rename(filePath, sharedFilePath);
+        await sql.importCsvFile(sharedFilePath, database.name, tableName);
+      } finally {
+        await rm(sharedFilePath);
+      }
+      current++;
+    }
   }
 }

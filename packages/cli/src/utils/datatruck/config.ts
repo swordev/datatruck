@@ -84,7 +84,7 @@ export function resolvePackagePath(
   });
 }
 
-type ResolveDatabaseNameParamsType = ResolvePackageParamsType & {
+export type ResolveDatabaseNameParamsType = ResolvePackageParamsType & {
   packageName: string;
   database: string | undefined;
 };
