@@ -51,7 +51,7 @@ jobs:
       - name: Update restic
         run: sudo restic self-update
       - name: Test
-        run: pnpm test
+        run: sudo npm test
       - name: Build
         run: pnpm build
       - name: Compose
