@@ -29,7 +29,6 @@ export function createMysqlCli(options: MysqlCliOptions) {
       `user = "${options.username}"`,
       `password = "${password}"`,
     ];
-    console.log(data.join("\n"));
     await writeFile(
       (defaultsFilePath = join(dir, "mysql.conf")),
       data.join("\n"),
