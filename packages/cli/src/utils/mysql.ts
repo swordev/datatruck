@@ -41,12 +41,13 @@ export function createMysqlCli(options: MysqlCliOptions) {
     return [`--defaults-file=${await getDefaultsFilePath()}`];
   }
 
-  async function run(query: string, database?: string) {
+  async function run(query: string, database?: string, extra: string[] = []) {
     return await exec(
       "mysql",
       [
         ...(await args()),
         ...(database ? [database] : []),
+        ...(extra || []),
         "-e",
         query.replace(/\s{1,}/g, " "),
         "-N",
@@ -206,6 +207,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
       ENCLOSED BY '"'
       LINES TERMINATED BY '\\n'`,
       database,
+      ["--local-infile"],
     );
   }
 
