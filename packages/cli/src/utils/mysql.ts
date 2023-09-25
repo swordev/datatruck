@@ -1,10 +1,10 @@
 import { AppError } from "../Error/AppError";
-import { existsFile, fetchData, mkdirIfNotExists } from "./fs";
+import { existsFile, fetchData, mkTmpDir, mkdirIfNotExists } from "./fs";
 import { exec, logExecStdout } from "./process";
 import { createMatchFilter, splitLines, undefIfEmpty } from "./string";
 import { randomBytes } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
-import { chmod, rm } from "fs/promises";
+import { chmod, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -17,15 +17,30 @@ export type MysqlCliOptions = {
 };
 
 export function createMysqlCli(options: MysqlCliOptions) {
-  async function args() {
+  let defaultsFilePath: string | undefined;
+  async function getDefaultsFilePath() {
+    if (defaultsFilePath) return defaultsFilePath;
+    const dir = await mkTmpDir("mysql-cli");
     const password = await fetchData(options.password, (p) => p.path);
-    return [
-      `--host=${options.hostname}`,
-      ...(options.port ? [`--port=${options.port}`] : []),
-      `--user=${options.username}`,
-      `--password=${password ?? ""}`,
+    const data = [
+      `[client]`,
+      `host = "${options.hostname}"`,
+      ...(options.port ? [`port = "${options.port}"`] : []),
+      `user = "${options.username}"`,
+      `password = "${password}"`,
     ];
+    console.log(data.join("\n"));
+    await writeFile(
+      (defaultsFilePath = join(dir, "mysql.conf")),
+      data.join("\n"),
+    );
+    return defaultsFilePath;
   }
+
+  async function args() {
+    return [`--defaults-file=${await getDefaultsFilePath()}`];
+  }
+
   async function run(query: string, database?: string) {
     return await exec(
       "mysql",
@@ -154,12 +169,12 @@ export function createMysqlCli(options: MysqlCliOptions) {
     return await exec(
       "mysql",
       [
+        ...(await args()),
         `--init-command=SET ${[
           "autocommit=0",
           "unique_checks=0",
           "foreign_key_checks=0",
         ].join(",")};`,
-        ...(await args()),
         database,
       ],
       null,
