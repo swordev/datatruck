@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.22.1
+
+### Patch Changes
+
+- [`e21ad9f`](https://github.com/swordev/datatruck/commit/e21ad9f33bd6cd28cc4c47485643905dd92dcb57) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix folder permissions in `mysql-dump` task
+
+- [`5e5ebf5`](https://github.com/swordev/datatruck/commit/5e5ebf53b0cb87160e7887e2a6372617e19d38b1) Thanks [@juanrgm](https://github.com/juanrgm)! - Hide MySQL credentials
+
 ## 0.22.0
 
 ### Minor Changes
