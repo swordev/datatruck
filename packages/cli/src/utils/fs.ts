@@ -20,6 +20,7 @@ import {
   opendir,
   rm,
   writeFile,
+  rename,
 } from "fs/promises";
 import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
@@ -628,4 +629,20 @@ export async function fetchData<T>(
   const path = onPath?.(input as any);
   if (typeof path === "string") return (await readFile(path)).toString();
   return null;
+}
+
+export async function safeRename(oldPath: string, newPath: string) {
+  try {
+    await rename(oldPath, newPath);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("cross-device link not permitted")
+    ) {
+      await cp(oldPath, newPath, { recursive: true });
+      await rm(oldPath, { recursive: true });
+    } else {
+      throw error;
+    }
+  }
 }

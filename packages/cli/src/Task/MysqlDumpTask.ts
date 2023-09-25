@@ -4,7 +4,7 @@ import {
   ResolveDatabaseNameParamsType,
   resolveDatabaseName,
 } from "../utils/datatruck/config";
-import { readDir } from "../utils/fs";
+import { readDir, safeRename } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { createMysqlCli } from "../utils/mysql";
 import { endsWith } from "../utils/string";
@@ -15,7 +15,7 @@ import {
 } from "./SqlDumpTaskAbstract";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
-import { chmod, mkdir, readdir, rename, rm } from "fs/promises";
+import { chmod, mkdir, readdir, rm } from "fs/promises";
 import { join } from "path";
 
 export const mysqlDumpTaskName = "mysql-dump";
@@ -105,11 +105,11 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
               files.every((file) => file === schemaFile || file === dataFile);
             if (!successCsvDump)
               throw new AppError(`Invalid csv dump files: ${files.join(", ")}`);
-            await rename(
+            await safeRename(
               join(tableSharedPath, schemaFile),
               join(outputPath, `${tableName}${suffix.tableSchema}`),
             );
-            await rename(
+            await safeRename(
               join(tableSharedPath, dataFile),
               join(outputPath, `${tableName}${suffix.tableData}`),
             );
@@ -280,7 +280,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         `tmp-dtt-restore-${data.snapshot.id.slice(0, 8)}-${tableName}.data.csv`,
       );
       try {
-        await rename(filePath, sharedFilePath);
+        await safeRename(filePath, sharedFilePath);
         await sql.importCsvFile(sharedFilePath, database.name, tableName);
       } finally {
         await rm(sharedFilePath);
