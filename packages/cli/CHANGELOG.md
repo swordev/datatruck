@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.22.0
+
+### Minor Changes
+
+- [`d0649f1`](https://github.com/swordev/datatruck/commit/d0649f1f7d4a7d891bea19793cfcb24d752a0d5c) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `csv` backup/restore format to `mysql-dump` task
+
+### Patch Changes
+
+- [`2e76917`](https://github.com/swordev/datatruck/commit/2e7691753b0a74c1f0653960882d13fbcf7d0567) Thanks [@juanrgm](https://github.com/juanrgm)! - Improve import performance in the `mysql-dump` task
+
 ## 0.21.1
 
 ### Patch Changes

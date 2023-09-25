@@ -1,6 +1,6 @@
 {
   "name": "datatruck",
-  "version": "0.21.1",
+  "version": "0.22.0",
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean",
