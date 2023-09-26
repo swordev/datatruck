@@ -49,7 +49,7 @@ const suffix = {
 
 export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
   override async onBackup(data: BackupDataType) {
-    const sql = createMysqlCli({
+    const sql = await createMysqlCli({
       ...this.config,
       verbose: data.options.verbose,
     });
@@ -188,7 +188,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
     }
   }
   override async onRestore(data: RestoreDataType) {
-    const sql = createMysqlCli({
+    const sql = await createMysqlCli({
       ...this.config,
       verbose: data.options.verbose,
     });

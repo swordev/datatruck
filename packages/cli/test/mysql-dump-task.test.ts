@@ -28,45 +28,40 @@ describe("mysql-dump-task", () => {
       const verbose = 1;
       const dbName = `tmp_dtt_db`;
       let restoredDbName: string | undefined;
-      const sql = createMysqlCli({
+      const sql = await createMysqlCli({
         verbose: !!verbose,
         hostname: "127.0.0.1",
         username: "root",
         password: "root",
         port: 3307,
       });
-
       try {
-        await sql.run(`DROP DATABASE IF EXISTS ${dbName}`);
-        const sourceData: Record<string, any[][]> = {
+        await sql.execute(`DROP DATABASE IF EXISTS ${dbName}`);
+        const sourceData: Record<string, Record<string, any>[]> = {
           table1: [
-            [1, null],
-            [2, "a"],
+            { id: 1, value: null },
+            { id: 2, value: "a" },
           ],
-          table2: [[3, "b"]],
+          table2: [{ id: 3, value: "b" }],
           emptytable: [],
         };
 
         await sql.createDatabase({ name: dbName });
-        const quote = (v: string | null) => JSON.stringify(v);
+        await sql.changeDatabase(dbName);
         for (const table of Object.keys(sourceData)) {
-          await sql.run(
+          await sql.execute(
             `
-        CREATE TABLE ${table} (
-          id INT(11) NOT NULL AUTO_INCREMENT,
-          value VARCHAR(50) NULL COLLATE 'utf8_general_ci',
-          PRIMARY KEY (id) USING BTREE
-        )
-        COLLATE='utf8_general_ci'
-        ENGINE=InnoDB
-      `,
-            dbName,
+              CREATE TABLE ${table} (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                value VARCHAR(50) NULL COLLATE 'utf8_general_ci',
+                PRIMARY KEY (id) USING BTREE
+              )
+              COLLATE='utf8_general_ci'
+              ENGINE=InnoDB
+            `,
           );
           for (const row of sourceData[table]) {
-            await sql.run(
-              `INSERT INTO ${table} VALUES (${row.map(quote)})`,
-              dbName,
-            );
+            await sql.insert(table, row);
           }
         }
 
@@ -120,18 +115,18 @@ describe("mysql-dump-task", () => {
 
         const tableNames = (await sql.fetchTableNames(restoredDbName)).sort();
         expect(tableNames.join()).toBe(Object.keys(sourceData).sort().join());
-
+        const restoreSql = await createMysqlCli({
+          ...sql.options,
+          database: restoredDbName,
+        });
         for (const table in sourceData) {
-          const rows = await sql.fetchAll(
-            `SELECT * FROM ${table}`,
-            restoredDbName,
-          );
-          expect(rows.length).toBe(sourceData[table].length);
+          const rows = await restoreSql.fetchAll(`SELECT * FROM ${table}`);
+          expect(JSON.stringify(rows)).toBe(JSON.stringify(sourceData[table]));
         }
       } finally {
         if (autoclean) {
-          await sql.run(`DROP DATABASE IF EXISTS ${dbName}`);
-          await sql.run(`DROP DATABASE IF EXISTS ${restoredDbName}`);
+          await sql.execute(`DROP DATABASE IF EXISTS ${dbName}`);
+          await sql.execute(`DROP DATABASE IF EXISTS ${restoredDbName}`);
         }
       }
     },

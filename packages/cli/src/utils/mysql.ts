@@ -1,11 +1,13 @@
 import { AppError } from "../Error/AppError";
+import { logExec } from "./cli";
 import { existsFile, fetchData, mkTmpDir, mkdirIfNotExists } from "./fs";
 import { exec, logExecStdout } from "./process";
-import { createMatchFilter, splitLines, undefIfEmpty } from "./string";
+import { createMatchFilter, undefIfEmpty } from "./string";
 import { ChildProcess } from "child_process";
 import { randomBytes } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
 import { chmod, rm, writeFile } from "fs/promises";
+import { createConnection } from "mysql2/promise";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -15,12 +17,33 @@ export type MysqlCliOptions = {
   port?: number;
   username: string;
   verbose?: boolean;
+  database?: string;
 };
 
-export function createMysqlCli(options: MysqlCliOptions) {
-  let defaultsFilePath: string | undefined;
-  async function getDefaultsFilePath() {
-    if (defaultsFilePath) return defaultsFilePath;
+function flatQuery(query: string, params?: any[]) {
+  query = query.replace(/\s{1,}/g, " ").trim();
+  let paramIndex = 0;
+  return params
+    ? query.replace(/\?/g, () => {
+        const param = params![paramIndex++];
+        return param ? JSON.stringify(param) : "?";
+      })
+    : query;
+}
+
+export async function createMysqlCli(options: MysqlCliOptions) {
+  let sqlConfigPath: string | undefined;
+  const password = (await fetchData(options.password, (p) => p.path)) ?? "";
+  const sql = await createConnection({
+    host: options.hostname,
+    user: options.username,
+    password,
+    port: options.port,
+    database: options.database,
+  });
+
+  async function createSqlConfig() {
+    if (sqlConfigPath) return sqlConfigPath;
     const dir = await mkTmpDir("mysql-cli");
     const password = await fetchData(options.password, (p) => p.path);
     const data = [
@@ -30,15 +53,12 @@ export function createMysqlCli(options: MysqlCliOptions) {
       `user = "${options.username}"`,
       `password = "${password}"`,
     ];
-    await writeFile(
-      (defaultsFilePath = join(dir, "mysql.conf")),
-      data.join("\n"),
-    );
-    return defaultsFilePath;
+    await writeFile((sqlConfigPath = join(dir, "mysql.conf")), data.join("\n"));
+    return sqlConfigPath;
   }
 
   async function args() {
-    return [`--defaults-file=${await getDefaultsFilePath()}`];
+    return [`--defaults-file=${await createSqlConfig()}`];
   }
 
   async function run(
@@ -54,7 +74,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
         ...(database ? [database] : []),
         ...(extra || []),
         "-e",
-        query.replace(/\s{1,}/g, " "),
+        flatQuery(query),
         "-N",
         "--silent",
       ],
@@ -67,10 +87,9 @@ export function createMysqlCli(options: MysqlCliOptions) {
       },
     );
   }
-  async function fetchAll(query: string, database?: string) {
-    return splitLines((await run(query, database)).stdout).map((line) =>
-      line.split("\t"),
-    );
+  async function fetchAll<T>(query: string, params?: any[]): Promise<T[]> {
+    const [rows] = await sql.query(query, params);
+    return rows as T[];
   }
 
   async function fetchTableNames(
@@ -79,18 +98,21 @@ export function createMysqlCli(options: MysqlCliOptions) {
     exclude?: string[],
   ) {
     return (
-      await fetchAll(`
+      await fetchAll<{ table_name: string }>(
+        `
       SELECT
         table_name 
       FROM
         information_schema.tables
       WHERE
-        table_schema = '${database}'
+        table_schema = ?
       ORDER BY
         table_name
-  `)
+  `,
+        [database],
+      )
     )
-      .map((r) => r[0])
+      .map((r) => r.table_name)
       .filter(createMatchFilter(include, exclude));
   }
   async function dump(input: {
@@ -221,10 +243,9 @@ export function createMysqlCli(options: MysqlCliOptions) {
   }) {
     return run(
       `
-      LOAD DATA LOCAL INFILE '${input.path.replaceAll("\\", "/")}'
+      LOAD DATA LOCAL INFILE ${JSON.stringify(input.path.replaceAll("\\", "/"))}
       INTO TABLE ${input.table}
-      FIELDS TERMINATED BY ','
-      ENCLOSED BY '"'
+      FIELDS TERMINATED BY '\\t'
       LINES TERMINATED BY '\\n'`,
       input.database,
       ["--local-infile"],
@@ -233,19 +254,22 @@ export function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function isDatabaseEmpty(database: string) {
-    const [total] = await fetchAll(`
+    const [row] = await fetchAll<{ total: number }>(
+      `
       SELECT
         COUNT(*) AS total 
       FROM
         information_schema.tables
       WHERE
-        table_schema = '${database}'
-    `);
-    return Number(total) ? false : true;
+        table_schema = ?
+    `,
+      [database],
+    );
+    return Number(row.total) ? false : true;
   }
 
   async function createDatabase(database: { name: string; charset?: string }) {
-    await run(`
+    await sql.execute(`
       CREATE DATABASE IF NOT EXISTS \`${database.name}\`
       CHARACTER SET ${database.charset ?? "utf8"}
       COLLATE ${database.charset ?? "utf8_general_ci"}
@@ -253,11 +277,10 @@ export function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function fetchVariable(name: string) {
-    const stdout = undefIfEmpty(
-      (await run(`SHOW VARIABLES LIKE "${name}"`)).stdout.trim(),
-    );
-
-    return stdout ? undefIfEmpty(stdout.slice(name.length).trim()) : undefined;
+    const rows = await fetchAll<{ Value: string }>(`SHOW VARIABLES LIKE ?`, [
+      name,
+    ]);
+    return undefIfEmpty(rows?.[0].Value);
   }
 
   async function initSharedDir(sharedDir?: string) {
@@ -280,7 +303,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
     try {
       await mkdirIfNotExists(dir);
       await chmod(dir, 0o777);
-      await run(`SELECT 1 INTO OUTFILE ${outFileVar}`);
+      await sql.execute(`SELECT 1 INTO OUTFILE ${outFileVar}`);
       const exists = await existsFile(outFile);
       if (!exists)
         throw new AppError(`MySQL shared dir is not reached: ${dir}`);
@@ -291,11 +314,43 @@ export function createMysqlCli(options: MysqlCliOptions) {
     }
   }
 
+  async function execute(query: string, params: any[] = []) {
+    if (options.verbose) {
+      logExec(`mysql`, [
+        ...(await args()),
+        "-e",
+        `"${flatQuery(query)}"`,
+        ...(sql.config.database ? [sql.config.database] : []),
+      ]);
+    }
+    await sql.execute(query, params);
+  }
+
+  async function insert(tableName: string, item: Record<string, any>) {
+    const columnsExpr = Object.keys(item)
+      .map((v) => v)
+      .join(", ");
+    const paramsExpr = Array.from({ length: Object.keys(item).length })
+      .fill("?")
+      .join(", ");
+    const params = Object.values(item);
+    await execute(
+      `INSERT INTO ${tableName} (${columnsExpr}) VALUES (${paramsExpr})`,
+      params,
+    );
+  }
+
+  async function changeDatabase(name: string) {
+    await sql.changeUser({ database: name });
+  }
   return {
     options,
     initSharedDir,
     args,
     run,
+    execute,
+    insert,
+    changeDatabase,
     fetchAll,
     dump,
     fetchTableNames,
