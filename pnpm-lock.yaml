@@ -59,6 +59,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@supercharge/promise-pool':
+        specifier: ^3.1.0
+        version: 3.1.0
       ajv:
         specifier: ^8.12.0
         version: 8.12.0
@@ -1927,6 +1930,11 @@ packages:
     resolution: {integrity: sha512-CX6t4SYQ37lzxicAqsBtxA3OseeoVrh9cSJ5PFYam0GksYlupRfy1A+Q4aYD3zvcfECLc0zO2u+ZnR2UYKvCrw==}
     engines: {node: '>=14.16'}
     dev: true
+
+  /@supercharge/promise-pool@3.1.0:
+    resolution: {integrity: sha512-gB3NukbIcYzRtPoE6dx9svQYPodxvnfQlaaQd8N/z87E6WaMfRE7o5HwB+LZ+KeM0nsNAq1n4TmBtfz1VCUR+Q==}
+    engines: {node: '>=8'}
+    dev: false
 
   /@szmarczak/http-timer@4.0.6:
     resolution: {integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==}

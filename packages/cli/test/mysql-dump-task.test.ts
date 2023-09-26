@@ -1,10 +1,8 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
-import { parentTmpDir } from "../src/utils/fs";
 import { createMysqlCli } from "../src/utils/mysql";
 import { makeConfig, makeRepositoryConfig } from "./util";
-import { rm } from "fs/promises";
-import { describe, expect, it, afterAll } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const autoclean = true;
 const repositoryTypes = (

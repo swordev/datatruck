@@ -2,6 +2,7 @@ import { AppError } from "../Error/AppError";
 import { existsFile, fetchData, mkTmpDir, mkdirIfNotExists } from "./fs";
 import { exec, logExecStdout } from "./process";
 import { createMatchFilter, splitLines, undefIfEmpty } from "./string";
+import { ChildProcess } from "child_process";
 import { randomBytes } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
 import { chmod, rm, writeFile } from "fs/promises";
@@ -40,7 +41,12 @@ export function createMysqlCli(options: MysqlCliOptions) {
     return [`--defaults-file=${await getDefaultsFilePath()}`];
   }
 
-  async function run(query: string, database?: string, extra: string[] = []) {
+  async function run(
+    query: string,
+    database?: string,
+    extra: string[] = [],
+    onSpawn?: (p: ChildProcess) => void,
+  ) {
     return await exec(
       "mysql",
       [
@@ -54,6 +60,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
       ],
       undefined,
       {
+        onSpawn,
         log: options.verbose,
         stderr: { toExitCode: true },
         stdout: { save: true },
@@ -91,6 +98,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
     database: string;
     items?: string[];
     onlyStoredPrograms?: boolean;
+    onSpawn?: (p: ChildProcess) => void;
     onProgress?: (data: { totalBytes: number }) => void;
   }) {
     const stream = createWriteStream(input.output);
@@ -123,6 +131,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
         null,
         {
           stderr: { toExitCode: true },
+          onSpawn: input.onSpawn,
           pipe: {
             stream,
             onWriteProgress: input.onProgress,
@@ -141,6 +150,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
     database: string;
     sharedPath: string;
     items?: string[];
+    onSpawn?: (p: ChildProcess) => void;
   }) {
     await exec(
       "mysqldump",
@@ -156,6 +166,7 @@ export function createMysqlCli(options: MysqlCliOptions) {
       null,
       {
         stderr: { toExitCode: true },
+        onSpawn: input.onSpawn,
         log: {
           exec: options.verbose,
           stderr: options.verbose,
@@ -165,7 +176,11 @@ export function createMysqlCli(options: MysqlCliOptions) {
     );
   }
 
-  async function importFile(path: string, database: string) {
+  async function importFile(input: {
+    path: string;
+    database: string;
+    onSpawn?: (p: ChildProcess) => void;
+  }) {
     return await exec(
       "mysql",
       [
@@ -175,12 +190,13 @@ export function createMysqlCli(options: MysqlCliOptions) {
           "unique_checks=0",
           "foreign_key_checks=0",
         ].join(",")};`,
-        database,
+        input.database,
       ],
       null,
       {
+        onSpawn: input.onSpawn,
         pipe: {
-          stream: createReadStream(path),
+          stream: createReadStream(input.path),
           onReadProgress: (data) => {
             if (options.verbose)
               logExecStdout({
@@ -197,16 +213,22 @@ export function createMysqlCli(options: MysqlCliOptions) {
     );
   }
 
-  async function importCsvFile(path: string, database: string, table: string) {
+  async function importCsvFile(input: {
+    path: string;
+    database: string;
+    table: string;
+    onSpawn?: (p: ChildProcess) => void;
+  }) {
     return run(
       `
-      LOAD DATA LOCAL INFILE '${path.replaceAll("\\", "/")}'
-      INTO TABLE ${table}
+      LOAD DATA LOCAL INFILE '${input.path.replaceAll("\\", "/")}'
+      INTO TABLE ${input.table}
       FIELDS TERMINATED BY ','
       ENCLOSED BY '"'
       LINES TERMINATED BY '\\n'`,
-      database,
+      input.database,
       ["--local-infile"],
+      input.onSpawn,
     );
   }
 

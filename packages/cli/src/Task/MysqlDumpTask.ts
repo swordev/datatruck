@@ -1,4 +1,5 @@
 import { AppError } from "../Error/AppError";
+import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import {
   ResolveDatabaseNameParamsType,
@@ -26,10 +27,15 @@ export type MysqlDumpTaskConfigType = {
    */
   dataFormat?: "csv" | "sql";
   csvSharedPath?: string;
+  /**
+   * @default 1
+   */
+  concurrency?: number;
 } & SqlDumpTaskConfigType;
 
 export const mysqlDumpTaskDefinition = sqlDumpTaskDefinition({
   dataFormat: { enum: ["csv", "sql"] },
+  concurrency: { type: "integer", minimum: 1 },
   csvSharedPath: { type: "string" },
 });
 
@@ -56,6 +62,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
     const outputPath = data.package.path;
     ok(typeof outputPath === "string");
 
+    const concurrency = this.config.concurrency ?? 4;
     const dataFormat = this.config.dataFormat ?? "sql";
 
     await mkdir(outputPath, { recursive: true });
@@ -66,81 +73,90 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         : undefined;
 
     if (this.config.oneFileByTable || sharedDir) {
-      let current = 0;
-      for (const tableName of tableNames) {
-        await data.onProgress({
-          relative: {
-            description: "Exporting",
-            payload: tableName,
-          },
-          absolute: {
-            total: tableNames.length,
-            current,
-            percent: progressPercent(tableNames.length, current),
-          },
-        });
-        if (sharedDir) {
-          const tableSharedPath = join(
-            sharedDir,
-            `tmp-dtt-backup-${data.snapshot.id.slice(0, 8)}-${tableName}`,
-          );
+      await runParallel({
+        items: tableNames,
+        concurrency,
+        onChange: async ({ processed: proccesed, buffer }) =>
+          await data.onProgress({
+            relative: {
+              description: "Exporting",
+              payload: [...buffer.keys()].join(", "),
+            },
+            absolute: {
+              total: tableNames.length,
+              current: proccesed,
+              percent: progressPercent(tableNames.length, proccesed),
+            },
+          }),
+        onItem: async ({ item: tableName, index, controller }) => {
+          if (sharedDir) {
+            const tableSharedPath = join(
+              sharedDir,
+              `tmp-dtt-backup-${data.snapshot.id.slice(0, 8)}-${tableName}`,
+            );
+            if (data.options.verbose) {
+              logExec("mkdir", ["-p", tableSharedPath]);
+              logExec("chmod", ["777", tableSharedPath]);
+            }
+            await mkdir(tableSharedPath, { recursive: true });
 
-          if (data.options.verbose) {
-            logExec("mkdir", ["-p", tableSharedPath]);
-            logExec("chmod", ["777", tableSharedPath]);
-          }
-          await mkdir(tableSharedPath, { recursive: true });
-          await chmod(tableSharedPath, 0o777);
-          try {
-            await sql.csvDump({
-              sharedPath: tableSharedPath,
+            try {
+              await chmod(tableSharedPath, 0o777);
+              await sql.csvDump({
+                sharedPath: tableSharedPath,
+                items: [tableName],
+                database: this.config.database,
+                onSpawn: (p) => (controller.stop = () => p.kill()),
+              });
+              const files = await readdir(tableSharedPath);
+              const schemaFile = `${tableName}.sql`;
+              const dataFile = `${tableName}.txt`;
+              const successCsvDump =
+                files.length === 2 &&
+                files.every((file) => file === schemaFile || file === dataFile);
+              if (!successCsvDump)
+                throw new AppError(
+                  `Invalid csv dump files: ${files.join(", ")}`,
+                );
+              await safeRename(
+                join(tableSharedPath, schemaFile),
+                join(outputPath, `${tableName}${suffix.tableSchema}`),
+              );
+              await safeRename(
+                join(tableSharedPath, dataFile),
+                join(outputPath, `${tableName}${suffix.tableData}`),
+              );
+            } finally {
+              await rm(tableSharedPath, { recursive: true });
+            }
+          } else {
+            const outPath = join(outputPath, `${tableName}${suffix.table}`);
+            await sql.dump({
+              output: outPath,
               items: [tableName],
               database: this.config.database,
+              onSpawn: (p) => (controller.stop = () => p.kill()),
+              ...(concurrency !== 1 && {
+                onProgress(progress) {
+                  data.onProgress({
+                    relative: {
+                      description: "Exporting",
+                      payload: tableName,
+                      current: progress.totalBytes,
+                      format: "size",
+                    },
+                    absolute: {
+                      total: tableNames.length,
+                      current: index,
+                      percent: progressPercent(tableNames.length, index),
+                    },
+                  });
+                },
+              }),
             });
-            const files = await readdir(tableSharedPath);
-            const schemaFile = `${tableName}.sql`;
-            const dataFile = `${tableName}.txt`;
-            const successCsvDump =
-              files.length === 2 &&
-              files.every((file) => file === schemaFile || file === dataFile);
-            if (!successCsvDump)
-              throw new AppError(`Invalid csv dump files: ${files.join(", ")}`);
-            await safeRename(
-              join(tableSharedPath, schemaFile),
-              join(outputPath, `${tableName}${suffix.tableSchema}`),
-            );
-            await safeRename(
-              join(tableSharedPath, dataFile),
-              join(outputPath, `${tableName}${suffix.tableData}`),
-            );
-          } finally {
-            await rm(tableSharedPath, { recursive: true });
           }
-        } else {
-          const outPath = join(outputPath, `${tableName}${suffix.table}`);
-          await sql.dump({
-            output: outPath,
-            items: [tableName],
-            database: this.config.database,
-            onProgress(progress) {
-              data.onProgress({
-                relative: {
-                  description: "Exporting",
-                  payload: tableName,
-                  current: progress.totalBytes,
-                  format: "size",
-                },
-                absolute: {
-                  total: tableNames.length,
-                  current,
-                  percent: progressPercent(tableNames.length, current),
-                },
-              });
-            },
-          });
-        }
-        current++;
-      }
+        },
+      });
     } else {
       await data.onProgress({
         relative: { description: "Exporting" },
@@ -241,51 +257,69 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
 
     if (data.options.verbose) logExec("readdir", [restorePath]);
 
-    let current = 0;
-    for (const file of files.filter((f) => !f.endsWith(suffix.tableData))) {
-      const path = join(restorePath, file);
-      data.onProgress({
-        relative: {
-          description: "Importing",
-          payload: file,
-        },
-        absolute: {
-          total: files.length,
-          current: current,
-          percent: progressPercent(files.length, current),
-        },
-      });
-      await sql.importFile(path, database.name);
-      current++;
-    }
+    const concurrency = this.config.concurrency ?? 1;
 
-    for (const file of dataFiles) {
-      const filePath = join(restorePath, file);
-      const tableName = file.slice(0, suffix.tableData.length * -1);
+    await runParallel({
+      items: files.filter((f) => !f.endsWith(suffix.tableData)),
+      concurrency,
+      onChange: async ({ processed: proccesed, buffer }) =>
+        await data.onProgress({
+          relative: {
+            description: "Importing",
+            payload: [...buffer.keys()].join(", "),
+          },
+          absolute: {
+            total: files.length,
+            current: proccesed,
+            percent: progressPercent(files.length, proccesed),
+          },
+        }),
+      onItem: async ({ item: file, controller }) => {
+        await sql.importFile({
+          path: join(restorePath, file),
+          database: database.name,
+          onSpawn: (p) => (controller.stop = () => p.kill()),
+        });
+      },
+    });
 
-      data.onProgress({
-        relative: {
-          description: "Importing",
-          payload: file,
-        },
-        absolute: {
-          total: files.length,
-          current: current,
-          percent: progressPercent(files.length, current),
-        },
-      });
-
-      const sharedFilePath = join(
-        sharedDir!,
-        `tmp-dtt-restore-${data.snapshot.id.slice(0, 8)}-${tableName}.data.csv`,
-      );
-      try {
-        await safeRename(filePath, sharedFilePath);
-        await sql.importCsvFile(sharedFilePath, database.name, tableName);
-      } finally {
-        await rm(sharedFilePath);
-      }
-      current++;
-    }
+    await runParallel({
+      items: dataFiles,
+      concurrency,
+      onChange: async ({ processed: proccesed, buffer }) =>
+        await data.onProgress({
+          relative: {
+            description: "Importing",
+            payload: [...buffer.keys()].join(", "),
+          },
+          absolute: {
+            total: files.length,
+            current: proccesed,
+            percent: progressPercent(files.length, proccesed),
+          },
+        }),
+      onItem: async ({ item: file, controller }) => {
+        const filePath = join(restorePath, file);
+        const tableName = file.slice(0, suffix.tableData.length * -1);
+        const sharedFilePath = join(
+          sharedDir!,
+          `tmp-dtt-restore-${data.snapshot.id.slice(
+            0,
+            8,
+          )}-${tableName}.data.csv`,
+        );
+        try {
+          await safeRename(filePath, sharedFilePath);
+          await sql.importCsvFile({
+            path: sharedFilePath,
+            database: database.name,
+            table: tableName,
+            onSpawn: (p) => (controller.stop = () => p.kill()),
+          });
+        } finally {
+          await rm(sharedFilePath);
+        }
+      },
+    });
   }
 }
