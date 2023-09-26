@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.22.2
+
+### Patch Changes
+
+- [`80eeded`](https://github.com/swordev/datatruck/commit/80eeded073aae970385e1efb04acc4ec222efa25) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix cross-device link
+
 ## 0.22.1
 
 ### Patch Changes
