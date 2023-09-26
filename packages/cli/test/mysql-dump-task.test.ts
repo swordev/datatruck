@@ -41,6 +41,12 @@ describe("mysql-dump-task", () => {
           table1: [
             { id: 1, value: null },
             { id: 2, value: "a" },
+            { id: 3, value: '"with\' quotes"' },
+            { id: 4, value: '"with\nline\r\nsalts"' },
+            { id: 5, value: '"\ttext' },
+            { id: 6, value: null },
+            { id: 7, value: "a\nb" },
+            { id: 8, value: "»finish" },
           ],
           table2: [{ id: 3, value: "b" }],
           emptytable: [],

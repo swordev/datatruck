@@ -181,6 +181,8 @@ export async function createMysqlCli(options: MysqlCliOptions) {
         input.database,
         "--lock-tables=false",
         "--skip-add-drop-table=false",
+        "--fields-terminated-by=0x09", // \t
+        "--lines-terminated-by=0x0a", // \n
         "-T",
         input.sharedPath,
         ...(input.items || []),
