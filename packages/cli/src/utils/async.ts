@@ -10,12 +10,13 @@ export async function runParallel<T>(options: {
     buffer: ItemBuffer<T>;
     processed: number;
     proccesing: number;
-  }) => Promise<void>;
+  }) => Promise<void> | void;
   onItem: (data: {
     item: T;
     index: number;
     controller: ControllerItem;
-  }) => Promise<void>;
+  }) => Promise<void> | void;
+  onFinished?: () => Promise<void> | void;
 }) {
   const buffer = new Map() as ItemBuffer<T>;
   let processed: number = 0;
@@ -47,6 +48,7 @@ export async function runParallel<T>(options: {
       } finally {
         buffer.delete(item);
         processed++;
+        await options.onFinished?.();
         await options.onChange({
           processed,
           proccesing: buffer.size,

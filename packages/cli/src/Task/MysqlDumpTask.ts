@@ -79,7 +79,8 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         onChange: async ({ processed: proccesed, buffer }) =>
           await data.onProgress({
             relative: {
-              description: "Exporting",
+              description:
+                buffer.size > 1 ? `Exporting (${buffer.size})` : "Exporting",
               payload: [...buffer.keys()].join(", "),
             },
             absolute: {
@@ -259,19 +260,25 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
 
     const concurrency = this.config.concurrency ?? 1;
 
+    let processed = 0;
+
     await runParallel({
       items: files.filter((f) => !f.endsWith(suffix.tableData)),
       concurrency,
-      onChange: async ({ processed: proccesed, buffer }) =>
+      onFinished: () => {
+        processed++;
+      },
+      onChange: async ({ buffer }) =>
         await data.onProgress({
           relative: {
-            description: "Importing",
+            description:
+              buffer.size > 1 ? `Importing (${buffer.size})` : "Importing",
             payload: [...buffer.keys()].join(", "),
           },
           absolute: {
             total: files.length,
-            current: proccesed,
-            percent: progressPercent(files.length, proccesed),
+            current: processed,
+            percent: progressPercent(files.length, processed),
           },
         }),
       onItem: async ({ item: file, controller }) => {
@@ -286,16 +293,20 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
     await runParallel({
       items: dataFiles,
       concurrency,
-      onChange: async ({ processed: proccesed, buffer }) =>
+      onFinished: () => {
+        processed++;
+      },
+      onChange: async ({ buffer }) =>
         await data.onProgress({
           relative: {
-            description: "Importing",
+            description:
+              buffer.size > 1 ? `Importing (${buffer.size})` : "Importing",
             payload: [...buffer.keys()].join(", "),
           },
           absolute: {
             total: files.length,
-            current: proccesed,
-            percent: progressPercent(files.length, proccesed),
+            current: processed,
+            percent: progressPercent(files.length, processed),
           },
         }),
       onItem: async ({ item: file, controller }) => {
