@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.23.0
+
+### Minor Changes
+
+- [`fa5d44d`](https://github.com/swordev/datatruck/commit/fa5d44dff24b26d976bed385bd20981fa767e089) Thanks [@juanrgm](https://github.com/juanrgm)! - Add concurrency config to `mysql-dump` task
+
 ## 0.22.2
 
 ### Patch Changes
