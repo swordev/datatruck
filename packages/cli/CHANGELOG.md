@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.23.1
+
+### Patch Changes
+
+- [`899aa7a`](https://github.com/swordev/datatruck/commit/899aa7af5204b13010643a900279456e737a154d) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `mysql-dump` progress
+
 ## 0.23.0
 
 ### Minor Changes
