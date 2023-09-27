@@ -276,12 +276,15 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       include: [],
     };
 
-    const packs: PackObject[] = [...configPacks, defaultsPack];
+    const packs: PackObject[] = [defaultsPack, ...configPacks];
     const defaultsPackIndex = packs.findIndex((p) => p === defaultsPack);
     const stream = createWriteStreamPool({
       path: await this.mkTmpDir("files"),
       onStreamPath: (key) => `files-${key}.txt`,
     });
+
+    scanner.total++;
+    stream.writeLine(defaultsPackIndex, ".");
 
     await scanner.start(async (entry) => {
       let packIndex = configPacks.findIndex((pack) =>
@@ -299,6 +302,10 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           name: pack.name ? `${pack.name}-${subname}` : subname,
         });
         packIndex = packs.length - 1;
+      }
+      if (!stream.lines(packIndex)) {
+        scanner.total++;
+        stream.writeLine(packIndex, ".");
       }
       stream.writeLine(packIndex, entry.path);
       return true;

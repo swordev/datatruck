@@ -22,6 +22,7 @@ export function renderProgressBar(
   size = 10,
   subprogress?: number,
 ) {
+  if (progress > 100) throw new Error(`Invalid progress value: ${progress}`);
   const completeChar = "\u2588";
   const incompleteChar = "\u2591";
   const completedSize = Math.round((progress * size) / 100);
