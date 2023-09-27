@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.23.3
+
+### Patch Changes
+
+- [`ea3cbc9`](https://github.com/swordev/datatruck/commit/ea3cbc98aee49151bd1b9422a2c7dadb29479751) Thanks [@juanrgm](https://github.com/juanrgm)! - Apply permissions to the root path in `datatruck` repository
+
 ## 0.23.2
 
 ### Patch Changes
