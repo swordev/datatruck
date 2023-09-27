@@ -157,7 +157,7 @@ describe("createTar", () => {
     if (platform() !== "win32") {
       expect(stats.uid).toBe(2000);
       expect(stats.gid).toBe(2000);
-      expect(stats.mode).toBe(0o777);
+      expect(stats.mode & 0o7777).toBe(0o777);
     }
   });
 });
