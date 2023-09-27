@@ -50,7 +50,7 @@ export type DatatruckRepositoryConfigType = {
 type PackObject = {
   name?: string;
   compress?: boolean | CompressOptions;
-  include: string[];
+  include?: string[];
   exclude?: string[];
   onePackByResult?: boolean;
 };
@@ -86,7 +86,6 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["include"],
         properties: {
           name: { type: "string" },
           compress: {
@@ -273,7 +272,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const defaultsPack: PackObject = {
       name: "defaults",
       compress: data.packageConfig?.compress ?? this.config.compress,
-      include: [],
     };
 
     const packs: PackObject[] = [defaultsPack, ...configPacks];
