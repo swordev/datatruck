@@ -51,6 +51,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
   override async onBackup(data: BackupDataType) {
     const sql = await createMysqlCli({
       ...this.config,
+      database: undefined,
       verbose: data.options.verbose,
     });
     const tableNames = await sql.fetchTableNames(
@@ -191,6 +192,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
   override async onRestore(data: RestoreDataType) {
     const sql = await createMysqlCli({
       ...this.config,
+      database: undefined,
       verbose: data.options.verbose,
     });
 
