@@ -1,4 +1,4 @@
-import { mkTmpDir, tmpDir } from "../../src/utils/fs";
+import { mkTmpDir } from "../../src/utils/fs";
 import {
   createTar,
   listTar,
@@ -7,10 +7,18 @@ import {
   CompressOptions,
 } from "../../src/utils/tar";
 import { createFileChanger } from "../util";
-import { rm, writeFile } from "fs/promises";
-import { cpus } from "os";
+import { chmod, chown, rm, stat, writeFile } from "fs/promises";
+import { platform } from "os";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
+
+async function createIncludeList(include: string[]) {
+  const includeDirPath = await mkTmpDir("test");
+  const includeList = join(includeDirPath, "files.txt");
+
+  await writeFile(includeList, ["notfound", ...include].join("\n"));
+  return { include, includeList };
+}
 
 describe("tar", async () => {
   const cases: {
@@ -60,17 +68,13 @@ describe("tar", async () => {
       // Compress
 
       const createProgress: { path: string }[] = [];
-      const include = [
+
+      const { include, includeList } = await createIncludeList([
         "emptyFolder/",
         "folder1/file1",
         "folder1/file2",
         "folder2/file3",
-      ];
-
-      const includeDirPath = await mkTmpDir("test");
-      const includeList = join(includeDirPath, "files.txt");
-
-      await writeFile(includeList, ["notfound", ...include].join("\n"));
+      ]);
 
       await createTar({
         path: join(path, "source"),
@@ -120,4 +124,40 @@ describe("tar", async () => {
         expect(extractEntries.some((o) => o.path === path)).toBeTruthy();
     },
   );
+});
+
+describe("createTar", () => {
+  it("ignores recursive files and applies permissions to folders", async () => {
+    const { path, update } = await createFileChanger();
+    const { include, includeList } = await createIncludeList([
+      "data/",
+      "data/file2",
+    ]);
+    const output = join(path, "output.tar.gz");
+    await update({
+      data: {
+        file1: "1",
+        file2: "2",
+      },
+    });
+
+    const dataPath = join(path, "data");
+    const listPaths: string[] = [];
+
+    await chmod(dataPath, 0o777);
+    await chown(dataPath, 2000, 2000);
+    await createTar({ path, includeList, output });
+    await listTar({ input: output, onEntry: (e) => listPaths.push(e.path) });
+    await extractTar({ input: output, output: join(path, "output") });
+
+    expect(include.join(",")).toBe(listPaths.join(","));
+
+    const stats = await stat(join(path, "output/data"));
+
+    if (platform() !== "win32") {
+      expect(stats.uid).toBe(2000);
+      expect(stats.gid).toBe(2000);
+      expect(stats.mode).toBe(0o777);
+    }
+  });
 });

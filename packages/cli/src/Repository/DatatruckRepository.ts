@@ -7,7 +7,6 @@ import {
   createFileScanner,
   ensureEmptyDir,
   fastFolderSizeAsync,
-  isEmptyDir,
   isNotFoundError,
   mkdirIfNotExists,
   parsePackageFile,
@@ -285,12 +284,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     });
 
     await scanner.start(async (entry) => {
-      if (
-        entry.dirent.isDirectory() &&
-        !(await isEmptyDir(join(sourcePath, entry.path)))
-      )
-        return false;
-
       let packIndex = configPacks.findIndex((pack) =>
         match(entry.path, pack.include, pack.exclude),
       );

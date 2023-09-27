@@ -181,6 +181,7 @@ export async function createTar(options: CreateTarOptions) {
   await exec(
     "tar",
     [
+      "--no-recursion",
       "-C",
       toLocalPath(options.path),
       compress?.cores === 1 ? "-czvf" : "-cvf",
