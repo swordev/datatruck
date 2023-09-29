@@ -1,18 +1,23 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
 import { createMysqlCli } from "../src/utils/mysql";
+import { parseStringList } from "../src/utils/string";
 import { makeConfig, makeRepositoryConfig } from "./util";
 import { describe, expect, it } from "vitest";
 
 const autoclean = true;
-const repositoryTypes = (
-  process.env.DTT_REPO ? process.env.DTT_REPO.split(",") : ["datatruck"]
-) as RepositoryConfigTypeType[];
-const dataFormats = (
-  process.env.DTT_DATA_FORMAT
-    ? process.env.DTT_DATA_FORMAT.split(",")
-    : ["sql", "csv"]
-) as ("sql" | "csv")[];
+
+const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
+  process.env.DTT_REPO,
+  ["datatruck", "git", "restic"],
+  true,
+);
+
+const dataFormats = parseStringList(
+  process.env.DTT_DATA_FORMAT,
+  ["sql" as const, "csv" as const],
+  true,
+);
 
 describe("mysql-dump-task", () => {
   it.each(

@@ -1,6 +1,6 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
-import { parentTmpDir } from "../src/utils/fs";
+import { parseStringList } from "../src/utils/string";
 import { expectSuccessBackup, expectSuccessRestore } from "./expect";
 import {
   makeConfig,
@@ -8,14 +8,13 @@ import {
   createFileChanger,
   FileChanges,
 } from "./util";
-import { rm } from "fs/promises";
-import { describe, expect, it, afterAll } from "vitest";
+import { describe, expect, it } from "vitest";
 
-const repositoryTypes = (
-  process.env.DTT_REPO
-    ? process.env.DTT_REPO.split(",")
-    : ["datatruck", "git", "restic"]
-) as RepositoryConfigTypeType[];
+const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
+  process.env.DTT_REPO,
+  ["datatruck", "git", "restic"],
+  true,
+);
 
 const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
   [
