@@ -76,6 +76,18 @@ describe("parseStringList", () => {
   it("returns three elements", () => {
     expect(parseStringList("a,,  b  , c, ")).toEqual(["a", "b", "c"]);
   });
+  it("returns defaults elements", () => {
+    expect(parseStringList(undefined, ["a", "b"], true)).toEqual(["a", "b"]);
+    expect(parseStringList(undefined, ["a", "b"], ["b"])).toEqual(["b"]);
+  });
+  it("returns input elements", () => {
+    expect(parseStringList("a,b", ["a", "b", "c"], true)).toEqual(["a", "b"]);
+    expect(parseStringList("a,b", ["a", "b", "c"])).toEqual(["a", "b"]);
+    expect(parseStringList("a,b", ["a", "b", "c"], ["c"])).toEqual(["a", "b"]);
+  });
+  it("throws errors", () => {
+    expect(() => parseStringList("a,c", ["a", "b"])).toThrowError();
+  });
 });
 
 describe("render", () => {

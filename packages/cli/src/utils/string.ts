@@ -27,16 +27,23 @@ export function render(
   });
 }
 
-export function parseStringList(value: string, validValues?: string[]) {
+export function parseStringList<T>(
+  value: string | undefined,
+  validValues?: T[],
+  defaultsValues?: T[] | true,
+): T[] {
+  const resultFallback =
+    (defaultsValues === true ? validValues : defaultsValues) ?? [];
   const result =
     value
       ?.split(",")
       .map((v) => v.trim())
-      .filter((v) => !!v.length) ?? null;
+      .filter((v) => !!v.length) ?? resultFallback;
   if (validValues)
     for (const v of result)
-      if (!validValues.includes(v)) throw new AppError(`Invalid value: ${v}`);
-  return result;
+      if (!validValues.includes(v as T))
+        throw new AppError(`Invalid value: ${v}`);
+  return result as T[];
 }
 
 export type UriType = {
