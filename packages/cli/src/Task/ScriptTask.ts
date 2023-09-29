@@ -1,33 +1,13 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { ensureEmptyDir, mkdirIfNotExists } from "../utils/fs";
 import { exec } from "../utils/process";
+import { Step, runSteps } from "../utils/steps";
 import { render } from "../utils/string";
 import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { writeFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { join } from "path";
-
-export type ProcessStepConfig = {
-  command: string;
-  env?: Record<string, string>;
-  args?: string[];
-};
-
-export type NodeStepConfig = {
-  env?: Record<string, string>;
-  code: string | string[];
-};
-
-export type Step =
-  | {
-      type: "process";
-      config: ProcessStepConfig;
-    }
-  | {
-      type: "node";
-      config: NodeStepConfig;
-    };
 
 export type ScriptTaskConfigType = {
   env?: Record<string, string | undefined>;
@@ -212,11 +192,15 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
     ok(typeof path === "string");
     ok(typeof targetPath === "string");
 
-    await this.processSteps(config.backupSteps, {
-      env: config.env,
-      vars: this.getVars(data),
-      verbose: this.verbose,
-    });
+    await runSteps(
+      config.backupSteps,
+      {
+        env: config.env,
+        vars: this.getVars(data),
+        verbose: this.verbose,
+      },
+      this.mkTmpDir.bind(this),
+    );
   }
 
   override async onBeforeRestore() {
@@ -238,10 +222,14 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
     await mkdirIfNotExists(restorePath);
     await ensureEmptyDir(restorePath);
 
-    await this.processSteps(config.restoreSteps, {
-      env: config.env,
-      vars: this.getVars(data),
-      verbose: this.verbose,
-    });
+    await runSteps(
+      config.restoreSteps,
+      {
+        env: config.env,
+        vars: this.getVars(data),
+        verbose: this.verbose,
+      },
+      this.mkTmpDir.bind(this),
+    );
   }
 }

@@ -13,6 +13,11 @@ export type BackupDataType = {
   snapshot: SnapshotType;
 };
 
+export type BeforeBackupDataType = Omit<
+  BackupDataType,
+  "onProgress" | "targetPath"
+>;
+
 export type RestoreDataType = {
   onProgress: (data: Progress) => Promise<void>;
   options: RestoreActionOptionsType;
@@ -20,6 +25,13 @@ export type RestoreDataType = {
   targetPath: string | undefined;
   snapshot: SnapshotType;
 };
+
+export type BeforeRestoreDataType = Omit<
+  RestoreDataType,
+  "onProgress" | "targetPath"
+>;
+
+export type BeforeReturn = Promise<{ targetPath?: string } | undefined | void>;
 
 export abstract class TaskAbstract<TConfig = any> {
   readonly tmpDirs: string[] = [];
@@ -29,16 +41,8 @@ export abstract class TaskAbstract<TConfig = any> {
     this.tmpDirs.push(dir);
     return dir;
   }
-  async onBeforeBackup(
-    data: Omit<BackupDataType, "onProgress" | "targetPath">,
-  ): Promise<{ targetPath?: string } | undefined> {
-    return undefined;
-  }
+  async onBeforeBackup(data: BeforeBackupDataType): BeforeReturn {}
   async onBackup(data: BackupDataType) {}
-  async onBeforeRestore(
-    data: Omit<RestoreDataType, "onProgress" | "targetPath">,
-  ): Promise<{ targetPath?: string } | undefined> {
-    return undefined;
-  }
+  async onBeforeRestore(data: BeforeRestoreDataType): BeforeReturn {}
   async onRestore(data: RestoreDataType) {}
 }
