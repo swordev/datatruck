@@ -27,10 +27,12 @@ export function render(
   });
 }
 
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
 export function parseStringList<T>(
   value: string | undefined,
   validValues?: T[],
-  defaultsValues?: T[] | true,
+  defaultsValues?: NoInfer<T>[] | true,
 ): T[] {
   const resultFallback =
     (defaultsValues === true ? validValues : defaultsValues) ?? [];

@@ -95,7 +95,7 @@ export function createActionInterface(
       const run = () =>
         exec(
           type as CommandEnum,
-          { ...globalOptions, outputFormat: "json" },
+          { ...globalOptions, outputFormat: "json", verbose: 1 },
           options,
         );
       let exitCode: number;

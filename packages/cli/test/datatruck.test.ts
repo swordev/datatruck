@@ -1,7 +1,8 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
-import { makeParseLog, CommandEnum, exec } from "../src/Factory/CommandFactory";
+import { createActionInterface } from "../src/Factory/CommandFactory";
 import { parseStringList } from "../src/utils/string";
-import { expectSuccessBackup, expectSuccessRestore } from "./expect";
+import { runBackups, runRestores } from "./expect";
+import { fileChanges } from "./fileChanges";
 import {
   makeConfig,
   makeRepositoryConfig,
@@ -16,71 +17,11 @@ const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
   true,
 );
 
-const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (type) =>
-  [
-    {
-      file1: "contents",
-      // https://github.com/restic/restic/issues/3760
-      ...(type === "restic" && {
-        empty: "",
-      }),
-    },
-    {},
-    { file1: "contents2" },
-    { file1: false },
-    {
-      folder1: {
-        ...(type === "git" && {
-          empty: "",
-        }),
-      },
-    },
-    {
-      folder1: {
-        "file1.json": JSON.stringify({ hello: "world" }),
-        folder2: {
-          folder3: {
-            folder4: {
-              folder5: {
-                folder6: {
-                  ".file": "*",
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    {
-      folder1: {
-        folder2: {
-          folder3: {
-            ...Array.from({ length: 20 })
-              .fill(0)
-              .map((v, i) => `file_${i}`)
-              .reduce(
-                (result, name) => {
-                  result[name] = `filename: ${name}`;
-                  return result;
-                },
-                {} as Record<string, string>,
-              ),
-          },
-        },
-      },
-    },
-    {
-      folder1: {
-        "file.bin": Buffer.from([1, 2, 3, 4]),
-      },
-    },
-  ] as FileChanges[];
-
 describe(
   "datatruck",
   () => {
     it("returns config", async () => {
-      const configPath = await makeConfig({
+      const config = await makeConfig({
         repositories: [
           {
             name: "git",
@@ -114,60 +55,34 @@ describe(
         ],
       });
 
-      const parseConfigLog = makeParseLog(CommandEnum.config);
+      const dtt = createActionInterface({ config });
 
-      expect(
-        await exec(
-          CommandEnum.config,
-          {
-            config: configPath,
-            outputFormat: "json",
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
-
-      expect(parseConfigLog()).toMatchObject([
+      expect(await dtt.config({})).toMatchObject([
         {
           packageName: "main/files",
           repositoryNames: ["datatruck"],
         },
-      ] as ReturnType<typeof parseConfigLog>);
+      ]);
     });
 
     it.each(repositoryTypes)(`init %s`, async (type) => {
-      const configPath = await makeConfig({
+      const config = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],
         packages: [],
       });
-
-      const parseConfigLog = makeParseLog(CommandEnum.init);
-
-      expect(
-        await exec(
-          CommandEnum.init,
-          {
-            config: configPath,
-            outputFormat: "json",
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
-
-      expect(parseConfigLog()).toMatchObject([
+      const dtt = createActionInterface({ config });
+      expect(await dtt.init({})).toMatchObject([
         {
           error: null,
           repositoryName: type,
           repositoryType: type,
         },
-      ] as ReturnType<typeof parseConfigLog>);
+      ]);
     });
 
     it.each(repositoryTypes)("backup, restore, prune %s", async (type) => {
       const fileChanger = await createFileChanger();
-      const configPath = await makeConfig({
+      const config = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],
         packages: [
           {
@@ -179,79 +94,20 @@ describe(
         ],
       });
 
-      expect(
-        await exec(
-          CommandEnum.init,
-          {
-            config: configPath,
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
+      const dtt = createActionInterface({ config });
+      await dtt.init({});
 
-      const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
-        [];
+      const backups = await runBackups(config, fileChanger, fileChanges(type));
 
-      let backupIndex = 0;
-      for (const changes of fileChanges(type)) {
-        backupResults.push(
-          await expectSuccessBackup({
-            configPath,
-            fileChanger,
-            changes,
-            backupIndex: ++backupIndex,
-          }),
-        );
+      await runRestores(config, fileChanger, backups);
+
+      if (type !== "git") {
+        await dtt.prune({ keepLast: 1, confirm: true });
+        const snapshots = await dtt.snapshots({});
+        const lastSnapshot = snapshots[snapshots.length - 1];
+        expect(snapshots).toHaveLength(1);
+        expect(snapshots[0].id).toBe(lastSnapshot.id);
       }
-
-      let restoreIndex = 0;
-      for (const backupResult of backupResults) {
-        await expectSuccessRestore({
-          configPath,
-          fileChanger,
-          restoreIndex: restoreIndex++,
-          files: backupResult.files,
-          restoreOptions: {
-            id: backupResult.snapshotId,
-          },
-        });
-      }
-
-      if (type === "git") return;
-      expect(
-        await exec(
-          CommandEnum.prune,
-          {
-            config: configPath,
-            outputFormat: "json",
-            verbose: 1,
-          },
-          {
-            keepLast: 1,
-            confirm: true,
-          },
-        ),
-      ).toBe(0);
-
-      const parseSnapshotsLog = makeParseLog(CommandEnum.snapshots);
-
-      expect(
-        await exec(
-          CommandEnum.snapshots,
-          {
-            config: configPath,
-            outputFormat: "json",
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
-
-      const snapshots = parseSnapshotsLog();
-      const lastBackup = backupResults[backupResults.length - 1];
-      expect(snapshots.length).toBe(1);
-      expect(snapshots[0].id).toBe(lastBackup.snapshotId);
     });
 
     it.each(repositoryTypes)(
@@ -259,7 +115,7 @@ describe(
       async (type) => {
         if (type === "git") return expect(true).toBeTruthy();
         const fileChanger = await createFileChanger();
-        const configPath = await makeConfig({
+        const config = await makeConfig({
           repositories: [
             {
               ...(await makeRepositoryConfig(type)),
@@ -277,65 +133,23 @@ describe(
           ],
         });
 
-        expect(
-          await exec(
-            CommandEnum.init,
-            {
-              config: configPath,
-              verbose: 1,
-            },
-            {},
-          ),
-        ).toBe(0);
+        const dtt = createActionInterface({ config });
+        await dtt.init({});
 
-        const backupResults: Awaited<ReturnType<typeof expectSuccessBackup>>[] =
-          [];
+        const backups = await runBackups(
+          config,
+          fileChanger,
+          fileChanges(type),
+        );
 
-        let backupIndex = 0;
-        for (const changes of fileChanges(type)) {
-          backupResults.push(
-            await expectSuccessBackup({
-              configPath,
-              fileChanger,
-              changes,
-              backupIndex: ++backupIndex,
-            }),
-          );
-        }
-
-        let restoreIndex = 0;
-        for (const backupResult of backupResults) {
-          await expectSuccessRestore({
-            configPath,
-            fileChanger,
-            restoreIndex: restoreIndex++,
-            files: backupResult.files,
-            cleanRestorePath: true,
-            restoreOptions: {
-              id: backupResult.snapshotId,
-              repository: type,
-            },
-          });
-        }
-
-        for (const backupResult of backupResults) {
-          await expectSuccessRestore({
-            configPath,
-            fileChanger,
-            restoreIndex: restoreIndex++,
-            files: backupResult.files,
-            restoreOptions: {
-              id: backupResult.snapshotId,
-              repository: `${type}-mirror`,
-            },
-          });
-        }
+        await runRestores(config, fileChanger, backups);
+        await runRestores(config, fileChanger, backups, `${type}-mirror`);
       },
     );
 
     it.each(repositoryTypes)("snapshots of %s", async (type) => {
       const fileChanger = await createFileChanger();
-      const configPath = await makeConfig({
+      const config = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],
         packages: [
           {
@@ -353,41 +167,13 @@ describe(
         },
       };
 
-      expect(
-        await exec(
-          CommandEnum.init,
-          {
-            config: configPath,
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
+      const dtt = createActionInterface({ config });
+      await dtt.init({});
+      await runBackups(config, fileChanger, [changes]);
 
-      await expectSuccessBackup({
-        configPath,
-        fileChanger,
-        changes,
-        backupIndex: 0,
-      });
-
-      const parseSnapshotsLog = makeParseLog(CommandEnum.snapshots);
-
-      expect(
-        await exec(
-          CommandEnum.snapshots,
-          {
-            config: configPath,
-            outputFormat: "json",
-            verbose: 1,
-          },
-          {},
-        ),
-      ).toBe(0);
-
-      const snapshots = parseSnapshotsLog();
+      const snapshots = await dtt.snapshots({});
       const [snapshot] = snapshots;
-      expect(snapshots.length).toBe(1);
+      expect(snapshots).toHaveLength(1);
       expect(snapshot.packageName).toBe("main/files");
       expect(snapshot.tags.join()).toBe("");
       expect(snapshot.shortId).toBe(snapshot.id.slice(0, 8));
