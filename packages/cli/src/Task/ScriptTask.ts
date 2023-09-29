@@ -1,13 +1,15 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { ensureEmptyDir, mkdirIfNotExists } from "../utils/fs";
-import { exec } from "../utils/process";
+import { mkdirIfNotExists } from "../utils/fs";
 import { Step, runSteps } from "../utils/steps";
-import { render } from "../utils/string";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
+import {
+  BackupDataType,
+  BeforeBackupDataType,
+  BeforeRestoreDataType,
+  RestoreDataType,
+  TaskAbstract,
+} from "./TaskAbstract";
 import { ok } from "assert";
-import { writeFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
-import { join } from "path";
 
 export type ScriptTaskConfigType = {
   env?: Record<string, string | undefined>;
@@ -78,6 +80,10 @@ export const scriptTaskDefinition: JSONSchema7 = {
         code: {
           anyOf: [{ type: "string" }, makeRef(DefinitionEnum.stringListUtil)],
         },
+        vars: {
+          type: "object",
+          patternProperties: { ".+": {} },
+        },
         env: {
           type: "object",
           patternProperties: { ".+": { type: "string" } },
@@ -108,128 +114,75 @@ export const scriptTaskDefinition: JSONSchema7 = {
 
 export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
   protected verbose?: boolean;
-  override async onBeforeBackup() {
+  override async onBeforeBackup(data: BeforeBackupDataType) {
     return {
-      targetPath: await this.mkTmpDir(ScriptTask.name),
+      targetPath:
+        data.package.path ?? (await this.mkTmpDir(`script-task_backup_target`)),
     };
   }
 
-  protected getVars(
-    data: BackupDataType | RestoreDataType,
-  ): Record<string, string | undefined> {
+  protected getVars(data: BackupDataType | RestoreDataType) {
     return {
-      DTT_SNAPSHOT_ID: data.snapshot.id,
-      DTT_SNAPSHOT_DATE: data.snapshot.date,
-      DTT_PACKAGE_NAME: data.package.name,
-      DTT_PACKAGE_PATH: data.package.path,
-      DTT_TARGET_PATH: data.targetPath,
+      process: {
+        DTT_SNAPSHOT_ID: data.snapshot.id,
+        DTT_SNAPSHOT_DATE: data.snapshot.date,
+        DTT_PACKAGE_NAME: data.package.name,
+        DTT_PACKAGE_PATH: data.package.path,
+        DTT_TARGET_PATH: data.targetPath,
+      },
+      node: {
+        dtt: {
+          snapshot: data.snapshot,
+          package: data.package,
+          targetPath: data.targetPath,
+        },
+      },
     };
-  }
-
-  protected async processSteps(
-    input: Step[] | Step,
-    options: {
-      env?: Record<string, string | undefined>;
-      vars: Record<string, string | undefined>;
-      verbose?: boolean;
-    },
-  ) {
-    const steps = Array.isArray(input) ? input : [input];
-    for (const step of steps) {
-      if (step.type === "process") {
-        await exec(
-          step.config.command,
-          (step.config.args || []).map((v) => render(v, options.vars)),
-          {
-            env: {
-              ...process.env,
-              ...options.vars,
-              ...options.env,
-              ...step.config.env,
-            },
-          },
-          {
-            log: options.verbose,
-          },
-        );
-      } else if (step.type === "node") {
-        const tempDir = await this.mkTmpDir("script-task-node-step");
-        const scriptPath = join(tempDir, "script.js");
-        await writeFile(
-          scriptPath,
-          Array.isArray(step.config.code)
-            ? step.config.code.join("\n")
-            : step.config.code,
-        );
-        await exec(
-          "node",
-          [scriptPath],
-          {
-            env: {
-              ...process.env,
-              ...options.vars,
-              ...options.env,
-              ...step.config.env,
-            },
-          },
-          {
-            log: options.verbose,
-          },
-        );
-      } else {
-        throw new Error(`Invalid step type: ${(step as any).type}`);
-      }
-    }
   }
 
   override async onBackup(data: BackupDataType) {
-    this.verbose = data.options.verbose;
     const config = this.config;
-
-    const path = data.package.path;
     const targetPath = data.targetPath;
-
-    ok(typeof path === "string");
     ok(typeof targetPath === "string");
-
-    await runSteps(
-      config.backupSteps,
-      {
-        env: config.env,
-        vars: this.getVars(data),
-        verbose: this.verbose,
+    const vars = this.getVars(data);
+    await mkdirIfNotExists(targetPath);
+    await runSteps(config.backupSteps, {
+      env: config.env,
+      verbose: data.options.verbose,
+      process: { vars: vars.process },
+      node: {
+        tempDir: () => this.mkTmpDir("script-task_backup_node-step"),
+        vars: vars.node,
       },
-      this.mkTmpDir.bind(this),
-    );
+    });
   }
 
-  override async onBeforeRestore() {
+  override async onBeforeRestore(data: BeforeRestoreDataType) {
     return {
-      targetPath: await this.mkTmpDir(ScriptTask.name),
+      targetPath:
+        data.package.restorePath ??
+        (await this.mkTmpDir(`script-task_restore_target`)),
     };
   }
 
   override async onRestore(data: RestoreDataType) {
-    this.verbose = data.options.verbose;
     const config = this.config;
-
-    const restorePath = data.package.restorePath;
     const targetPath = data.targetPath;
 
-    ok(typeof restorePath === "string");
     ok(typeof targetPath === "string");
 
-    await mkdirIfNotExists(restorePath);
-    await ensureEmptyDir(restorePath);
+    await mkdirIfNotExists(targetPath);
 
-    await runSteps(
-      config.restoreSteps,
-      {
-        env: config.env,
-        vars: this.getVars(data),
-        verbose: this.verbose,
+    const vars = this.getVars(data);
+
+    await runSteps(config.restoreSteps, {
+      env: config.env,
+      verbose: data.options.verbose,
+      process: { vars: vars.process },
+      node: {
+        tempDir: () => this.mkTmpDir("script-task_restore_node-step"),
+        vars: vars.node,
       },
-      this.mkTmpDir.bind(this),
-    );
+    });
   }
 }
