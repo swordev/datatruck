@@ -95,6 +95,7 @@ describe("mysql-dump-task", () => {
           ],
         });
 
+        expect(await exec(CommandEnum.init, { config, verbose }, {})).toBe(0);
         expect(await exec(CommandEnum.backup, { config, verbose }, {})).toBe(0);
 
         const parseLog = makeParseLog(CommandEnum.snapshots);
