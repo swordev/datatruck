@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.24.0
+
+### Minor Changes
+
+- [`f1615b2`](https://github.com/swordev/datatruck/commit/f1615b216cf635bd2c08d68bad818d50855f314b) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix and enhance `script` task
+
 ## 0.23.3
 
 ### Patch Changes
