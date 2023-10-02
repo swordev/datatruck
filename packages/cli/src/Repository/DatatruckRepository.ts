@@ -1,7 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
-import { parsePaths } from "../utils/datatruck/paths";
+import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   existsDir,
   createFileScanner,
@@ -243,20 +243,24 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     await mkdir(outPath, { recursive: true });
 
+    const backupPathsOptions: BackupPathsOptions = {
+      package: data.package,
+      snapshot: data.snapshot,
+      targetPath: sourcePath,
+      verbose: data.options.verbose,
+    };
+
     const scanner = await createFileScanner({
       onProgress: data.onProgress,
       glob: {
         cwd: sourcePath,
         onlyFiles: false,
-        include: await parsePaths(pkg.include ?? ["**"], {
-          cwd: sourcePath,
-          verbose: data.options.verbose,
-        }),
+        include: await parseBackupPaths(
+          pkg.include ?? ["**"],
+          backupPathsOptions,
+        ),
         ignore: pkg.exclude
-          ? await parsePaths(pkg.exclude, {
-              cwd: sourcePath,
-              verbose: data.options.verbose,
-            })
+          ? await parseBackupPaths(pkg.exclude, backupPathsOptions)
           : undefined,
       },
     });

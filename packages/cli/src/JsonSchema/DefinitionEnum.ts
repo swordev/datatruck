@@ -19,7 +19,6 @@ export enum DefinitionEnum {
   sqlDumpTask = "sqldump-task",
   stringListUtil = "stringlist-util",
   prunePolicy = "prune-policy",
-  pathsObject = "paths-object",
   compressUtil = "compress-util",
 }
 

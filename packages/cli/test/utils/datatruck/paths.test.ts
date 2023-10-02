@@ -1,23 +1,34 @@
-import { parsePaths } from "../../../src/utils/datatruck/paths";
+import {
+  BackupPathsOptions,
+  parseBackupPaths,
+  parsePaths,
+} from "../../../src/utils/datatruck/paths";
 import { platform } from "os";
 import { describe, expect, it } from "vitest";
 
 describe("parsePaths", () => {
+  const options: BackupPathsOptions = {
+    package: { name: "test" },
+    snapshot: { date: "", id: "" },
+    targetPath: "",
+  };
   it("returns same input", async () => {
     expect(await parsePaths(["a", "b"], {})).toMatchObject(["a", "b"]);
   });
 
   it("returns one path from stdout", async () => {
     expect(
-      await parsePaths(
+      await parseBackupPaths(
         [
           {
-            type: "spawn",
-            command: "echo",
-            args: ["file1"],
+            type: "process",
+            config: {
+              command: "echo",
+              args: ["file1"],
+            },
           },
         ],
-        {},
+        options,
       ),
     ).toMatchObject(["file1"]);
   });
@@ -28,12 +39,14 @@ describe("parsePaths", () => {
         await parsePaths(
           [
             {
-              type: "spawn",
-              command: "printf",
-              args: ["file1\\nfile2"],
+              type: "process",
+              config: {
+                command: "printf",
+                args: ["file1\\nfile2"],
+              },
             },
           ],
-          {},
+          options,
         ),
       ).toMatchObject(["file1", "file2"]);
     });
@@ -44,13 +57,15 @@ describe("parsePaths", () => {
         [
           "file1",
           {
-            type: "spawn",
-            command: "echo",
-            args: ["file2"],
+            type: "process",
+            config: {
+              command: "echo",
+              args: ["file2"],
+            },
           },
           "file3",
         ],
-        {},
+        options,
       ),
     ).toMatchObject(["file1", "file2", "file3"]);
   });

@@ -1,7 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { RepositoryType, Restic } from "../utils/Restic";
 import { logExec } from "../utils/cli";
-import { parsePaths } from "../utils/datatruck/paths";
+import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   fastglobToGitIgnore,
   mkdirIfNotExists,
@@ -239,11 +239,15 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     let gitignorePath: string | undefined;
 
+    const backupPathsOptions: BackupPathsOptions = {
+      package: data.package,
+      snapshot: data.snapshot,
+      targetPath: sourcePath,
+      verbose: data.options.verbose,
+    };
+
     if (!pkg.include && pkg.exclude) {
-      const exclude = await parsePaths(pkg.exclude, {
-        cwd: sourcePath,
-        verbose: data.options.verbose,
-      });
+      const exclude = await parseBackupPaths(pkg.exclude, backupPathsOptions);
 
       await data.onProgress({
         relative: {
@@ -259,16 +263,13 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       await writeFile(gitignorePath, ignoredContents);
     } else if (pkg.include || pkg.exclude) {
-      const include = await parsePaths(pkg.include ?? ["**"], {
-        cwd: sourcePath,
-        verbose: data.options.verbose,
-      });
+      const include = await parseBackupPaths(
+        pkg.include ?? ["**"],
+        backupPathsOptions,
+      );
 
       const exclude = pkg.exclude
-        ? await parsePaths(pkg.exclude, {
-            cwd: sourcePath,
-            verbose: data.options.verbose,
-          })
+        ? await parseBackupPaths(pkg.exclude, backupPathsOptions)
         : undefined;
 
       const stream = FastGlob.stream(include, {

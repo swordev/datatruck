@@ -17,7 +17,7 @@ export type ScriptTaskConfigType = {
   restoreSteps: Step[];
 };
 
-enum ScriptTaskDefinitionEnum {
+export enum ScriptTaskDefinitionEnum {
   step = "step",
   processStepConfig = "processStepConfig",
   nodeStepConfig = "nodeStepConfig",

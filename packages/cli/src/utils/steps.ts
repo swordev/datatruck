@@ -1,8 +1,7 @@
+import { mkTmpDir } from "./fs";
 import { exec } from "./process";
 import { render } from "./string";
-import { randomBytes } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import { tmpdir } from "os";
+import { writeFile } from "fs/promises";
 import { join } from "path";
 
 export type StepEnv = Record<string, string>;
@@ -38,6 +37,8 @@ export type StepOptions = {
     vars?: Record<string, any>;
     tempDir?: () => Promise<string>;
   };
+  cwd?: string;
+  onLine?: (p: string) => any;
   verbose?: boolean;
 };
 
@@ -51,6 +52,7 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
           render(v, options.process?.vars || {}),
         ),
         {
+          cwd: options.cwd,
           env: {
             ...process.env,
             ...options.env,
@@ -59,6 +61,12 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         },
         {
           log: options.verbose,
+          ...(options.onLine && {
+            stdout: {
+              parseLines: "skip-empty",
+              onData: (line) => options.onLine!(line),
+            },
+          }),
         },
       );
     } else if (step.type === "node") {
@@ -66,8 +74,7 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
       if (options.node?.tempDir) {
         tempDir = await options.node.tempDir();
       } else {
-        tempDir = join(tmpdir(), randomBytes(8).toString("hex"));
-        await mkdir(tempDir, { recursive: true });
+        tempDir = await mkTmpDir("node-step");
       }
       const scriptPath = join(tempDir, "script.js");
 
@@ -89,6 +96,7 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         "node",
         [scriptPath],
         {
+          cwd: options.cwd,
           env: {
             ...process.env,
             ...options.env,
@@ -97,6 +105,12 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         },
         {
           log: options.verbose,
+          ...(options.onLine && {
+            stdout: {
+              parseLines: "skip-empty",
+              onData: (line) => options.onLine!(line),
+            },
+          }),
         },
       );
     } else {

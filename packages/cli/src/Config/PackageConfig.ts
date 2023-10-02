@@ -1,4 +1,6 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
+import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
+import { Step } from "../utils/steps";
 import { PackageRepositoryConfigType } from "./PackageRepositoryConfig";
 import { PrunePolicyConfigType } from "./PrunePolicyConfig";
 import type { TaskConfigType } from "./TaskConfig";
@@ -26,13 +28,19 @@ export const packageConfigDefinition: JSONSchema7 = {
     include: {
       type: "array",
       items: {
-        anyOf: [{ type: "string" }, makeRef(DefinitionEnum.pathsObject)],
+        anyOf: [
+          { type: "string" },
+          makeRef(DefinitionEnum.scriptTask, ScriptTaskDefinitionEnum.step),
+        ],
       },
     },
     exclude: {
       type: "array",
       items: {
-        anyOf: [{ type: "string" }, makeRef(DefinitionEnum.pathsObject)],
+        anyOf: [
+          { type: "string" },
+          makeRef(DefinitionEnum.scriptTask, ScriptTaskDefinitionEnum.step),
+        ],
       },
     },
     repositoryNames: makeRef(DefinitionEnum.stringListUtil),
@@ -42,39 +50,6 @@ export const packageConfigDefinition: JSONSchema7 = {
     },
     prunePolicy: makeRef(DefinitionEnum.prunePolicy),
   },
-};
-
-export const pathsObjectDefinition: JSONSchema7 = {
-  type: "object",
-  required: ["type"],
-  properties: {
-    type: { type: "string" },
-  },
-  anyOf: [
-    {
-      if: {
-        type: "object",
-        properties: {
-          type: { const: "spawn" },
-        },
-      },
-      then: {
-        type: "object",
-        required: ["command"],
-        properties: {
-          command: { type: "string" },
-          args: makeRef(DefinitionEnum.stringListUtil),
-        },
-      },
-      else: false,
-    },
-  ],
-};
-
-export type PathsObjectType = {
-  type: "spawn";
-  command: string;
-  args?: string[];
 };
 
 export type PackageConfigType = {
@@ -87,8 +62,8 @@ export type PackageConfigType = {
     uid: string | number;
     gid: string | number;
   };
-  include?: (string | PathsObjectType)[];
-  exclude?: (string | PathsObjectType)[];
+  include?: (string | Step)[];
+  exclude?: (string | Step)[];
   repositoryNames?: string[];
   prunePolicy?: PrunePolicyConfigType;
   repositoryConfigs?: PackageRepositoryConfigType[];

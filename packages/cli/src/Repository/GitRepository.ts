@@ -1,7 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { Git } from "../utils/Git";
 import { logExec } from "../utils/cli";
-import { parsePaths } from "../utils/datatruck/paths";
+import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   existsDir,
   fastFolderSizeAsync,
@@ -231,16 +231,20 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
 
     const createdPaths: string[] = [];
 
-    const include = await parsePaths(pkg.include ?? ["**"], {
-      cwd: sourcePath,
+    const backupPathsOptions: BackupPathsOptions = {
+      package: data.package,
+      snapshot: data.snapshot,
+      targetPath: sourcePath,
       verbose: data.options.verbose,
-    });
+    };
+
+    const include = await parseBackupPaths(
+      pkg.include ?? ["**"],
+      backupPathsOptions,
+    );
 
     const exclude = pkg.exclude
-      ? await parsePaths(pkg.exclude, {
-          cwd: sourcePath,
-          verbose: data.options.verbose,
-        })
+      ? await parseBackupPaths(pkg.exclude, backupPathsOptions)
       : undefined;
 
     const stream = await fg(include, {

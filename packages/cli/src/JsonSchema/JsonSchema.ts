@@ -1,8 +1,5 @@
 import { configDefinition } from "../Config/Config";
-import {
-  pathsObjectDefinition,
-  packageConfigDefinition,
-} from "../Config/PackageConfig";
+import { packageConfigDefinition } from "../Config/PackageConfig";
 import { packageRepositoryConfigDefinition } from "../Config/PackageRepositoryConfig";
 import { prunePolicyConfigDefinition } from "../Config/PrunePolicyConfig";
 import { repositoryConfigDefinition } from "../Config/RepositoryConfig";
@@ -57,7 +54,6 @@ export const definitions: Record<DefinitionEnum, JSONSchema7> = {
   [DefinitionEnum.postgresqlDumpTask]: postgresqlDumpTaskDefinition,
   [DefinitionEnum.config]: configDefinition,
   [DefinitionEnum.prunePolicy]: prunePolicyConfigDefinition,
-  [DefinitionEnum.pathsObject]: pathsObjectDefinition,
   [DefinitionEnum.compressUtil]: compressDefinition,
 };
 

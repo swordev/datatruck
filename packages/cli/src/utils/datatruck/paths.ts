@@ -1,37 +1,57 @@
-import { PathsObjectType } from "../../Config/PackageConfig";
-import { exec } from "../process";
+import { PackageConfigType } from "../../Config/PackageConfig";
+import { SnapshotType } from "../../Repository/RepositoryAbstract";
+import { Step, runSteps } from "../steps";
+
+export type ParsePathsOptions = {
+  cwd?: string;
+  verbose?: boolean;
+  vars?: Record<string, any>;
+};
 
 export async function parsePaths(
-  values: (string | PathsObjectType)[],
+  values: (string | Step)[],
   options: {
     cwd?: string;
     verbose?: boolean;
+    vars?: Record<string, any>;
+    tempDir?: () => Promise<string>;
   },
 ) {
   let paths: string[] = [];
   for (const value of values) {
     if (typeof value === "string") {
       paths.push(value);
-    } else if (value.type === "spawn") {
-      const spawnResult = await exec(
-        value.command,
-        value.args,
-        { cwd: options.cwd },
-        {
-          log: options.verbose,
-          stderr: { save: true },
-          stdout: { save: true },
-        },
-      );
-      const spawnFiles = [spawnResult.stderr, spawnResult.stdout].flatMap(
-        (text) =>
-          text
-            .split(/\r?\n/)
-            .map((v) => v.trim())
-            .filter((v) => !!v.length),
-      );
-      paths.push(...spawnFiles);
+    } else {
+      await runSteps(value, {
+        node: { tempDir: options.tempDir },
+        verbose: options.verbose,
+        onLine: (path) => paths.push(path),
+      });
     }
   }
   return paths;
+}
+
+export type BackupPathsOptions = {
+  package: PackageConfigType;
+  snapshot: SnapshotType;
+  targetPath: string;
+  verbose?: boolean;
+};
+
+export async function parseBackupPaths(
+  paths: (string | Step)[],
+  options: BackupPathsOptions,
+) {
+  return parsePaths(paths, {
+    cwd: options.targetPath,
+    verbose: options.verbose,
+    vars: {
+      dtt: {
+        package: options.package,
+        snapshot: options.snapshot,
+        targetPath: options.targetPath,
+      },
+    },
+  });
 }
