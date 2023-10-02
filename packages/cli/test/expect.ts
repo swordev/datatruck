@@ -45,7 +45,7 @@ export async function runRestores(
     await dtt.restore({ id, repository });
     const restorePath = `${fileChanger.path}-restore-${id}`;
     const restoreFiles = await readFiles(restorePath);
-    await expectSameFiles(files, restoreFiles, `Invalid snapshot (${index})`);
+    await expectSameFiles(files, restoreFiles, `Invalid restore (${index})`);
     if (!process.env.DEBUG) await rm(restorePath, { recursive: true });
     index++;
   }

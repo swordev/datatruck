@@ -9,6 +9,7 @@ import {
   createFileChanger,
   FileChanges,
 } from "./util";
+import { writeFile } from "fs/promises";
 import { describe, expect, it } from "vitest";
 
 const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
@@ -43,14 +44,7 @@ describe(
             name: "main/files",
             path: "/source",
             repositoryNames: ["datatruck"],
-            include: [
-              "path1",
-              {
-                type: "spawn",
-                command: "echo",
-                args: [],
-              },
-            ],
+            include: ["path1"],
           },
         ],
       });
@@ -63,6 +57,47 @@ describe(
           repositoryNames: ["datatruck"],
         },
       ]);
+    });
+
+    it("backups paths generated on fly", async () => {
+      const fileChanger = await createFileChanger();
+      const config = await makeConfig({
+        repositories: [await makeRepositoryConfig("datatruck")],
+        packages: [
+          {
+            name: "main",
+            path: fileChanger.path,
+            restorePath: `${fileChanger.path}-restore-{snapshotId}`,
+            include: [
+              "file0",
+              {
+                type: "node",
+                config: {
+                  code: ['console.log("file1");', 'console.log("file2");'],
+                },
+              },
+              {
+                type: "node",
+                config: {
+                  code: 'console.log("file3");',
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const dtt = createActionInterface({ config });
+      await dtt.init({});
+      await writeFile(`${fileChanger.path}/file4`, "f4");
+      const backupFiles = await runBackups(config, fileChanger, [
+        {
+          file0: "f0",
+          file1: "f1",
+          file2: "f2",
+          file3: "f3",
+        },
+      ]);
+      await runRestores(config, fileChanger, backupFiles);
     });
 
     it.each(repositoryTypes)(`init %s`, async (type) => {

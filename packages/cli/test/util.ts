@@ -83,29 +83,28 @@ export type FileChangerResult = {
 export async function applyFileChanges(
   dir: string,
   changes: FileChanges,
-  returnFiles = true,
+  files: FileMap,
+  parent?: string,
 ) {
   for (const name in changes) {
+    const key = parent ? `${parent}/${name}` : name;
     const change = changes[name];
     const path = join(dir, name);
     if (typeof change === "string" || Buffer.isBuffer(change)) {
-      await mkdir(dirname(path), {
-        recursive: true,
-      });
+      await mkdir(dirname(path), { recursive: true });
+      const parentKey = dirname(key);
+      if (parentKey !== ".") files[dirname(key)] = null;
       await writeFile(path, change);
+      files[key] = change;
     } else if (change === false) {
-      await rm(path, {
-        recursive: true,
-      });
+      await rm(path, { recursive: true });
+      delete files[key];
     } else {
-      await mkdir(path, {
-        recursive: true,
-      });
-      await applyFileChanges(path, change, false);
+      await mkdir(path, { recursive: true });
+      files[key] = null;
+      await applyFileChanges(path, change, files, key);
     }
   }
-  if (!returnFiles) return {};
-  return await readFiles(dir);
 }
 
 export function sortObjectKeys<T extends Record<string, any>>(object: T) {
@@ -119,10 +118,20 @@ export function sortObjectKeys<T extends Record<string, any>>(object: T) {
 
 export async function createFileChanger(changes?: FileChanges) {
   const path = await mkTmpDir("test-source");
-  const update = (changes: FileChanges) => applyFileChanges(path, changes);
+  const files: FileMap = {};
+  const update = async (changes: FileChanges) => {
+    await applyFileChanges(path, changes, files);
+    return Object.keys(files)
+      .sort()
+      .reduce((object, file) => {
+        object[file] = files[file];
+        return object;
+      }, {});
+  };
   if (changes) await update(changes);
   return {
     path,
+    files,
     update,
   };
 }
@@ -138,11 +147,11 @@ export async function readFiles(dir: string) {
 
   for (const file of files) {
     if (file.stats!.isDirectory()) {
-      result[file.name] = null;
+      result[file.path] = null;
     } else {
       const path = join(dir, file.path);
       const contents = await readFile(path);
-      result[file.name] = file.name.endsWith(".bin")
+      result[file.path] = file.path.endsWith(".bin")
         ? contents
         : contents.toString();
     }
