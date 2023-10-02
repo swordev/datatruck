@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.25.0
+
+### Minor Changes
+
+- [`7a1adf0`](https://github.com/swordev/datatruck/commit/7a1adf0624d4306f40bfd1943105cbfaa64a566c) Thanks [@juanrgm](https://github.com/juanrgm)! - Add node steps to `include`/`exclude` package options
+
 ## 0.24.0
 
 ### Minor Changes
