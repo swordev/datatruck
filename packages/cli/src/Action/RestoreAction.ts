@@ -225,7 +225,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     let repoError: Error | undefined;
     let repoInstance: RepositoryAbstract<any> | undefined;
 
-    if (this.options.restorePath)
+    if (!this.options.restorePath)
       pkg = {
         ...pkg,
         restorePath: pkg.path,

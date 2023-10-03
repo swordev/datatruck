@@ -211,7 +211,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       name: resolveDatabaseName(this.config.database, params),
     };
 
-    if (this.config.targetDatabase && !data.options.restorePath)
+    if (this.config.targetDatabase && data.options.restorePath)
       database.name = resolveDatabaseName(this.config.targetDatabase.name, {
         ...params,
         database: database.name,

@@ -128,7 +128,9 @@ export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
 ) {
   const result: T2 = {} as any;
   for (const key in options) {
-    const value = object?.[key] ?? options[key].defaults;
+    const isNegative = options[key].option.startsWith("--no");
+    const defaultsValue = isNegative ? true : options[key].defaults;
+    const value = object?.[key] ?? defaultsValue;
     const parser = options[key].parser;
     if (typeof value !== "undefined") {
       result[key] = parser ? parser(value as any) : (value as any);
