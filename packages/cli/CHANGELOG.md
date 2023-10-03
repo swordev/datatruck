@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.26.1
+
+### Patch Changes
+
+- [`2ca1421`](https://github.com/swordev/datatruck/commit/2ca142106ddca9e0ca53ef906f4412acd3a5bfae) Thanks [@juanrgm](https://github.com/juanrgm)! - Add meta property to the package config
+
 ## 0.26.0
 
 ### Minor Changes
