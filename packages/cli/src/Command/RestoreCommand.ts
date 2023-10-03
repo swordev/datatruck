@@ -16,7 +16,7 @@ export type RestoreCommandOptionsType<TResolved = false> = {
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   tag?: If<TResolved, string[]>;
-  noRestorePath?: boolean;
+  restorePath?: boolean;
 };
 
 export class RestoreCommand extends CommandAbstract<
@@ -35,7 +35,7 @@ export class RestoreCommand extends CommandAbstract<
         option: "-p,--package <values>",
         parser: parseStringList,
       },
-      noRestorePath: {
+      restorePath: {
         description: "Disable restore path",
         option: "--no-restore-path",
       },
@@ -77,7 +77,7 @@ export class RestoreCommand extends CommandAbstract<
       repositoryTypes: this.options.repositoryType,
       tags: this.options.tag,
       verbose: verbose > 0,
-      noRestorePath: this.options.noRestorePath,
+      restorePath: this.options.restorePath,
     });
 
     const sessionManager = new RestoreSessionManager({

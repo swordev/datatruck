@@ -34,7 +34,7 @@ export type RestoreActionOptionsType = {
   repositoryNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;
-  noRestorePath?: boolean;
+  restorePath?: boolean;
 };
 
 type SnapshotType = SnapshotResultType & {
@@ -225,7 +225,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     let repoError: Error | undefined;
     let repoInstance: RepositoryAbstract<any> | undefined;
 
-    if (this.options.noRestorePath)
+    if (this.options.restorePath)
       pkg = {
         ...pkg,
         restorePath: pkg.path,
