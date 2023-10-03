@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.26.2
+
+### Patch Changes
+
+- [`627adbd`](https://github.com/swordev/datatruck/commit/627adbd8114510371f451b674b007dc2093fee96) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `--no-restore-path` option
+
 ## 0.26.1
 
 ### Patch Changes
