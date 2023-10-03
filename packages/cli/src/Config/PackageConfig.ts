@@ -16,6 +16,7 @@ export const packageConfigDefinition: JSONSchema7 = {
     task: makeRef(DefinitionEnum.task),
     path: { type: "string" },
     restorePath: { type: "string" },
+    meta: { type: "object" },
     restorePermissions: {
       type: "object",
       required: ["uid", "gid"],
@@ -58,6 +59,7 @@ export type PackageConfigType = {
   task?: TaskConfigType;
   path?: string;
   restorePath?: string;
+  meta?: Record<string, any>;
   restorePermissions?: {
     uid: string | number;
     gid: string | number;
