@@ -245,7 +245,7 @@ export abstract class SqlDumpTaskAbstract<
       }),
     };
 
-    if (this.config.targetDatabase) {
+    if (this.config.targetDatabase && !data.options.noRestorePath) {
       database.name = resolveDatabaseName(this.config.targetDatabase.name, {
         packageName: data.package.name,
         snapshotId: data.options.snapshotId,

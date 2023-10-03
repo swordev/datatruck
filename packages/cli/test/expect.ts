@@ -1,3 +1,4 @@
+import { RestoreCommandOptionsType } from "../src/Command/RestoreCommand";
 import { createActionInterface } from "../src/Factory/CommandFactory";
 import "./toEqualMessage";
 import {
@@ -37,16 +38,19 @@ export async function runRestores(
   config: string,
   fileChanger: FileChangerResult,
   backups: Backup[],
-  repository?: string,
+  options?: Omit<RestoreCommandOptionsType, "id">,
 ) {
   const dtt = createActionInterface({ config });
   let index = 0;
   for (const { id, files } of backups) {
-    await dtt.restore({ id, repository });
-    const restorePath = `${fileChanger.path}-restore-${id}`;
+    await dtt.restore({ id, ...options });
+    const restorePath = options?.noRestorePath
+      ? fileChanger.path
+      : `${fileChanger.path}-restore-${id}`;
     const restoreFiles = await readFiles(restorePath);
     await expectSameFiles(files, restoreFiles, `Invalid restore (${index})`);
-    if (!process.env.DEBUG) await rm(restorePath, { recursive: true });
+    if (!process.env.DEBUG && !options?.noRestorePath)
+      await rm(restorePath, { recursive: true });
     index++;
   }
 }

@@ -1,5 +1,6 @@
 import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { createActionInterface } from "../src/Factory/CommandFactory";
+import { existsFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
 import { runBackups, runRestores } from "./expect";
 import { fileChanges } from "./fileChanges";
@@ -9,7 +10,8 @@ import {
   createFileChanger,
   FileChanges,
 } from "./util";
-import { writeFile } from "fs/promises";
+import { readFile, readdir, rm, writeFile } from "fs/promises";
+import { join } from "path";
 import { describe, expect, it } from "vitest";
 
 const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
@@ -100,6 +102,45 @@ describe(
       await runRestores(config, fileChanger, backupFiles);
     });
 
+    it("disables restore path", async () => {
+      const fileChanger = await createFileChanger();
+      const config = await makeConfig({
+        repositories: [await makeRepositoryConfig("datatruck")],
+        packages: [
+          {
+            name: "main",
+            path: fileChanger.path,
+            restorePath: `${fileChanger.path}-restore-{snapshotId}`,
+          },
+        ],
+      });
+      const dtt = createActionInterface({ config, verbose: 1 });
+      await dtt.init({});
+      const backupFiles = await runBackups(config, fileChanger, [
+        {
+          f1: "test",
+        },
+      ]);
+
+      await runRestores(config, fileChanger, backupFiles);
+
+      await expect(() =>
+        runRestores(config, fileChanger, backupFiles, {
+          noRestorePath: true,
+        }),
+      ).rejects.toThrowError();
+
+      await rm(fileChanger.path, { recursive: true });
+
+      const f1Path = join(fileChanger.path, "f1");
+      expect(await existsFile(f1Path)).toBeFalsy();
+
+      await runRestores(config, fileChanger, backupFiles, {
+        noRestorePath: true,
+      });
+      expect(await existsFile(f1Path)).toBeTruthy();
+      expect((await readFile(f1Path)).toString()).toBe("test");
+    });
     it.each(repositoryTypes)(`init %s`, async (type) => {
       const config = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],
@@ -178,7 +219,9 @@ describe(
         );
 
         await runRestores(config, fileChanger, backups);
-        await runRestores(config, fileChanger, backups, `${type}-mirror`);
+        await runRestores(config, fileChanger, backups, {
+          repository: `${type}-mirror`,
+        });
       },
     );
 
