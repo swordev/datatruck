@@ -372,7 +372,6 @@ export class RestoreAction<TRequired extends boolean = true> {
       });
       if (error) errors.push(error);
     }
-
     await session.endDrivers();
     return { errors };
   }

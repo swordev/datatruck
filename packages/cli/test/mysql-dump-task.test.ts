@@ -1,13 +1,12 @@
-import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { createActionInterface } from "../src/Factory/CommandFactory";
 import { createMysqlCli } from "../src/utils/mysql";
 import { parseStringList } from "../src/utils/string";
-import { makeConfig, makeRepositoryConfig } from "./util";
+import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";
 import { describe, expect, it } from "vitest";
 
-const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
+const repositoryTypes = parseStringList(
   process.env.DTT_REPO,
-  ["datatruck", "git", "restic"],
+  testRepositoryTypes,
   true,
 );
 

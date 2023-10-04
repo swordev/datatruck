@@ -1,7 +1,6 @@
-import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
-import { FileChanges } from "./util";
+import { FileChanges, TestRepositoryType } from "./util";
 
-export const fileChanges: (type: RepositoryConfigTypeType) => FileChanges[] = (
+export const fileChanges: (type: TestRepositoryType) => FileChanges[] = (
   type,
 ) =>
   [

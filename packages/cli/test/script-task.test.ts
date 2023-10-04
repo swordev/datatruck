@@ -1,15 +1,14 @@
-import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { createActionInterface } from "../src/Factory/CommandFactory";
 import { mkTmpDir } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
-import { makeConfig, makeRepositoryConfig } from "./util";
+import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";
 import { readFile, readdir, writeFile } from "fs/promises";
 import { describe, expect, it } from "vitest";
 
 const verbose = 1;
-const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
+const repositoryTypes = parseStringList(
   process.env.DTT_REPO,
-  ["datatruck", "git", "restic"],
+  testRepositoryTypes,
   true,
 );
 

@@ -1,5 +1,4 @@
 import { RestoreCommand } from "../src/Command/RestoreCommand";
-import { RepositoryConfigTypeType } from "../src/Config/RepositoryConfig";
 import { createActionInterface } from "../src/Factory/CommandFactory";
 import { existsFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
@@ -10,14 +9,15 @@ import {
   makeRepositoryConfig,
   createFileChanger,
   FileChanges,
+  testRepositoryTypes,
 } from "./util";
-import { readFile, readdir, rm, writeFile } from "fs/promises";
+import { readFile, rm, writeFile } from "fs/promises";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 
-const repositoryTypes = parseStringList<RepositoryConfigTypeType>(
+const repositoryTypes = parseStringList(
   process.env.DTT_REPO,
-  ["datatruck", "git", "restic"],
+  testRepositoryTypes,
   true,
 );
 
@@ -38,7 +38,7 @@ describe(
             name: "datatruck",
             type: "datatruck",
             config: {
-              outPath: "/",
+              backend: "/",
             },
           },
         ],
@@ -156,17 +156,39 @@ describe(
       expect(await existsFile(f1Path)).toBeTruthy();
       expect((await readFile(f1Path)).toString()).toBe("test");
     });
-    it.each(repositoryTypes)(`init %s`, async (type) => {
+
+    it.each(repositoryTypes)(`saves one snapshot %s`, async (type) => {
+      const fileChanger = await createFileChanger();
       const config = await makeConfig({
         repositories: [await makeRepositoryConfig(type)],
+        packages: [
+          {
+            name: "main",
+            path: fileChanger.path,
+            restorePath: `${fileChanger.path}-restore-{snapshotId}`,
+          },
+        ],
+      });
+      const dtt = createActionInterface({ config });
+      await fileChanger.update({ f: "test" });
+      await dtt.init({});
+      await dtt.backup({});
+      const snapshots = await dtt.snapshots({});
+      expect(snapshots).toHaveLength(1);
+      await dtt.restore({ id: snapshots[0].id });
+    });
+    it.each(repositoryTypes)(`init %s`, async (type) => {
+      const repo = await makeRepositoryConfig(type);
+      const config = await makeConfig({
+        repositories: [repo],
         packages: [],
       });
       const dtt = createActionInterface({ config });
       expect(await dtt.init({})).toMatchObject([
         {
           error: null,
-          repositoryName: type,
-          repositoryType: type,
+          repositoryName: repo.name,
+          repositoryType: repo.type,
         },
       ]);
     });
@@ -241,9 +263,10 @@ describe(
     );
 
     it.each(repositoryTypes)("snapshots of %s", async (type) => {
+      const repo = await makeRepositoryConfig(type);
       const fileChanger = await createFileChanger();
       const config = await makeConfig({
-        repositories: [await makeRepositoryConfig(type)],
+        repositories: [repo],
         packages: [
           {
             name: "main/files",
@@ -270,9 +293,9 @@ describe(
       expect(snapshot.packageName).toBe("main/files");
       expect(snapshot.tags.join()).toBe("");
       expect(snapshot.shortId).toBe(snapshot.id.slice(0, 8));
-      expect(snapshot.size > 0).toBeTruthy();
-      expect(snapshot.repositoryName).toBe(type);
-      expect(snapshot.repositoryType).toBe(type);
+      expect(snapshot.size).toBeGreaterThan(0);
+      expect(snapshot.repositoryName).toBe(repo.name);
+      expect(snapshot.repositoryType).toBe(repo.type);
     });
   },
   {

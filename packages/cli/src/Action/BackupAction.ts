@@ -373,7 +373,6 @@ export class BackupAction<TRequired extends boolean = true> {
     await session.endDrivers({
       snapshotId: snapshot.id.slice(0, 8),
     });
-
     return {
       total: packages.length,
       errors,

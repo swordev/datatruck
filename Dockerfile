@@ -37,3 +37,4 @@ RUN set -x \
     && npm uninstall -g pnpm
 
 ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["start"]

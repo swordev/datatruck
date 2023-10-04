@@ -23,6 +23,7 @@ export async function runBackups(
   for (const change of changes) {
     const files = await fileChanger.update(change);
     try {
+      console.log(`Running backup ${index + 1}/${backups.length}`);
       await dtt.backup({});
     } catch (error) {
       throw new Error(`Failed backup: ${index}`);
@@ -43,6 +44,7 @@ export async function runRestores(
   const dtt = createActionInterface({ config });
   let index = 0;
   for (const { id, files } of backups) {
+    console.log(`Running restore ${index + 1}/${backups.length}`);
     await dtt.restore({ id, ...options });
     const restorePathOption = options?.restorePath ?? true;
     const restorePath = restorePathOption

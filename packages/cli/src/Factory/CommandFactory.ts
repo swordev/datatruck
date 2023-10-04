@@ -33,6 +33,10 @@ import {
   SnapshotsCommandLogType,
   SnapshotsCommandOptionsType,
 } from "../Command/SnapshotsCommand";
+import {
+  StartServerCommand,
+  StartServerCommandOptionsType,
+} from "../Command/StartServerCommand";
 import { AppError } from "../Error/AppError";
 
 export enum CommandEnum {
@@ -45,6 +49,7 @@ export enum CommandEnum {
   restore = "restore",
   restoreSessions = "restore-sessions",
   cleanCache = "clean-cache",
+  startServer = "start-server",
 }
 
 export type OptionsMapType = {
@@ -57,6 +62,7 @@ export type OptionsMapType = {
   [CommandEnum.restore]: RestoreCommandOptionsType;
   [CommandEnum.restoreSessions]: RestoreSessionsCommandOptionsType;
   [CommandEnum.cleanCache]: CleanCacheActionOptionsType;
+  [CommandEnum.startServer]: StartServerCommandOptionsType;
 };
 
 export type LogMapType = {
@@ -136,6 +142,7 @@ export function makeParseLog<TCommand extends keyof LogMapType>(
   const data: unknown[] = [];
   const consoleLog = console.log;
   console.log = console.info = (...items: unknown[]) => {
+    consoleLog.bind(console)(...items);
     data.push(...items);
   };
   return function parseLog() {
@@ -163,6 +170,8 @@ export function CommandConstructorFactory(type: CommandEnum) {
     return RestoreSessionsCommand;
   } else if (type === CommandEnum.cleanCache) {
     return CleanCacheCommand;
+  } else if (type === CommandEnum.startServer) {
+    return StartServerCommand;
   } else {
     throw new AppError(`Invalid command type: ${type}`);
   }

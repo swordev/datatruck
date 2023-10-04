@@ -111,6 +111,7 @@ program.option(
   "table" as FormatType,
 );
 
+makeCommand(CommandEnum.startServer).alias("start");
 makeCommand(CommandEnum.config).alias("c");
 makeCommand(CommandEnum.init).alias("i");
 makeCommand(CommandEnum.snapshots).alias("s");

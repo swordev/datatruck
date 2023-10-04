@@ -3,6 +3,7 @@ if [ "$1" == "" ]; then
     datatruck -h
 elif 
     [ "$1" == "config" ] || [ "$1" == "c" ] || 
+    [ "$1" == "start-server" ] || [ "$1" == "start" ] || 
     [ "$1" == "init" ] || [ "$1" == "i" ] || 
     [ "$1" == "snapshots" ] || [ "$1" == "s" ] || 
     [ "$1" == "prune" ] || [ "$1" == "p" ] || 

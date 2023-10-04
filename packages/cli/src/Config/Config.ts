@@ -1,4 +1,5 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
+import { DatatruckServerOptions } from "../utils/datatruck/server";
 import { PackageConfigType } from "./PackageConfig";
 import { RepositoryConfigType } from "./RepositoryConfig";
 import type { JSONSchema7 } from "json-schema";
@@ -7,6 +8,7 @@ export type ConfigType = {
   tempDir?: string;
   repositories: RepositoryConfigType[];
   packages: PackageConfigType[];
+  server?: DatatruckServerOptions;
 };
 
 export const configDefinition: JSONSchema7 = {
@@ -23,6 +25,32 @@ export const configDefinition: JSONSchema7 = {
     packages: {
       type: "array",
       items: makeRef(DefinitionEnum.package),
+    },
+    server: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        path: { type: "string" },
+        users: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              name: { type: "string" },
+              password: { type: "string" },
+            },
+          },
+        },
+        listen: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            port: { type: "integer" },
+            address: { type: "string" },
+          },
+        },
+      },
     },
   },
 };

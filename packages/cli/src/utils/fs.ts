@@ -471,50 +471,78 @@ export async function cpy(options: {
   return stats;
 }
 
-export async function createFileScanner(options: {
-  glob: Options & {
-    include: string[];
-  };
+type ProgressObject = {
+  disposed: boolean;
+  total: number;
+  current: number;
+  update: (
+    description: string,
+    path?: string,
+    increment?: boolean,
+  ) => Promise<void>;
+};
+
+export function createProgress(options: {
   onProgress: (data: Progress) => Promise<void>;
 }) {
-  const object = {
+  const progress: ProgressObject = {
     disposed: false,
     total: 0,
     current: 0,
-    progress: async (description: string, path?: string, increment = true) => {
-      if (object.disposed) return;
-      if (path && increment) object.current++;
+    update: async (description, path, increment = true) => {
+      if (progress.disposed) return;
+      if (path && increment) progress.current++;
       await options.onProgress({
         relative: {
           description,
           payload: path,
         },
         absolute: {
-          total: object.total,
-          current: object.current,
-          percent: progressPercent(object.total, object.current),
+          total: progress.total,
+          current: progress.current,
+          percent: progressPercent(progress.total, progress.current),
         },
       });
     },
+  };
+  return progress;
+}
+
+export async function createFileScanner(options: {
+  glob: Options & {
+    include: string[];
+  };
+  onProgress: (data: Progress) => Promise<void>;
+}): Promise<
+  ProgressObject & {
+    progress: ProgressObject["update"];
+    start: (cb?: (entry: Required<Entry>) => any) => Promise<void>;
+    end: () => Promise<void>;
+  }
+> {
+  const progress = createProgress(options);
+
+  Object.assign(progress, {
+    progress: progress.update,
     end: async () => {
-      if (!object.disposed) await object.progress("Finished");
-      object.disposed = true;
+      if (!progress.disposed) await progress.update("Finished");
+      progress.disposed = true;
     },
     start: async (cb?: (entry: Required<Entry>) => any) => {
       let lastTime = performance.now();
-      await object.progress("Scanning files");
+      await progress.update("Scanning files");
       for await (const entry of pathIterator(stream)) {
         if (cb) {
-          if (await cb(entry)) object.total++;
+          if (await cb(entry)) progress.total++;
         } else {
-          object.total++;
+          progress.total++;
         }
         if (lastTime - performance.now() > 500)
-          await object.progress("Scanning files");
+          await progress.update("Scanning files");
       }
-      await object.progress("Scanned files");
+      await progress.update("Scanned files");
     },
-  };
+  });
 
   const stream = FastGlob.stream(options.glob.include, {
     dot: true,
@@ -523,7 +551,7 @@ export async function createFileScanner(options: {
     ...options.glob,
   });
 
-  return object;
+  return progress as any;
 }
 
 type StreamItem = {
@@ -645,4 +673,10 @@ export async function safeRename(oldPath: string, newPath: string) {
       throw error;
     }
   }
+}
+
+export async function tryRm(path: string) {
+  try {
+    await rm(path);
+  } catch (_) {}
 }

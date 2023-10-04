@@ -1,20 +1,17 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
+import { createFs } from "../utils/datatruck/client";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
-  existsDir,
   createFileScanner,
-  ensureEmptyDir,
-  fastFolderSizeAsync,
-  isNotFoundError,
-  mkdirIfNotExists,
   parsePackageFile,
-  readDir,
   createWriteStreamPool,
+  tryRm,
+  createProgress,
 } from "../utils/fs";
 import { checkMatch, match, makePathPatterns } from "../utils/string";
-import { listTar, extractTar, createTar, CompressOptions } from "../utils/tar";
+import { extractTar, createTar, CompressOptions } from "../utils/tar";
 import {
   RepositoryAbstract,
   BackupDataType,
@@ -26,10 +23,10 @@ import {
   CopyBackupType,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
-import { mkdir, readFile, writeFile, rm, cp } from "fs/promises";
+import { rm, stat } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
-import { basename, dirname, join, resolve } from "path";
+import { basename, join, resolve } from "path";
 
 export type MetaDataType = {
   id: string;
@@ -39,11 +36,11 @@ export type MetaDataType = {
   tags: string[];
   version: string;
   size: number;
-  tarStats?: Record<string, { files: number }>;
+  tarStats?: Record<string, { files: number; size: number }>;
 };
 
 export type DatatruckRepositoryConfigType = {
-  outPath: string;
+  backend: string;
   compress?: boolean | CompressOptions;
 };
 
@@ -64,10 +61,10 @@ export const datatruckRepositoryName = "datatruck";
 
 export const datatruckRepositoryDefinition: JSONSchema7 = {
   type: "object",
-  required: ["outPath"],
+  required: ["backend"],
   additionalProperties: false,
   properties: {
-    outPath: { type: "string" },
+    backend: { type: "string" },
     compress: {
       anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
     },
@@ -103,14 +100,13 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
 export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfigType> {
   static zipBasenameTpl = `.*.dd.tar.gz`;
 
-  static buildSnapshotName(data: {
-    snapshotId: string;
-    snapshotDate: string;
-    packageName: string;
-  }) {
-    const date = data.snapshotDate.replace(/:/g, "-");
-    const pkgName = encodeURIComponent(data.packageName).replace(/%40/g, "@");
-    const snapshotShortId = data.snapshotId.slice(0, 8);
+  static buildSnapshotName(
+    snapshot: { id: string; date: string },
+    pkg: { name: string },
+  ) {
+    const date = snapshot.date.replace(/:/g, "-");
+    const pkgName = encodeURIComponent(pkg.name).replace(/%40/g, "@");
+    const snapshotShortId = snapshot.id.slice(0, 8);
     return `${date}_${pkgName}_${snapshotShortId}`;
   }
 
@@ -125,55 +121,41 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return { snapshotDate, packageName, snapshotShortId, sourcePath: name };
   }
 
-  protected buildMetaPath(snapshotName: string, packageName: string) {
-    return join(this.config.outPath, snapshotName, packageName) + ".meta.json";
-  }
-
-  static async parseMetaData(path: string): Promise<MetaDataType | undefined> {
-    let contents: Buffer;
-    try {
-      contents = await readFile(path);
-    } catch (error) {
-      if (isNotFoundError(error)) return;
-      throw error;
-    }
-    return JSON.parse(contents.toString());
-  }
-
-  static stringifyMetaData(data: MetaDataType) {
-    return JSON.stringify(data);
+  static async parseMetaData(data: string): Promise<MetaDataType> {
+    return JSON.parse(data.toString());
   }
 
   override onGetSource() {
-    return this.config.outPath;
+    return this.config.backend;
   }
 
   override async onInit(data: InitDataType) {
-    await mkdirIfNotExists(this.config.outPath);
+    const fs = createFs(this.config.backend);
+    await fs.mkdir(".");
   }
 
   override async onPrune(data: PruneDataType) {
-    const snapshotName = DatatruckRepository.buildSnapshotName({
-      snapshotId: data.snapshot.id,
-      snapshotDate: data.snapshot.date,
-      packageName: data.snapshot.packageName,
+    const fs = createFs(this.config.backend);
+    const snapshotName = DatatruckRepository.buildSnapshotName(data.snapshot, {
+      name: data.snapshot.packageName,
     });
-    const snapshotPath = join(this.config.outPath, snapshotName);
 
-    if (data.options.verbose) logExec(`Deleting ${snapshotPath}`);
-    if (await existsDir(snapshotPath))
-      await rm(snapshotPath, {
-        recursive: true,
-      });
+    if (data.options.verbose)
+      logExec(`Deleting ${fs.resolvePath(snapshotName)}`);
+    if (await fs.existsDir(snapshotName)) await fs.rmAll(snapshotName);
   }
 
   override async onSnapshots(data: SnapshotsDataType) {
-    if (!(await existsDir(this.config.outPath)))
+    const fs = createFs(this.config.backend);
+    if (!(await fs.existsDir(".")))
       throw new Error(
-        `Repository (${this.repository.name}) out path does not exist: ${this.config.outPath}`,
+        `Repository (${
+          this.repository.name
+        }) out path does not exist: ${fs.resolvePath(".")}`,
       );
-    const snapshotNames = await readDir(this.config.outPath);
+
     const snapshots: SnapshotResultType[] = [];
+    const snapshotNames = await fs.readdir(".");
     const packagePatterns = makePathPatterns(data.options.packageNames);
     const taskPatterns = makePathPatterns(data.options.packageTaskNames);
 
@@ -195,8 +177,9 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       )
         continue;
 
-      const metaPath = join(this.config.outPath, snapshotName, "meta.json");
-      const meta = await DatatruckRepository.parseMetaData(metaPath);
+      const metaData = await fs.readFileIfExists(`${snapshotName}/meta.json`);
+      const meta =
+        !!metaData && (await DatatruckRepository.parseMetaData(metaData));
 
       if (!meta) continue;
 
@@ -230,18 +213,20 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   override async onBackup(
     data: BackupDataType<DatatruckPackageRepositoryConfigType>,
   ) {
-    const snapshotName = DatatruckRepository.buildSnapshotName({
-      snapshotId: data.snapshot.id,
-      snapshotDate: data.snapshot.date,
-      packageName: data.package.name,
-    });
-    const outPath = resolve(join(this.config.outPath, snapshotName));
+    const fs = createFs(this.config.backend);
+    const snapshotName = DatatruckRepository.buildSnapshotName(
+      data.snapshot,
+      data.package,
+    );
+    const outPath = fs.isLocal()
+      ? fs.resolvePath(snapshotName)
+      : await this.mkTmpDir("datatruck-backup");
     const pkg = data.package;
     const sourcePath = data.targetPath ?? pkg.path;
 
     ok(sourcePath);
 
-    await mkdir(outPath, { recursive: true });
+    await fs.mkdir(snapshotName);
 
     const backupPathsOptions: BackupPathsOptions = {
       package: data.package,
@@ -330,19 +315,27 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       if (includeList) {
         tarStats[packBasename] = {
           files: stream.lines(packIndex)!,
+          size: 0,
         };
+        const tarPath = join(outPath, packBasename);
+
         await createTar({
           compress: pack.compress,
           verbose: data.options.verbose,
           includeList,
           path: sourcePath,
-          output: join(outPath, packBasename),
+          output: tarPath,
           onEntry: async (data) =>
             await scanner.progress(
               pack.compress ? "Compressing" : "Packing",
               data.path,
             ),
         });
+        tarStats[packBasename].size = (await stat(tarPath)).size;
+        if (!fs.isLocal()) {
+          await fs.upload(tarPath, `${snapshotName}/${packBasename}`);
+          await rm(tarPath);
+        }
       }
       packIndex++;
     }
@@ -351,7 +344,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     // Meta
 
-    const metaPath = `${outPath}/meta.json`;
+    const metaPath = `${snapshotName}/meta.json`;
     const nodePkg = parsePackageFile();
     const meta: MetaDataType = {
       id: data.snapshot.id,
@@ -360,60 +353,56 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
-      size: await fastFolderSizeAsync(outPath),
+      size: Object.values(tarStats).reduce(
+        (total, { size }) => total + size,
+        0,
+      ),
       tarStats,
     };
-    if (data.options.verbose) logExec(`Writing metadata into ${metaPath}`);
-    await writeFile(metaPath, DatatruckRepository.stringifyMetaData(meta));
+    if (data.options.verbose)
+      logExec(`Writing metadata into ${fs.resolvePath(metaPath)}`);
+    await fs.writeFile(`${snapshotName}/meta.json`, JSON.stringify(meta));
   }
 
   override async onCopyBackup(
     data: CopyBackupType<DatatruckRepositoryConfigType>,
   ): Promise<void> {
-    const snapshotName = DatatruckRepository.buildSnapshotName({
-      snapshotId: data.snapshot.id,
-      snapshotDate: data.snapshot.date,
-      packageName: data.package.name,
-    });
-    const sourcePath = resolve(join(this.config.outPath, snapshotName));
-    const targetPath = resolve(
-      join(data.mirrorRepositoryConfig.outPath, snapshotName),
+    const sourceFs = createFs(this.config.backend);
+    const targetFs = createFs(data.mirrorRepositoryConfig.backend);
+    const snapshotName = DatatruckRepository.buildSnapshotName(
+      data.snapshot,
+      data.package,
     );
 
-    if (data.options.verbose) logExec(`Copying backup files to ${targetPath}`);
+    if (data.options.verbose)
+      logExec(`Copying backup files to ${data.mirrorRepositoryConfig.backend}`);
 
-    await mkdir(targetPath, { recursive: true });
-    await ensureEmptyDir(targetPath);
+    await targetFs.mkdir(snapshotName);
+    await targetFs.ensureEmptyDir(snapshotName);
 
-    const scanner = await createFileScanner({
-      onProgress: data.onProgress,
-      glob: {
-        include: ["**/*"],
-        cwd: sourcePath,
-      },
-    });
+    const entries = await sourceFs.readdir(snapshotName);
 
-    const entryPaths: string[] = [];
-
-    await scanner.start(async (entry) => {
-      entryPaths.push(entry.path);
-      return true;
-    });
-
-    for (const entryPath of entryPaths) {
-      const sourceFile = join(sourcePath, entryPath);
-      const targetFile = join(targetPath, entryPath);
-      await scanner.progress("Copying", entryPath);
-      await mkdir(dirname(targetFile), { recursive: true });
-      await cp(sourceFile, targetFile);
+    for (const entry of entries) {
+      const sourceEntry = `${snapshotName}/${entry}`;
+      if (targetFs.isLocal()) {
+        await sourceFs.download(sourceEntry, targetFs.resolvePath(sourceEntry));
+      } else {
+        const tempDir = await this.mkTmpDir("remote-copy", entry);
+        const tempFile = join(tempDir, entry);
+        try {
+          await sourceFs.download(sourceEntry, tempFile);
+          await targetFs.upload(tempFile, sourceEntry);
+        } finally {
+          await tryRm(tempFile);
+        }
+      }
     }
-
-    await scanner.end();
   }
 
   override async onRestore(
     data: RestoreDataType<DatatruckPackageRepositoryConfigType>,
   ) {
+    const fs = createFs(this.config.backend);
     const relRestorePath = data.targetPath ?? data.package.restorePath;
     ok(relRestorePath);
     const restorePath = resolve(relRestorePath);
@@ -425,69 +414,52 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     if (!snapshot) throw new AppError("Snapshot not found");
 
-    const snapshotName = DatatruckRepository.buildSnapshotName({
-      snapshotId: data.snapshot.id,
-      snapshotDate: data.snapshot.date,
-      packageName: data.package.name,
-    });
+    const snapshotName = DatatruckRepository.buildSnapshotName(
+      snapshot,
+      data.package,
+    );
+    const meta = await DatatruckRepository.parseMetaData(
+      await fs.readFile(`${snapshotName}/meta.json`),
+    );
 
-    const sourcePath = join(this.config.outPath, snapshotName);
-    const metaPath = join(sourcePath, "meta.json");
-    const meta = await DatatruckRepository.parseMetaData(metaPath);
+    const progress = createProgress({ onProgress: data.onProgress });
 
-    const scanner = await createFileScanner({
-      onProgress: data.onProgress,
-      glob: {
-        cwd: sourcePath,
-        include: ["**/*"],
-      },
-    });
-
-    const tarFiles: string[] = [];
+    await progress.update("Scanning files");
+    const entries = (await fs.readdir(snapshotName)).filter(
+      (v) => v.endsWith(".tar") || v.endsWith(".tar.gz"),
+    );
     const tarStats = meta?.tarStats || {};
-
-    await scanner.start(async (entry) => {
-      const path = join(sourcePath, entry.name);
-      const isTar = entry.name.endsWith(".tar");
-      const isTarGz = entry.name.endsWith(".tar.gz");
-      if (isTar || isTarGz) {
-        tarFiles.push(path);
-        if (typeof tarStats[entry.name]?.files === "number") {
-          scanner.total += tarStats[entry.name].files;
-        } else {
-          scanner.progress("Scanning", entry.name, false);
-          const selfTarStats = (tarStats[entry.name] = { files: 0 });
-          await listTar({
-            input: path,
-            verbose: data.options.verbose,
-            onEntry: () => {
-              scanner.total++;
-              selfTarStats.files++;
-            },
-          });
-        }
-      }
-      return false;
-    });
+    for (const file in tarStats) progress.total += tarStats[file].files;
+    await progress.update(`Scanned files: ${progress.total}`);
 
     if (data.options.verbose) logExec(`Unpacking files to ${restorePath}`);
 
-    for (const tarFile of tarFiles) {
-      const entryName = basename(tarFile);
-      await extractTar({
-        total: tarStats[entryName].files,
-        input: tarFile,
-        output: restorePath,
-        decompress: tarFile.endsWith(".tar.gz"),
-        verbose: data.options.verbose,
-        onEntry: async (data) =>
-          await scanner.progress(
-            tarFile.endsWith(".tar.gz") ? "Extracting" : "Unpacking",
-            data.path,
-          ),
-      });
+    for (const entry of entries) {
+      let tempEntry: string | undefined;
+      try {
+        const sourceEntry = `${snapshotName}/${entry}`;
+        if (!fs.isLocal()) {
+          const tempDir = await this.mkTmpDir("remote-restore", entry);
+          tempEntry = `${tempDir}/${entry}`;
+          await fs.download(sourceEntry, tempEntry);
+        }
+        await extractTar({
+          total: tarStats[entry].files,
+          input: tempEntry ?? fs.resolvePath(sourceEntry),
+          output: restorePath,
+          decompress: entry.endsWith(".tar.gz"),
+          verbose: data.options.verbose,
+          onEntry: async (data) =>
+            await progress.update(
+              entry.endsWith(".tar.gz") ? "Extracting" : "Unpacking",
+              data.path,
+            ),
+        });
+      } finally {
+        if (tempEntry) await tryRm(tempEntry);
+      }
     }
 
-    await scanner.end();
+    await progress.update("Finished");
   }
 }

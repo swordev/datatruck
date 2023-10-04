@@ -1,21 +1,56 @@
 import { ConfigType } from "../src/Config/Config";
-import {
-  RepositoryConfigType,
-  RepositoryConfigTypeType,
-} from "../src/Config/RepositoryConfig";
+import { RepositoryConfigType } from "../src/Config/RepositoryConfig";
+import { createDatatruckServer } from "../src/utils/datatruck/server";
 import { mkTmpDir, writeJSONFile } from "../src/utils/fs";
 import "./toEqualMessage";
 import FastGlob from "fast-glob";
 import { mkdir, readFile, rm, writeFile } from "fs/promises";
+import { Server } from "http";
+import { AddressInfo } from "net";
 import { dirname, join } from "path";
 import { expect } from "vitest";
 
+export const servers: Set<Server> = new Set();
+
+export type TestRepositoryType =
+  | "datatruck"
+  | "git"
+  | "restic"
+  | "datatruck-remote";
+
+export const testRepositoryTypes: TestRepositoryType[] = [
+  "datatruck",
+  "datatruck-remote",
+  "git",
+  "restic",
+];
+
 export async function makeRepositoryConfig(
-  type: RepositoryConfigTypeType,
+  type: TestRepositoryType,
   name: string = type,
 ) {
   if (type === "datatruck") {
     return makeDatatruckRepositoryConfig(name);
+  } else if (type === "datatruck-remote") {
+    const server = createDatatruckServer({
+      path: await mkTmpDir(type),
+      log: false,
+      users: [
+        {
+          name: "user1",
+          password: "password1",
+        },
+      ],
+    });
+    servers.add(server);
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", undefined, resolve);
+    });
+    const { port } = server.address() as AddressInfo;
+    return makeDatatruckRepositoryConfig(
+      name,
+      `http://user1:password1@127.0.0.1:${port}`,
+    );
   } else if (type === "git") {
     return makeGitRepositoryConfig(name);
   } else if (type === "restic") {
@@ -26,12 +61,13 @@ export async function makeRepositoryConfig(
 }
 export async function makeDatatruckRepositoryConfig(
   name: string = "datatruck",
+  backend?: string,
 ) {
   return {
     type: "datatruck",
     name: name,
     config: {
-      outPath: await mkTmpDir(`test-${name}`),
+      backend: backend ?? (await mkTmpDir(`test-${name}`)),
     },
   } as RepositoryConfigType;
 }
@@ -126,7 +162,7 @@ export async function createFileChanger(changes?: FileChanges) {
       .reduce((object, file) => {
         object[file] = files[file];
         return object;
-      }, {});
+      }, {} as FileMap);
   };
   if (changes) await update(changes);
   return {
