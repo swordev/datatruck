@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.27.0
+
+### Minor Changes
+
+- [`e6485ad`](https://github.com/swordev/datatruck/commit/e6485ad80258d3b1c30f3efb1a2549a5c2760878) Thanks [@juanrgm](https://github.com/juanrgm)! - Add datatruck server
+
 ## 0.26.2
 
 ### Patch Changes
