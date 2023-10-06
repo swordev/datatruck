@@ -10,6 +10,7 @@
     "@supercharge/promise-pool": "^3.1.0",
     "ajv": "^8.12.0",
     "async": "^3.2.4",
+    "bytes": "^3.1.2",
     "chalk": "^4.1.2",
     "cli-table3": "^0.6.3",
     "commander": "^11.0.0",
@@ -18,12 +19,12 @@
     "fast-glob": "^3.3.1",
     "micromatch": "^4.0.5",
     "mysql2": "^3.6.1",
-    "pretty-bytes": "^5.6.0",
     "sqlite": "^5.0.1",
     "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",
+    "@types/bytes": "^3.1.2",
     "@types/json-schema": "^7.0.13",
     "@types/micromatch": "^4.0.2",
     "json-schema": "^0.4.0"

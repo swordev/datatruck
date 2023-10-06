@@ -18,8 +18,8 @@ import {
   SessionDriverAbstract,
   SessionDriverOptions,
 } from "./SessionDriverAbstract";
+import bytes from "bytes";
 import { cyan, white, red, grey, green } from "chalk";
-import prettyBytes from "pretty-bytes";
 
 type BadgeType = {
   name: string;
@@ -154,7 +154,7 @@ export class ConsoleSessionDriver extends SessionDriverAbstract<ConsoleSessionDr
         result.push(`${p.percent.toFixed(2)}%`);
       if (typeof p.current === "number" || typeof p.total === "number") {
         const format = (value: number) =>
-          p.format === "size" ? prettyBytes(value) : value;
+          p.format === "size" ? bytes(value) : value;
         if (typeof p.current === "number" && typeof p.total === "number") {
           result.push(`${format(p.current)}/${format(p.total)}`);
         } else if (typeof p.current === "number") {

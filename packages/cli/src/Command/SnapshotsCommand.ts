@@ -5,7 +5,7 @@ import { DataFormat } from "../utils/DataFormat";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
-import prettyBytes from "pretty-bytes";
+import bytes from "bytes";
 
 export type SnapshotsCommandOptionsType<TResolved = false> = {
   id?: If<TResolved, string[]>;
@@ -159,7 +159,7 @@ export class SnapshotsCommand extends CommandAbstract<
           item.date.replace("T", " ").replace("Z", ""),
           item.packageName,
           item.packageTaskName || "",
-          prettyBytes(item.size),
+          bytes(item.size),
           item.repositoryName,
           item.repositoryType,
         ],

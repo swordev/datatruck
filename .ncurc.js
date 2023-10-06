@@ -4,7 +4,7 @@ module.exports = {
   root: true,
   dep: "dev,optional,prod,bundle",
   target: (name) => {
-    if (["chalk", "pretty-bytes"].includes(name)) {
+    if (["chalk"].includes(name)) {
       return "minor";
     } else {
       return "latest";
