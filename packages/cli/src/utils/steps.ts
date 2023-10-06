@@ -1,6 +1,6 @@
-import { mkTmpDir } from "./fs";
 import { exec } from "./process";
 import { render } from "./string";
+import { mkTmpDir } from "./temp";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 
@@ -77,20 +77,19 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         tempDir = await mkTmpDir("node-step");
       }
       const scriptPath = join(tempDir, "script.js");
-
-      const vars = Object.entries({
+      const vars = {
         ...step.config.vars,
         ...options.node?.vars,
-      }).reduce((items, [name, value]) => {
-        items.push(`let ${name} = ${JSON.stringify(value)}`);
-        return items;
-      }, [] as string[]);
+      };
+      const varKeys = Object.keys(vars);
+      const varJson = JSON.stringify(vars);
+      const code = Array.isArray(step.config.code)
+        ? [...step.config.code].join(";\n")
+        : step.config.code;
 
       await writeFile(
         scriptPath,
-        Array.isArray(step.config.code)
-          ? [...vars, ...step.config.code].join(";\n")
-          : `${vars.join(";\n")}\n${step.config.code}`,
+        `(async function({ ${varKeys} }) {\n${code};\n})(${varJson});`,
       );
       await exec(
         "node",

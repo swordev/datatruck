@@ -1,9 +1,7 @@
-import globalData from "../globalData";
 import { progressPercent } from "./math";
 import { rootPath } from "./path";
 import { Progress } from "./progress";
 import { eachLimit } from "async";
-import { randomUUID } from "crypto";
 import fastFolderSize from "fast-folder-size";
 import FastGlob, { Entry, Options } from "fast-glob";
 import { createReadStream, Dirent, ReadStream, Stats } from "fs";
@@ -66,6 +64,10 @@ export async function mkdirIfNotExists(path: string) {
 
 export async function ensureEmptyDir(path: string) {
   if (!(await isEmptyDir(path))) throw new Error(`Dir is not empty: ${path}`);
+}
+
+export async function ensureExistsDir(path: string) {
+  if (!(await existsDir(path))) throw new Error(`Dir is not crated: ${path}`);
 }
 
 export async function safeStat(path: string) {
@@ -134,42 +136,8 @@ export async function findFile(
   return path;
 }
 
-export function parentTmpDir() {
-  return join(globalData.tempDir, "datatruck-temp");
-}
-
-export function sessionTmpDir() {
-  return join(parentTmpDir(), process.pid.toString());
-}
-
-export function isTmpDir(path: string) {
-  return path.startsWith(sessionTmpDir()) && path.includes("datatruck-temp");
-}
-
-export async function rmTmpDir(input: string | string[]) {
-  if (typeof input === "string") {
-    if (!isTmpDir(input)) throw new Error(`Path is not a temp dir: ${input}`);
-    await rm(input, {
-      recursive: true,
-    });
-  } else {
-    for (const path of input) await rmTmpDir(path);
-  }
-}
-
-export function tmpDir(prefix: string, id?: string) {
-  if (!id) id = randomUUID().slice(0, 8);
-  return join(sessionTmpDir(), `${prefix}-${id}`);
-}
-
 export async function fastFolderSizeAsync(path: string) {
   return (await promisify(fastFolderSize)(path)) || 0;
-}
-
-export async function mkTmpDir(prefix: string, id?: string) {
-  const path = tmpDir(prefix, id);
-  await mkdir(path, { recursive: true });
-  return path;
 }
 
 export async function readPartialFile(
@@ -337,7 +305,7 @@ export async function cpy(options: {
         path: string;
         basePath: string;
       };
-  targetPath: string;
+  outPath: string;
   /**
    * @default 1
    */
@@ -375,7 +343,7 @@ export async function cpy(options: {
     const isDir = rawEntryPath.endsWith("/");
     const entryPath = normalize(rawEntryPath);
     const entrySourcePath = resolve(join(basePath, rawEntryPath));
-    const entryTargetPath = resolve(join(options.targetPath, rawEntryPath));
+    const entryTargetPath = resolve(join(options.outPath, rawEntryPath));
     const onPathResult = await options?.onPath?.({
       isDir,
       entryPath,
@@ -475,15 +443,11 @@ type ProgressObject = {
   disposed: boolean;
   total: number;
   current: number;
-  update: (
-    description: string,
-    path?: string,
-    increment?: boolean,
-  ) => Promise<void>;
+  update: (description: string, path?: string, increment?: boolean) => void;
 };
 
 export function createProgress(options: {
-  onProgress: (data: Progress) => Promise<void>;
+  onProgress: (data: Progress) => void;
 }) {
   const progress: ProgressObject = {
     disposed: false,
@@ -492,7 +456,7 @@ export function createProgress(options: {
     update: async (description, path, increment = true) => {
       if (progress.disposed) return;
       if (path && increment) progress.current++;
-      await options.onProgress({
+      options.onProgress({
         relative: {
           description,
           payload: path,
@@ -512,25 +476,25 @@ export async function createFileScanner(options: {
   glob: Options & {
     include: string[];
   };
-  onProgress: (data: Progress) => Promise<void>;
+  onProgress: (data: Progress) => void;
 }): Promise<
   ProgressObject & {
     progress: ProgressObject["update"];
     start: (cb?: (entry: Required<Entry>) => any) => Promise<void>;
-    end: () => Promise<void>;
+    end: () => void;
   }
 > {
   const progress = createProgress(options);
 
   Object.assign(progress, {
     progress: progress.update,
-    end: async () => {
-      if (!progress.disposed) await progress.update("Finished");
+    end: () => {
+      if (!progress.disposed) progress.update("Finished");
       progress.disposed = true;
     },
     start: async (cb?: (entry: Required<Entry>) => any) => {
       let lastTime = performance.now();
-      await progress.update("Scanning files");
+      progress.update("Scanning files");
       for await (const entry of pathIterator(stream)) {
         if (cb) {
           if (await cb(entry)) progress.total++;
@@ -538,9 +502,9 @@ export async function createFileScanner(options: {
           progress.total++;
         }
         if (lastTime - performance.now() > 500)
-          await progress.update("Scanning files");
+          progress.update("Scanning files");
       }
-      await progress.update("Scanned files");
+      progress.update("Scanned files");
     },
   });
 
@@ -679,4 +643,11 @@ export async function tryRm(path: string) {
   try {
     await rm(path);
   } catch (_) {}
+}
+
+export async function initEmptyDir(path: string | undefined) {
+  if (!path) throw new Error(`Path is not defined`);
+  await mkdirIfNotExists(path);
+  await ensureEmptyDir(path);
+  return path;
 }

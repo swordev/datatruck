@@ -1,21 +1,35 @@
+import { PackageConfigType } from "../Config/PackageConfig";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { mkdirIfNotExists } from "../utils/fs";
+import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { Step, runSteps } from "../utils/steps";
+import { mkTmpDir } from "../utils/temp";
 import {
-  BackupDataType,
-  BeforeBackupDataType,
-  BeforeRestoreDataType,
-  RestoreDataType,
+  TaskBackupData,
+  TaskPrepareRestoreData,
+  TaskRestoreData,
   TaskAbstract,
 } from "./TaskAbstract";
-import { ok } from "assert";
 import { JSONSchema7 } from "json-schema";
+
+type NodeVars = {
+  dtt: {
+    snapshot: PreSnapshot;
+    package: PackageConfigType;
+    snapshotPath: string;
+  };
+};
 
 export type ScriptTaskConfigType = {
   env?: Record<string, string | undefined>;
   backupSteps: Step[];
   restoreSteps: Step[];
 };
+
+export function scriptTaskCode<V extends Record<string, any>>(
+  cb: (vars: NodeVars & V) => void,
+) {
+  return `(${cb.toString()})(...arguments);`;
+}
 
 export enum ScriptTaskDefinitionEnum {
   step = "step",
@@ -114,73 +128,65 @@ export const scriptTaskDefinition: JSONSchema7 = {
 
 export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
   protected verbose?: boolean;
-  override async onBeforeBackup(data: BeforeBackupDataType) {
-    return {
-      targetPath:
-        data.package.path ?? (await this.mkTmpDir(`script-task_backup_target`)),
-    };
-  }
 
-  protected getVars(data: BackupDataType | RestoreDataType) {
+  protected getVars(data: TaskBackupData | TaskRestoreData) {
     return {
       process: {
         DTT_SNAPSHOT_ID: data.snapshot.id,
         DTT_SNAPSHOT_DATE: data.snapshot.date,
         DTT_PACKAGE_NAME: data.package.name,
         DTT_PACKAGE_PATH: data.package.path,
-        DTT_TARGET_PATH: data.targetPath,
+        DTT_SNAPSHOT_PATH: data.snapshotPath,
       },
       node: {
         dtt: {
           snapshot: data.snapshot,
           package: data.package,
-          targetPath: data.targetPath,
+          snapshotPath: data.snapshotPath,
         },
-      },
+      } as NodeVars,
     };
   }
-
-  override async onBackup(data: BackupDataType) {
+  override async backup(data: TaskBackupData) {
     const config = this.config;
-    const targetPath = data.targetPath;
-    ok(typeof targetPath === "string");
-    const vars = this.getVars(data);
-    await mkdirIfNotExists(targetPath);
+    const snapshotPath =
+      data.package.path ??
+      (await mkTmpDir(scriptTaskName, "task", "backup", "snapshot"));
+    const vars = this.getVars({
+      ...data,
+      snapshotPath,
+    });
     await runSteps(config.backupSteps, {
       env: config.env,
+      cwd: snapshotPath,
       verbose: data.options.verbose,
       process: { vars: vars.process },
       node: {
-        tempDir: () => this.mkTmpDir("script-task_backup_node-step"),
+        tempDir: () => mkTmpDir(scriptTaskName, "task", "backup", "nodeStep"),
         vars: vars.node,
       },
     });
+
+    return { snapshotPath };
   }
 
-  override async onBeforeRestore(data: BeforeRestoreDataType) {
+  override async prepareRestore(data: TaskPrepareRestoreData) {
     return {
-      targetPath:
+      snapshotPath:
         data.package.restorePath ??
-        (await this.mkTmpDir(`script-task_restore_target`)),
+        (await mkTmpDir(scriptTaskName, "task", "restore", "snapshot")),
     };
   }
 
-  override async onRestore(data: RestoreDataType) {
+  override async restore(data: TaskRestoreData) {
     const config = this.config;
-    const targetPath = data.targetPath;
-
-    ok(typeof targetPath === "string");
-
-    await mkdirIfNotExists(targetPath);
-
     const vars = this.getVars(data);
-
     await runSteps(config.restoreSteps, {
       env: config.env,
       verbose: data.options.verbose,
       process: { vars: vars.process },
       node: {
-        tempDir: () => this.mkTmpDir("script-task_restore_node-step"),
+        tempDir: () => mkTmpDir(scriptTaskName, "task", "restore", "nodeStep"),
         vars: vars.node,
       },
     });

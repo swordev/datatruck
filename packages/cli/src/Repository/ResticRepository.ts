@@ -11,19 +11,19 @@ import {
 import { progressPercent } from "../utils/math";
 import { Progress } from "../utils/progress";
 import { checkMatch, formatUri, makePathPatterns } from "../utils/string";
+import { mkTmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
-  BackupDataType,
-  InitDataType,
-  RestoreDataType,
-  SnapshotsDataType,
-  SnapshotResultType,
+  RepoBackupData,
+  RepoInitData,
+  RepoRestoreData,
+  RepoFetchSnapshotsData,
+  Snapshot,
   SnapshotTagObjectType,
   SnapshotTagEnum,
-  PruneDataType,
-  CopyBackupType,
+  RepoPruneData,
+  RepoCopyData,
 } from "./RepositoryAbstract";
-import { ok } from "assert";
 import FastGlob from "fast-glob";
 import { writeFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
@@ -156,11 +156,11 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     return result as typeof result;
   }
 
-  override onGetSource() {
+  override getSource() {
     return formatUri({ ...this.config.repository, password: undefined });
   }
 
-  override async onInit(data: InitDataType) {
+  override async init(data: RepoInitData) {
     const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
@@ -172,7 +172,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     if (!(await restic.checkRepository())) await restic.exec(["init"]);
   }
 
-  override async onSnapshots(data: SnapshotsDataType) {
+  override async fetchSnapshots(data: RepoFetchSnapshotsData) {
     const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
@@ -210,10 +210,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         size: Number(tag.size) || 0,
       });
       return items;
-    }, [] as SnapshotResultType[]);
+    }, [] as Snapshot[]);
   }
 
-  async onPrune(data: PruneDataType) {
+  async prune(data: RepoPruneData) {
     const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
@@ -224,8 +224,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
   }
 
-  override async onBackup(
-    data: BackupDataType<ResticPackageRepositoryConfigType>,
+  override async backup(
+    data: RepoBackupData<ResticPackageRepositoryConfigType>,
   ) {
     const restic = new Restic({
       env: await this.buildEnv(),
@@ -233,32 +233,33 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
 
     const pkg = data.package;
-    const sourcePath = data.targetPath ?? data.package.path;
-
-    ok(sourcePath);
+    const path = data.package.path;
 
     let gitignorePath: string | undefined;
 
     const backupPathsOptions: BackupPathsOptions = {
       package: data.package,
       snapshot: data.snapshot,
-      targetPath: sourcePath,
+      path,
       verbose: data.options.verbose,
     };
 
     if (!pkg.include && pkg.exclude) {
       const exclude = await parseBackupPaths(pkg.exclude, backupPathsOptions);
 
-      await data.onProgress({
+      data.onProgress({
         relative: {
           description: "Writing excluded paths list",
         },
       });
 
-      const tmpDir = await this.mkTmpDir("restic-exclude");
-      const ignoredContents = fastglobToGitIgnore(exclude, sourcePath).join(
-        "\n",
+      const tmpDir = await mkTmpDir(
+        resticRepositoryName,
+        "repo",
+        "backup",
+        "exclude",
       );
+      const ignoredContents = fastglobToGitIgnore(exclude, path).join("\n");
       gitignorePath = join(tmpDir, "ignored.txt");
 
       await writeFile(gitignorePath, ignoredContents);
@@ -273,7 +274,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
         : undefined;
 
       const stream = FastGlob.stream(include, {
-        cwd: sourcePath,
+        cwd: path,
         ignore: exclude,
         dot: true,
         onlyFiles: true,
@@ -282,7 +283,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       if (data.options.verbose) logExec(`Writing paths lists`);
 
-      await data.onProgress({
+      data.onProgress({
         relative: {
           description: "Writing excluded paths list",
         },
@@ -290,7 +291,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
       gitignorePath = await writeGitIgnoreList({
         paths: stream,
-        outDir: await this.mkTmpDir("gitignore-list"),
+        outDir: await mkTmpDir(
+          resticRepositoryName,
+          "repo",
+          "backup",
+          "gitignore",
+        ),
       });
     }
 
@@ -306,7 +312,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       data.package.name,
     );
 
-    await data.onProgress({
+    data.onProgress({
       relative: {
         description: "Fetching last snapshot",
       },
@@ -324,7 +330,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     let totalFilesChanges = 0;
     const totalFilesChangesLimit = 10;
 
-    await data.onProgress({
+    data.onProgress({
       relative: {
         description: "Executing backup action",
       },
@@ -334,7 +340,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     let resticTotalBytes: number | undefined;
 
     await restic.backup({
-      cwd: sourcePath,
+      cwd: path,
       paths: ["."],
       allowEmptySnapshot: true,
       excludeFile: gitignorePath ? [gitignorePath] : undefined,
@@ -368,7 +374,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           : []),
         ...(data.options.tags ?? []),
       ],
-      createEmptyDir: async () => await this.mkTmpDir("empty"),
+      createEmptyDir: async () =>
+        await mkTmpDir(resticRepositoryName, "repo", "backup", "empty-dir"),
       onStream: async (streamData) => {
         if (streamData.message_type === "status") {
           let showProgressBar = false;
@@ -379,7 +386,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
           } else {
             totalFilesChanges++;
           }
-          await data.onProgress(
+          data.onProgress(
             (lastProgress = {
               relative: {
                 description: "Copying file",
@@ -420,7 +427,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
 
     await restic.exec(["tag", "--add", sizeTag, resticSnapshotId]);
 
-    await data.onProgress({
+    data.onProgress({
       absolute: {
         total: lastProgress?.absolute?.total || 0,
         current: lastProgress?.absolute?.total || 0,
@@ -429,12 +436,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
   }
 
-  override async onCopyBackup(
-    data: CopyBackupType<ResticRepositoryConfigType>,
+  override async copy(
+    data: RepoCopyData<ResticRepositoryConfigType>,
   ): Promise<void> {
     const config = data.mirrorRepositoryConfig;
 
-    const [snapshot] = await this.onSnapshots({
+    const [snapshot] = await this.fetchSnapshots({
       options: {
         ids: [data.snapshot.id],
         packageNames: [data.package.name],
@@ -458,18 +465,16 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
   }
 
-  override async onRestore(
-    data: RestoreDataType<ResticPackageRepositoryConfigType>,
+  override async restore(
+    data: RepoRestoreData<ResticPackageRepositoryConfigType>,
   ) {
-    const restorePath = data.targetPath ?? data.package.restorePath;
-
-    ok(restorePath);
+    const restorePath = data.snapshotPath;
 
     const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
-    const [snapshot] = await this.onSnapshots({
+    const [snapshot] = await this.fetchSnapshots({
       options: {
         ids: [data.snapshot.id],
         packageNames: [data.package.name],
@@ -483,7 +488,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
       onStream: async (streamData) => {
         if (streamData.message_type === "restore-status") {
           const current = Math.min(streamData.total_bytes, snapshot.size);
-          await data.onProgress({
+          data.onProgress({
             absolute: {
               total: snapshot.size,
               current,

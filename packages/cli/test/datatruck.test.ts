@@ -1,7 +1,8 @@
 import { RestoreCommand } from "../src/Command/RestoreCommand";
 import { createActionInterface } from "../src/Factory/CommandFactory";
-import { existsFile } from "../src/utils/fs";
+import { existsDir, existsFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
+import { mkTmpDir } from "../src/utils/temp";
 import { runBackups, runRestores } from "./expect";
 import { fileChanges } from "./fileChanges";
 import {
@@ -129,7 +130,7 @@ describe(
           },
         ],
       });
-      const dtt = createActionInterface({ config, verbose: 1 });
+      const dtt = createActionInterface({ config });
       await dtt.init({});
       const backupFiles = await runBackups(config, fileChanger, [
         {

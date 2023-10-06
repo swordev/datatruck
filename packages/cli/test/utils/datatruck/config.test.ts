@@ -26,7 +26,7 @@ describe("filterPackages", () => {
       {
         name: "main1",
         config: {
-          outPath: "/tmp",
+          backend: "/tmp",
         },
         type: "datatruck",
       },
@@ -131,7 +131,7 @@ describe("findRepositoryOrFail", () => {
       {
         name: "a",
         config: {
-          outPath: "/tmp",
+          backend: "/tmp",
         },
         type: "datatruck",
       },

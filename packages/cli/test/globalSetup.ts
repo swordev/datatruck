@@ -1,4 +1,4 @@
-import { parentTmpDir } from "../src/utils/fs";
+import { parentTmpDir } from "../src/utils/temp";
 import { rm } from "fs/promises";
 
 export default async function () {

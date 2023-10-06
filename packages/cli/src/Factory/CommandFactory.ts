@@ -1,41 +1,30 @@
-import { CleanCacheActionOptionsType } from "../Action/CleanCacheAction";
-import {
-  BackupCommand,
-  BackupCommandOptionsType,
-} from "../Command/BackupCommand";
-import {
-  BackupSessionsCommand,
-  BackupSessionsCommandOptionsType,
-} from "../Command/BackupSessionsCommand";
+import { CleanCacheActionOptions } from "../Action/CleanCacheAction";
+import { BackupCommand, BackupCommandOptions } from "../Command/BackupCommand";
 import { CleanCacheCommand } from "../Command/CleanCacheCommand";
-import { GlobalOptionsType } from "../Command/CommandAbstract";
+import { GlobalOptions } from "../Command/CommandAbstract";
 import {
   ConfigCommand,
   ConfigCommandLogType,
-  ConfigCommandOptionsType,
+  ConfigCommandOptions,
 } from "../Command/ConfigCommand";
 import {
   InitCommand,
   InitCommandLogType,
-  InitCommandOptionsType,
+  InitCommandOptions,
 } from "../Command/InitCommand";
-import { PruneCommand, PruneCommandOptionsType } from "../Command/PruneCommand";
+import { PruneCommand, PruneCommandOptions } from "../Command/PruneCommand";
 import {
   RestoreCommand,
   RestoreCommandOptionsType,
 } from "../Command/RestoreCommand";
 import {
-  RestoreSessionsCommand,
-  RestoreSessionsCommandOptionsType,
-} from "../Command/RestoreSessionsCommand";
-import {
   SnapshotsCommand,
   SnapshotsCommandLogType,
-  SnapshotsCommandOptionsType,
+  SnapshotsCommandOptions,
 } from "../Command/SnapshotsCommand";
 import {
   StartServerCommand,
-  StartServerCommandOptionsType,
+  StartServerCommandOptions,
 } from "../Command/StartServerCommand";
 import { AppError } from "../Error/AppError";
 
@@ -45,24 +34,20 @@ export enum CommandEnum {
   snapshots = "snapshots",
   prune = "prune",
   backup = "backup",
-  backupSessions = "backup-sessions",
   restore = "restore",
-  restoreSessions = "restore-sessions",
   cleanCache = "clean-cache",
   startServer = "start-server",
 }
 
 export type OptionsMapType = {
-  [CommandEnum.config]: ConfigCommandOptionsType;
-  [CommandEnum.init]: InitCommandOptionsType;
-  [CommandEnum.snapshots]: SnapshotsCommandOptionsType;
-  [CommandEnum.prune]: PruneCommandOptionsType;
-  [CommandEnum.backup]: BackupCommandOptionsType;
-  [CommandEnum.backupSessions]: BackupSessionsCommandOptionsType;
+  [CommandEnum.config]: ConfigCommandOptions;
+  [CommandEnum.init]: InitCommandOptions;
+  [CommandEnum.snapshots]: SnapshotsCommandOptions;
+  [CommandEnum.prune]: PruneCommandOptions;
+  [CommandEnum.backup]: BackupCommandOptions;
   [CommandEnum.restore]: RestoreCommandOptionsType;
-  [CommandEnum.restoreSessions]: RestoreSessionsCommandOptionsType;
-  [CommandEnum.cleanCache]: CleanCacheActionOptionsType;
-  [CommandEnum.startServer]: StartServerCommandOptionsType;
+  [CommandEnum.cleanCache]: CleanCacheActionOptions;
+  [CommandEnum.startServer]: StartServerCommandOptions;
 };
 
 export type LogMapType = {
@@ -73,7 +58,7 @@ export type LogMapType = {
 
 export function CommandFactory<TCommand extends keyof OptionsMapType>(
   type: TCommand,
-  globalOptions: GlobalOptionsType<false>,
+  globalOptions: GlobalOptions<true>,
   options: OptionsMapType[TCommand],
 ) {
   const constructor = CommandConstructorFactory(type);
@@ -82,15 +67,13 @@ export function CommandFactory<TCommand extends keyof OptionsMapType>(
 
 export async function exec<TCommand extends keyof OptionsMapType>(
   type: TCommand,
-  globalOptions: GlobalOptionsType<false>,
+  globalOptions: GlobalOptions<true>,
   options: OptionsMapType[TCommand],
 ) {
   return await CommandFactory(type, globalOptions, options).onExec();
 }
 
-export function createActionInterface(
-  globalOptions: GlobalOptionsType<false>,
-): {
+export function createActionInterface(globalOptions: GlobalOptions<true>): {
   [K in keyof OptionsMapType as `${K}`]: (
     options: OptionsMapType[K],
   ) => Promise<K extends keyof LogMapType ? LogMapType[K] : never>;
@@ -162,12 +145,8 @@ export function CommandConstructorFactory(type: CommandEnum) {
     return PruneCommand;
   } else if (type === CommandEnum.backup) {
     return BackupCommand;
-  } else if (type === CommandEnum.backupSessions) {
-    return BackupSessionsCommand;
   } else if (type === CommandEnum.restore) {
     return RestoreCommand;
-  } else if (type === CommandEnum.restoreSessions) {
-    return RestoreSessionsCommand;
   } else if (type === CommandEnum.cleanCache) {
     return CleanCacheCommand;
   } else if (type === CommandEnum.startServer) {

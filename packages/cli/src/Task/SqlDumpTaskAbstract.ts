@@ -2,10 +2,21 @@ import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import { resolveDatabaseName } from "../utils/datatruck/config";
-import { existsDir, readDir } from "../utils/fs";
+import {
+  ensureEmptyDir,
+  existsDir,
+  mkdirIfNotExists,
+  readDir,
+} from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { exec } from "../utils/process";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
+import { mkTmpDir } from "../utils/temp";
+import {
+  TaskBackupData,
+  TaskPrepareRestoreData,
+  TaskRestoreData,
+  TaskAbstract,
+} from "./TaskAbstract";
 import { ok } from "assert";
 import { mkdir, readFile } from "fs/promises";
 import { JSONSchema7, JSONSchema7Definition } from "json-schema";
@@ -144,10 +155,17 @@ export abstract class SqlDumpTaskAbstract<
   abstract onExportStoredPrograms(output: string): Promise<void>;
   abstract onImport(path: string, database: string): Promise<void>;
 
-  override async onBackup(data: BackupDataType): Promise<void> {
+  override async backup(data: TaskBackupData) {
     this.verbose = data.options.verbose;
+
+    const snapshotPath =
+      data.package.path ??
+      (await mkTmpDir("sqldump", "task", "backup", "snapshot"));
+
+    await mkdirIfNotExists(snapshotPath);
+    await ensureEmptyDir(snapshotPath);
+
     const config = this.config;
-    const outputPath = data.package.path;
     const allTableNames = await this.onFetchTableNames(this.config.database);
     const tableNames = allTableNames.filter((tableName) => {
       if (config.includeTables && !isMatch(tableName, config.includeTables))
@@ -157,23 +175,23 @@ export abstract class SqlDumpTaskAbstract<
       return true;
     });
 
-    ok(typeof outputPath === "string");
+    ok(typeof snapshotPath === "string");
 
-    if (!(await existsDir(outputPath)))
-      await mkdir(outputPath, { recursive: true });
+    if (!(await existsDir(snapshotPath)))
+      await mkdir(snapshotPath, { recursive: true });
 
     if (!this.config.oneFileByTable) {
       const outPath = join(
-        outputPath,
+        snapshotPath,
         serializeSqlFile({ database: this.config.database }),
       );
-      await data.onProgress({
+      data.onProgress({
         relative: {
           description: "Exporting",
         },
       });
       await this.onExportTables(tableNames, outPath, async (progress) => {
-        await data.onProgress({
+        data.onProgress({
           absolute: {
             description: "Exporting in single file",
             current: progress.totalBytes,
@@ -184,7 +202,7 @@ export abstract class SqlDumpTaskAbstract<
     } else {
       let current = 0;
       for (const tableName of tableNames) {
-        await data.onProgress({
+        data.onProgress({
           relative: {
             description: "Exporting",
             payload: tableName,
@@ -196,11 +214,11 @@ export abstract class SqlDumpTaskAbstract<
           },
         });
         const outPath = join(
-          outputPath,
+          snapshotPath,
           serializeSqlFile({ table: tableName }),
         );
         await this.onExportTables([tableName], outPath, async (progress) => {
-          await data.onProgress({
+          data.onProgress({
             relative: {
               description: "Exporting",
               payload: tableName,
@@ -219,21 +237,29 @@ export abstract class SqlDumpTaskAbstract<
     }
 
     if (this.config.storedPrograms) {
-      const outPath = join(outputPath, "stored-programs.sql");
-      await data.onProgress({
+      const outPath = join(snapshotPath, "stored-programs.sql");
+      data.onProgress({
         relative: {
           description: "Exporting storaged programs",
         },
       });
       await this.onExportStoredPrograms(outPath);
     }
+
+    return {
+      snapshotPath: snapshotPath,
+    };
   }
-
-  override async onRestore(data: RestoreDataType) {
-    const restorePath = data.package.restorePath;
+  override async prepareRestore(data: TaskPrepareRestoreData) {
+    return {
+      snapshotPath:
+        data.package.restorePath ??
+        (await mkTmpDir("sqldump", "task", "restore", "snapshot")),
+    };
+  }
+  override async restore(data: TaskRestoreData) {
+    const snapshotPath = data.snapshotPath;
     this.verbose = data.options.verbose;
-
-    ok(typeof restorePath === "string");
 
     const database: TargetDatabaseType = {
       name: resolveDatabaseName(this.config.database, {
@@ -255,7 +281,7 @@ export abstract class SqlDumpTaskAbstract<
       });
     }
 
-    const items = (await readDir(restorePath))
+    const items = (await readDir(snapshotPath))
       .map(parseSqlFile)
       .filter((v) => !!v) as SqlFile[];
 
@@ -283,11 +309,11 @@ export abstract class SqlDumpTaskAbstract<
 
     await this.onCreateDatabase(database);
 
-    if (this.verbose) logExec("readdir", [restorePath]);
+    if (this.verbose) logExec("readdir", [snapshotPath]);
 
     let current = 0;
     for (const item of items) {
-      const path = join(restorePath, item.fileName);
+      const path = join(snapshotPath, item.fileName);
       data.onProgress({
         relative: {
           description: "Importing",

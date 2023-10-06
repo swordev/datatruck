@@ -1,4 +1,3 @@
-import { mkTmpDir } from "../../src/utils/fs";
 import {
   createTar,
   listTar,
@@ -6,6 +5,7 @@ import {
   checkPigzLib,
   CompressOptions,
 } from "../../src/utils/tar";
+import { mkTmpDir } from "../../src/utils/temp";
 import { createFileChanger } from "../util";
 import { chmod, chown, rm, stat, writeFile } from "fs/promises";
 import { platform } from "os";

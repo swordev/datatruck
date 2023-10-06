@@ -10,7 +10,7 @@ describe("parsePaths", () => {
   const options: BackupPathsOptions = {
     package: { name: "test" },
     snapshot: { date: "", id: "" },
-    targetPath: "",
+    path: "",
   };
   it("returns same input", async () => {
     expect(await parsePaths(["a", "b"], {})).toMatchObject(["a", "b"]);

@@ -7,7 +7,7 @@ import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 import bytes from "bytes";
 
-export type SnapshotsCommandOptionsType<TResolved = false> = {
+export type SnapshotsCommandOptions<TResolved = false> = {
   id?: If<TResolved, string[]>;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
@@ -29,8 +29,8 @@ export type SnapshotsCommandOptionsType<TResolved = false> = {
 export type SnapshotsCommandLogType = Unwrap<SnapshotsAction["exec"]>;
 
 export class SnapshotsCommand extends CommandAbstract<
-  SnapshotsCommandOptionsType<false>,
-  SnapshotsCommandOptionsType<true>
+  SnapshotsCommandOptions<false>,
+  SnapshotsCommandOptions<true>
 > {
   override onOptions() {
     const groupByValues = [

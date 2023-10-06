@@ -1,22 +1,27 @@
 import { ConfigType } from "../Config/Config";
 import { FormatType } from "../utils/DataFormat";
 import { OptionsType, parseOptions } from "../utils/cli";
-import { SimilarObject } from "../utils/ts";
+import { If, SimilarObject } from "../utils/ts";
 
-export type GlobalOptionsType<TResolved = false> = {
+export type GlobalOptions<TResolved = false> = {
   config: string | ConfigType;
   outputFormat?: FormatType;
   verbose?: number;
-  progress?: "auto" | "plain" | "tty";
+  tty?: If<TResolved, "auto" | boolean, "auto" | "true" | "false">;
+  progress?: If<
+    TResolved,
+    "auto" | boolean,
+    "auto" | "true" | "false" | "interval"
+  >;
   progressInterval?: number;
 };
 
-export type CommandConstructorType<
+export type CommandConstructor<
   TUnresolvedOptions,
   TOptions extends SimilarObject<TUnresolvedOptions>,
 > = {
   new (
-    globalOptions: GlobalOptionsType<true>,
+    globalOptions: GlobalOptions<true>,
     options: TOptions,
   ): CommandAbstract<TUnresolvedOptions, TOptions>;
 };
@@ -27,7 +32,7 @@ export abstract class CommandAbstract<
 > {
   readonly options: TOptions;
   constructor(
-    readonly globalOptions: GlobalOptionsType<true>,
+    readonly globalOptions: GlobalOptions<true>,
     options: TUnresolvedOptions,
   ) {
     this.options = parseOptions(options, this.onOptions());

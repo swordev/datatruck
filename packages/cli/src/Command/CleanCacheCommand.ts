@@ -1,12 +1,12 @@
 import { CleanCacheAction } from "../Action/CleanCacheAction";
-import { parentTmpDir } from "../utils/fs";
+import { parentTmpDir } from "../utils/temp";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type CleanCacheCommandOptionsType<TResolved = false> = {};
+export type CleanCacheCommandOptions<TResolved = false> = {};
 
 export class CleanCacheCommand extends CommandAbstract<
-  CleanCacheCommandOptionsType<false>,
-  CleanCacheCommandOptionsType<true>
+  CleanCacheCommandOptions<false>,
+  CleanCacheCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({});

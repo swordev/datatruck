@@ -1,31 +1,23 @@
 import type { ConfigType } from "../Config/Config";
 import { PackageConfigType } from "../Config/PackageConfig";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { TaskConfigType } from "../Config/TaskConfig";
 import { AppError } from "../Error/AppError";
-import { RepositoryFactory } from "../Factory/RepositoryFactory";
-import { TaskFactory } from "../Factory/TaskFactory";
-import {
-  RepositoryAbstract,
-  SnapshotResultType,
-} from "../Repository/RepositoryAbstract";
-import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
-import { TaskAbstract } from "../Task/TaskAbstract";
-import { logExec } from "../utils/cli";
+import { createRepo } from "../Factory/RepositoryFactory";
+import { createTask } from "../Factory/TaskFactory";
+import { Snapshot } from "../Repository/RepositoryAbstract";
 import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
-import { isEmptyDir, isTmpDir, mkdirIfNotExists, rmTmpDir } from "../utils/fs";
-import { push } from "../utils/object";
-import { exec } from "../utils/process";
+import { initEmptyDir } from "../utils/fs";
+import { ProgressManager } from "../utils/progress";
+import { GargabeCollector } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
-import { platform } from "os";
+import { Listr, ListrTask } from "listr2";
 
-export type RestoreActionOptionsType = {
+export type RestoreActionOptions = {
   snapshotId: string;
   tags?: string[];
   packageNames?: string[];
@@ -35,13 +27,14 @@ export type RestoreActionOptionsType = {
   repositoryTypes?: string[];
   verbose?: boolean;
   restorePath?: boolean;
+  tty?: "auto" | boolean;
+  progress?: "auto" | "interval" | boolean;
+  progressInterval?: number;
 };
 
-type SnapshotType = SnapshotResultType & {
+type RestoreSnapshot = Snapshot & {
   repositoryName: string;
 };
-
-type SnapshotAndConfigType = [SnapshotType, PackageConfigType | null];
 
 export class RestoreAction<TRequired extends boolean = true> {
   protected taskErrors: Record<string, Error[]> = {};
@@ -49,55 +42,24 @@ export class RestoreAction<TRequired extends boolean = true> {
 
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, RestoreActionOptionsType>,
+    readonly options: IfRequireKeys<TRequired, RestoreActionOptions>,
   ) {}
 
   protected assocConfigs(
     packages: PackageConfigType[],
-    snapshots: SnapshotType[],
-  ): [SnapshotType, PackageConfigType | null][] {
+    snapshots: RestoreSnapshot[],
+  ): [RestoreSnapshot, PackageConfigType][] {
     return snapshots.map((snapshot) => {
       const pkg =
         packages.find((pkg) => pkg.name === snapshot.packageName) ?? null;
+      if (!pkg)
+        throw new Error(`Package config not found: ${snapshot.packageName}`);
       return [snapshot, pkg];
     });
   }
 
-  protected async init(
-    session: RestoreSessionManager,
-    snapshotId: string,
-    snapshots: SnapshotAndConfigType[],
-  ) {
-    await session.initDrivers();
-
-    for (const [snapshot, pkg] of snapshots) {
-      if (!pkg)
-        throw new AppError(`Package config not found: ${snapshot.packageName}`);
-
-      const sessionId = await session.init({
-        snapshotId: snapshotId,
-        packageName: pkg.name,
-      });
-
-      if (pkg.task)
-        await session.initTask({
-          sessionId: sessionId,
-          taskName: pkg.task.name,
-        });
-
-      for (const repositoryName of pkg.repositoryNames ?? []) {
-        const repo = findRepositoryOrFail(this.config, repositoryName);
-        await session.initRepository({
-          sessionId: sessionId,
-          repositoryName: repositoryName,
-          repositoryType: repo.type,
-        });
-      }
-    }
-  }
-
   protected async findSnapshots() {
-    const result: SnapshotType[] = [];
+    const result: RestoreSnapshot[] = [];
 
     for (const repository of this.config.repositories) {
       if (
@@ -133,7 +95,7 @@ export class RestoreAction<TRequired extends boolean = true> {
               packageTaskName: ss.packageTaskName,
               tags: ss.tags,
               repositoryName: repository.name,
-            }) as SnapshotType,
+            }) as RestoreSnapshot,
         ),
       );
     }
@@ -141,7 +103,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     return result;
   }
 
-  protected groupSnapshots(snapshots: SnapshotType[]) {
+  protected groupSnapshots(snapshots: RestoreSnapshot[]) {
     const names: string[] = [];
     return snapshots.filter((snapshot) => {
       if (names.includes(snapshot.packageName)) return false;
@@ -150,229 +112,118 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
   }
 
-  protected async task(
-    session: RestoreSessionManager,
-    pkg: PackageConfigType,
-    task: TaskAbstract<any>,
-    snapshot: SnapshotType,
-    targetPath: string | undefined,
-  ) {
-    const taskId = session.findTaskId({
-      packageName: pkg.name,
-      taskName: pkg.task!.name,
-    });
-
-    await session.startTask({
-      id: taskId,
-    });
-
-    let error: Error | undefined;
-
-    if (this.repoErrors[pkg.name]?.length) {
-      error = AppError.create("Repository failed", this.repoErrors[pkg.name]);
-    } else if (this.taskErrors[pkg.name]?.length) {
-      error = AppError.create(
-        "Previous task failed",
-        this.taskErrors[pkg.name],
-      );
-    } else {
-      try {
-        await task.onRestore({
-          package: pkg,
-          options: this.options,
-          snapshot,
-          targetPath,
-          onProgress: async (progress) => {
-            await session.progressTask({
-              id: taskId,
-              progress,
-            });
-          },
-        });
-      } catch (_) {
-        if (!this.taskErrors[pkg.name]) this.taskErrors[pkg.name] = [];
-        this.taskErrors[pkg.name].push((error = _ as Error));
-      }
-    }
-
-    await session.endTask({
-      id: taskId,
-      error: error?.stack,
-    });
-
-    return {
-      error: error ? false : true,
-      tmpDirs: task?.tmpDirs ?? [],
-    };
-  }
-
-  protected async restore(
-    session: RestoreSessionManager,
-    pkg: PackageConfigType,
-    repo: RepositoryConfigType,
-    snapshot: SnapshotType,
-    targetPath: string | undefined,
-  ) {
-    const repositoryId = session.findRepositoryId({
-      packageName: pkg.name,
-      repositoryName: repo.name,
-    });
-
-    await session.startRepository({
-      id: repositoryId,
-    });
-
-    let repoError: Error | undefined;
-    let repoInstance: RepositoryAbstract<any> | undefined;
-
-    if (!this.options.restorePath)
-      pkg = {
-        ...pkg,
-        restorePath: pkg.path,
-      };
-
-    try {
-      if (typeof pkg.restorePath !== "string")
-        throw new AppError("Restore path is not defined");
-
-      await mkdirIfNotExists(pkg.restorePath);
-
-      if (!(await isEmptyDir(pkg.restorePath)))
-        throw new AppError(`Restore path is not empty: ${pkg.restorePath}`);
-
-      if (this.options.verbose) logExec(`restorePath=${pkg.restorePath}`);
-
-      repoInstance = RepositoryFactory(repo);
-      await repoInstance.onRestore({
-        package: pkg,
-        targetPath,
-        packageConfig: pkg.repositoryConfigs?.find(
-          (config) =>
-            config.type === repo.type &&
-            (!config.names || config.names.includes(repo.name)),
-        )?.config,
-        options: this.options,
-        snapshot: snapshot,
-        onProgress: async (progress) => {
-          await session.progressRepository({
-            id: repositoryId,
-            progress,
-          });
-        },
-      });
-      if (pkg.restorePermissions && platform() !== "win32")
-        await exec(
-          "chown",
-          [
-            "-R",
-            `${pkg.restorePermissions.uid}:${pkg.restorePermissions.gid}`,
-            pkg.restorePath,
-          ],
-          {},
-          {
-            log: this.options.verbose,
-          },
-        );
-    } catch (error) {
-      push(this.repoErrors, pkg.name, (repoError = error as Error));
-    }
-    await session.endRepository({
-      id: repositoryId,
-      error: repoError?.stack,
-    });
-    return {
-      error: repoError ? false : true,
-      tmpDirs: repoInstance?.tmpDirs || [],
-    };
-  }
-
-  protected getError(pkg: PackageConfigType) {
-    const taskErrors = this.taskErrors[pkg.name] || [];
-    const repoErrors = this.repoErrors[pkg.name] || [];
-    const errors = [...taskErrors, ...repoErrors];
-    if (!errors.length) return;
-    return AppError.create(
-      taskErrors.length && repoErrors.length
-        ? "Task and repository failed"
-        : taskErrors.length && !repoErrors.length
-        ? "Task failed"
-        : "Repository failed",
-      errors,
-    );
-  }
-
-  async exec(session: RestoreSessionManager) {
-    if (!this.options.snapshotId) throw new AppError("Snapshot id is required");
-    const snapshots = this.groupSnapshots(await this.findSnapshots());
-
-    if (!snapshots.length) throw new AppError("None snapshot found");
-
-    let packages = filterPackages(this.config, {
+  protected getPackages(snapshot: { date: string }) {
+    const packages = filterPackages(this.config, {
       ...this.options,
       sourceAction: "restore",
     });
-
-    packages = resolvePackages(packages, {
+    return resolvePackages(packages, {
       snapshotId: this.options.snapshotId,
-      snapshotDate: snapshots[0].date,
+      snapshotDate: snapshot.date,
       action: "restore",
     });
+  }
 
+  async exec() {
+    const { options } = this;
+    const pm = new ProgressManager({
+      verbose: this.options.verbose,
+      tty: options.tty,
+      enabled: options.progress,
+      interval: options.progressInterval,
+    });
+
+    if (!options.snapshotId) throw new AppError("Snapshot id is required");
+    const snapshots = this.groupSnapshots(await this.findSnapshots());
+    const [snapshot] = snapshots;
+    if (!snapshot) throw new AppError("None snapshot found");
+    const packages = this.getPackages(snapshot);
     const snapshotAndConfigs = this.assocConfigs(packages, snapshots);
 
-    await this.init(session, this.options.snapshotId, snapshotAndConfigs);
+    return new Listr(
+      [
+        {
+          title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
+          task: () => {},
+        },
+        ...snapshotAndConfigs.map(([snapshot, pkg]) => {
+          return {
+            title: `Restoring ${pkg.name}`,
+            exitOnError: false,
+            task: async (_, listTask) => {
+              const repoConfig = findRepositoryOrFail(
+                this.config,
+                snapshot.repositoryName,
+              );
+              const gc = new GargabeCollector();
+              const repo = createRepo(repoConfig);
+              const task = pkg.task ? createTask(pkg.task) : undefined;
 
-    const errors: Error[] = [];
+              if (!options.restorePath) pkg = { ...pkg, restorePath: pkg.path };
 
-    for (const [snapshot, pkg] of snapshotAndConfigs) {
-      ok(pkg);
+              let snapshotPath = pkg.restorePath ?? pkg.path;
 
-      const repo = findRepositoryOrFail(this.config, snapshot.repositoryName);
+              await gc.cleanupIfFail(async () => {
+                if (task) {
+                  const taskResult = await task!.prepareRestore({
+                    options,
+                    package: pkg,
+                    snapshot,
+                  });
+                  snapshotPath = taskResult?.snapshotPath;
+                }
+                await initEmptyDir(snapshotPath);
+                await repo.restore({
+                  options,
+                  snapshot,
+                  package: pkg,
+                  snapshotPath: snapshotPath!,
+                  packageConfig: pkg.repositoryConfigs?.find(
+                    (config) =>
+                      config.type === repoConfig.type &&
+                      (!config.names || config.names.includes(repoConfig.name)),
+                  )?.config,
+                  onProgress: (p) => pm.update(p, (t) => (listTask.output = t)),
+                });
+              });
 
-      const id = session.findId({
-        packageName: pkg.name,
-      });
+              if (!task) await gc.cleanup();
 
-      await session.start({ id });
-      let targetPath: string | undefined;
-      let taskInstance: TaskAbstract<any> | undefined;
-      if (pkg.task) {
-        taskInstance = TaskFactory(pkg.task);
-        const result = await taskInstance.onBeforeRestore({
-          options: this.options,
-          package: pkg,
-          snapshot,
-        });
-        targetPath = result?.targetPath;
-      }
-
-      const { tmpDirs } = await this.restore(
-        session,
-        pkg,
-        repo,
-        snapshot,
-        targetPath,
-      );
-
-      if (taskInstance) {
-        await this.task(session, pkg, taskInstance, snapshot, targetPath);
-      }
-
-      if (!this.options.verbose) {
-        await rmTmpDir(taskInstance?.tmpDirs || []);
-        await rmTmpDir(tmpDirs);
-        if (pkg.restorePath && isTmpDir(pkg.restorePath))
-          await rmTmpDir(pkg.restorePath);
-      }
-
-      const error = this.getError(pkg);
-      await session.end({
-        id,
-        error: error?.message,
-      });
-      if (error) errors.push(error);
-    }
-    await session.endDrivers();
-    return { errors };
+              return listTask.newListr([
+                {
+                  title: `Executing task ${pkg.task?.name}`,
+                  enabled: !!task,
+                  task: async (_, listTask) => {
+                    await gc.cleanup(async () => {
+                      ok(snapshotPath);
+                      await task!.restore({
+                        package: pkg,
+                        options,
+                        snapshot,
+                        snapshotPath,
+                        onProgress: (p) =>
+                          pm.update(p, (t) => (listTask.output = t)),
+                      });
+                    });
+                  },
+                },
+              ]);
+            },
+          } satisfies ListrTask;
+        }),
+      ],
+      pm.tty
+        ? {
+            renderer: "default",
+            collectErrors: "minimal",
+            rendererOptions: {
+              collapseErrors: false,
+            },
+          }
+        : {
+            renderer: "simple",
+            collectErrors: "minimal",
+          },
+    );
   }
 }

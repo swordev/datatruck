@@ -8,7 +8,7 @@ import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type PruneCommandOptionsType<TResolved = false> = {
+export type PruneCommandOptions<TResolved = false> = {
   id?: If<TResolved, string[]>;
   longId?: boolean;
   package?: If<TResolved, string[]>;
@@ -29,8 +29,8 @@ export type PruneCommandOptionsType<TResolved = false> = {
 };
 
 export class PruneCommand extends CommandAbstract<
-  PruneCommandOptionsType<false>,
-  PruneCommandOptionsType<true>
+  PruneCommandOptions<false>,
+  PruneCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({

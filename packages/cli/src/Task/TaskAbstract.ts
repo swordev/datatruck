@@ -1,48 +1,35 @@
-import { BackupActionOptionsType } from "../Action/BackupAction";
-import { RestoreActionOptionsType } from "../Action/RestoreAction";
+import { BackupActionOptions } from "../Action/BackupAction";
+import { RestoreActionOptions } from "../Action/RestoreAction";
 import { PackageConfigType } from "../Config/PackageConfig";
-import { SnapshotType } from "../Repository/RepositoryAbstract";
-import { mkTmpDir } from "../utils/fs";
+import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { Progress } from "../utils/progress";
 
-export type BackupDataType = {
-  onProgress: (data: Progress) => Promise<void>;
-  options: BackupActionOptionsType;
+type TaskCommonData = {
   package: PackageConfigType;
-  targetPath: string | undefined;
-  snapshot: SnapshotType;
+  snapshot: PreSnapshot;
 };
 
-export type BeforeBackupDataType = Omit<
-  BackupDataType,
-  "onProgress" | "targetPath"
->;
-
-export type RestoreDataType = {
-  onProgress: (data: Progress) => Promise<void>;
-  options: RestoreActionOptionsType;
-  package: PackageConfigType;
-  targetPath: string | undefined;
-  snapshot: SnapshotType;
+export type TaskBackupData = TaskCommonData & {
+  onProgress: (data: Progress) => void;
+  options: BackupActionOptions;
+  snapshotPath?: string;
 };
 
-export type BeforeRestoreDataType = Omit<
-  RestoreDataType,
-  "onProgress" | "targetPath"
->;
+export type TaskRestoreData = TaskCommonData & {
+  onProgress: (data: Progress) => void;
+  options: RestoreActionOptions;
+  snapshotPath: string;
+};
 
-export type BeforeReturn = Promise<{ targetPath?: string } | undefined | void>;
+export type TaskPrepareRestoreData = TaskCommonData & {
+  options: RestoreActionOptions;
+};
+
+export type TaskReturn = Promise<{ snapshotPath?: string } | undefined | void>;
 
 export abstract class TaskAbstract<TConfig = any> {
-  readonly tmpDirs: string[] = [];
   constructor(readonly config: TConfig) {}
-  async mkTmpDir(prefix: string, id?: string) {
-    const dir = await mkTmpDir(prefix, id);
-    this.tmpDirs.push(dir);
-    return dir;
-  }
-  async onBeforeBackup(data: BeforeBackupDataType): BeforeReturn {}
-  async onBackup(data: BackupDataType) {}
-  async onBeforeRestore(data: BeforeRestoreDataType): BeforeReturn {}
-  async onRestore(data: RestoreDataType) {}
+  async backup(data: TaskBackupData): TaskReturn {}
+  async prepareRestore(data: TaskPrepareRestoreData): TaskReturn {}
+  async restore(data: TaskRestoreData) {}
 }

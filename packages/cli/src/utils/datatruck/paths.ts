@@ -1,5 +1,5 @@
 import { PackageConfigType } from "../../Config/PackageConfig";
-import { SnapshotType } from "../../Repository/RepositoryAbstract";
+import { PreSnapshot } from "../../Repository/RepositoryAbstract";
 import { Step, runSteps } from "../steps";
 
 export type ParsePathsOptions = {
@@ -34,8 +34,8 @@ export async function parsePaths(
 
 export type BackupPathsOptions = {
   package: PackageConfigType;
-  snapshot: SnapshotType;
-  targetPath: string;
+  snapshot: PreSnapshot;
+  path: string;
   verbose?: boolean;
 };
 
@@ -44,13 +44,13 @@ export async function parseBackupPaths(
   options: BackupPathsOptions,
 ) {
   return parsePaths(paths, {
-    cwd: options.targetPath,
+    cwd: options.path,
     verbose: options.verbose,
     vars: {
       dtt: {
         package: options.package,
         snapshot: options.snapshot,
-        targetPath: options.targetPath,
+        path: options.path,
       },
     },
   });

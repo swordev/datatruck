@@ -1,7 +1,9 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import {
+  ensureEmptyDir,
   forEachFile,
+  initEmptyDir,
   mkdirIfNotExists,
   readDir,
   waitForClose,
@@ -9,7 +11,13 @@ import {
 import { progressPercent } from "../utils/math";
 import { createProcess, exec } from "../utils/process";
 import { extractTar } from "../utils/tar";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
+import { mkTmpDir } from "../utils/temp";
+import {
+  TaskBackupData,
+  TaskPrepareRestoreData,
+  TaskRestoreData,
+  TaskAbstract,
+} from "./TaskAbstract";
 import { ok } from "assert";
 import { createReadStream, createWriteStream } from "fs";
 import { readFile, rm, writeFile } from "fs/promises";
@@ -148,21 +156,20 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
   private get command() {
     return this.config.command ?? "mariabackup";
   }
-  override async onBeforeBackup() {
-    return {
-      targetPath: await this.mkTmpDir(MariadbTask.name),
-    };
-  }
-  override async onBackup(data: BackupDataType) {
+  override async backup(data: TaskBackupData) {
     this.verbose = data.options.verbose;
     const config = this.config;
     const command = this.command;
 
     const sourcePath = data.package.path;
-    const targetPath = data.targetPath;
+    const snapshotPath = await mkTmpDir(
+      mariadbTaskName,
+      "task",
+      "backup",
+      "snapshot",
+    );
 
     ok(typeof sourcePath === "string");
-    ok(typeof targetPath === "string");
 
     const { parallel, compress } = normalizeConfig(config);
 
@@ -184,7 +191,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     if (compress) {
       args.push(`--stream=xbstream`);
     } else {
-      args.push(`--target-dir=${targetPath}`);
+      args.push(`--target-dir=${snapshotPath}`);
     }
 
     if (config.includeDatabases)
@@ -222,7 +229,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       } else {
         const matches = pathRegex.exec(text);
         if (matches) current++;
-        await data.onProgress({
+        data.onProgress({
           relative: {
             payload: matches ? matches[1] : text,
           },
@@ -236,10 +243,13 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     };
 
     const stats: Stats = { xbFiles: total };
-    await writeFile(join(targetPath, "stats.dtt.json"), JSON.stringify(stats));
+    await writeFile(
+      join(snapshotPath, "stats.dtt.json"),
+      JSON.stringify(stats),
+    );
 
     if (compress) {
-      const p0 = createWriteStream(join(targetPath, "db.xb.gz"));
+      const p0 = createWriteStream(join(snapshotPath, "db.xb.gz"));
       p1 = createProcess(command, args, {
         $log: {
           exec: this.verbose,
@@ -275,7 +285,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
 
       await exec(
         command,
-        [`--prepare`, `--target-dir=${targetPath}`],
+        [`--prepare`, `--target-dir=${snapshotPath}`],
         undefined,
         {
           log: this.verbose,
@@ -283,15 +293,12 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
         },
       );
     }
+    return { snapshotPath };
   }
 
-  override async onRestore(data: RestoreDataType) {
+  override async restore(data: TaskRestoreData) {
     this.verbose = data.options.verbose;
-
-    const restorePath = data.package.restorePath;
-    ok(typeof restorePath === "string");
-
-    await mkdirIfNotExists(restorePath);
+    const snapshotPath = data.snapshotPath;
 
     const removeFiles: string[] = [];
     let files: string[] = [];
@@ -299,7 +306,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       data: { removeFile?: string } = {},
     ): Promise<string[]> => {
       if (data.removeFile) removeFiles.push(data.removeFile);
-      return (files = (await readDir(restorePath)).filter(
+      return (files = (await readDir(snapshotPath)).filter(
         (v) => !removeFiles.includes(v),
       ));
     };
@@ -321,7 +328,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     let stats: Stats | undefined;
 
     if (statsFile) {
-      const statsFilePath = join(restorePath, statsFile);
+      const statsFilePath = join(snapshotPath, statsFile);
       const statsBuffer = await readFile(statsFilePath);
       stats = JSON.parse(statsBuffer.toString());
       await reloadFiles({ removeFile: statsFile });
@@ -338,17 +345,17 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
       absolute.description = "Extracting";
       absolute.payload = zipFile;
 
-      await data.onProgress({
+      data.onProgress({
         absolute,
       });
 
       await extractTar({
-        input: join(restorePath, zipFile),
+        input: join(snapshotPath, zipFile),
         decompress: true,
-        output: restorePath,
+        output: snapshotPath,
         verbose: this.verbose,
-        async onEntry(item) {
-          await data.onProgress({
+        onEntry(item) {
+          data.onProgress({
             absolute,
             relative: {
               payload: item.path,
@@ -369,14 +376,14 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     absolute.percent = progressPercent(absolute.total, absolute.current);
 
     if (files.length === 1 && xbFile) {
-      const xbFilePath = join(restorePath, xbFile);
+      const xbFilePath = join(snapshotPath, xbFile);
       const xbStream = createReadStream(xbFilePath);
 
       removeFiles.push(xbFile);
       absolute.description = "Extracting stream";
       absolute.payload = xbFile;
 
-      await data.onProgress({
+      data.onProgress({
         absolute,
       });
 
@@ -386,14 +393,14 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
 
       const p1 = createProcess(
         "mbstream",
-        ["-x", "-C", restorePath, "-v", "-p", parallel],
+        ["-x", "-C", snapshotPath, "-v", "-p", parallel],
         {
           $log: this.verbose,
           $stderr: {
             parseLines: true,
-            async onData(line) {
+            onData(line) {
               const { text: path } = parseLine(line);
-              await data.onProgress({
+              data.onProgress({
                 absolute,
                 relative: {
                   payload: path,
@@ -423,13 +430,13 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     if (files.length === 1 && xbFile) {
       absolute.description = "Preparing";
 
-      await data.onProgress({
+      data.onProgress({
         absolute,
       });
 
       await exec(
         this.command,
-        [`--prepare`, `--target-dir=${restorePath}`],
+        [`--prepare`, `--target-dir=${snapshotPath}`],
         undefined,
         {
           log: this.verbose,
@@ -445,7 +452,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
     // Remove files
 
     for (const file of removeFiles) {
-      const filePath = join(restorePath, file);
+      const filePath = join(snapshotPath, file);
       if (this.verbose) logExec("rm", [filePath]);
       await rm(filePath);
     }

@@ -12,15 +12,16 @@ import {
 } from "../utils/fs";
 import { checkMatch, match, makePathPatterns } from "../utils/string";
 import { extractTar, createTar, CompressOptions } from "../utils/tar";
+import { mkTmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
-  BackupDataType,
-  InitDataType,
-  RestoreDataType,
-  SnapshotsDataType,
-  SnapshotResultType,
-  PruneDataType,
-  CopyBackupType,
+  RepoBackupData,
+  RepoInitData,
+  RepoRestoreData,
+  RepoFetchSnapshotsData,
+  Snapshot,
+  RepoPruneData,
+  RepoCopyData,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import { rm, stat } from "fs/promises";
@@ -125,16 +126,16 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return JSON.parse(data.toString());
   }
 
-  override onGetSource() {
+  override getSource() {
     return this.config.backend;
   }
 
-  override async onInit(data: InitDataType) {
+  override async init(data: RepoInitData) {
     const fs = createFs(this.config.backend);
     await fs.mkdir(".");
   }
 
-  override async onPrune(data: PruneDataType) {
+  override async prune(data: RepoPruneData) {
     const fs = createFs(this.config.backend);
     const snapshotName = DatatruckRepository.buildSnapshotName(data.snapshot, {
       name: data.snapshot.packageName,
@@ -145,7 +146,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     if (await fs.existsDir(snapshotName)) await fs.rmAll(snapshotName);
   }
 
-  override async onSnapshots(data: SnapshotsDataType) {
+  override async fetchSnapshots(data: RepoFetchSnapshotsData) {
     const fs = createFs(this.config.backend);
     if (!(await fs.existsDir(".")))
       throw new Error(
@@ -154,7 +155,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         }) out path does not exist: ${fs.resolvePath(".")}`,
       );
 
-    const snapshots: SnapshotResultType[] = [];
+    const snapshots: Snapshot[] = [];
     const snapshotNames = await fs.readdir(".");
     const packagePatterns = makePathPatterns(data.options.packageNames);
     const taskPatterns = makePathPatterns(data.options.packageTaskNames);
@@ -210,8 +211,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return snapshots;
   }
 
-  override async onBackup(
-    data: BackupDataType<DatatruckPackageRepositoryConfigType>,
+  override async backup(
+    data: RepoBackupData<DatatruckPackageRepositoryConfigType>,
   ) {
     const fs = createFs(this.config.backend);
     const snapshotName = DatatruckRepository.buildSnapshotName(
@@ -220,25 +221,23 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     );
     const outPath = fs.isLocal()
       ? fs.resolvePath(snapshotName)
-      : await this.mkTmpDir("datatruck-backup");
+      : await mkTmpDir(datatruckRepositoryName, "repo", "backup", "fs-remote");
     const pkg = data.package;
-    const sourcePath = data.targetPath ?? pkg.path;
-
-    ok(sourcePath);
+    const path = pkg.path;
 
     await fs.mkdir(snapshotName);
 
     const backupPathsOptions: BackupPathsOptions = {
       package: data.package,
       snapshot: data.snapshot,
-      targetPath: sourcePath,
+      path: path,
       verbose: data.options.verbose,
     };
 
     const scanner = await createFileScanner({
       onProgress: data.onProgress,
       glob: {
-        cwd: sourcePath,
+        cwd: path,
         onlyFiles: false,
         include: await parseBackupPaths(
           pkg.include ?? ["**"],
@@ -266,7 +265,12 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const packs: PackObject[] = [defaultsPack, ...configPacks];
     const defaultsPackIndex = packs.findIndex((p) => p === defaultsPack);
     const stream = createWriteStreamPool({
-      path: await this.mkTmpDir("files"),
+      path: await mkTmpDir(
+        datatruckRepositoryName,
+        "repo",
+        "backup",
+        "stream-pool",
+      ),
       onStreamPath: (key) => `files-${key}.txt`,
     });
 
@@ -323,10 +327,10 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           compress: pack.compress,
           verbose: data.options.verbose,
           includeList,
-          path: sourcePath,
+          path: path,
           output: tarPath,
           onEntry: async (data) =>
-            await scanner.progress(
+            scanner.progress(
               pack.compress ? "Compressing" : "Packing",
               data.path,
             ),
@@ -340,7 +344,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       packIndex++;
     }
 
-    await scanner.end();
+    scanner.end();
 
     // Meta
 
@@ -364,8 +368,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await fs.writeFile(`${snapshotName}/meta.json`, JSON.stringify(meta));
   }
 
-  override async onCopyBackup(
-    data: CopyBackupType<DatatruckRepositoryConfigType>,
+  override async copy(
+    data: RepoCopyData<DatatruckRepositoryConfigType>,
   ): Promise<void> {
     const sourceFs = createFs(this.config.backend);
     const targetFs = createFs(data.mirrorRepositoryConfig.backend);
@@ -387,7 +391,12 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       if (targetFs.isLocal()) {
         await sourceFs.download(sourceEntry, targetFs.resolvePath(sourceEntry));
       } else {
-        const tempDir = await this.mkTmpDir("remote-copy", entry);
+        const tempDir = await mkTmpDir(
+          datatruckRepositoryName,
+          "repo",
+          "remote-copy",
+          entry,
+        );
         const tempFile = join(tempDir, entry);
         try {
           await sourceFs.download(sourceEntry, tempFile);
@@ -399,14 +408,14 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     }
   }
 
-  override async onRestore(
-    data: RestoreDataType<DatatruckPackageRepositoryConfigType>,
+  override async restore(
+    data: RepoRestoreData<DatatruckPackageRepositoryConfigType>,
   ) {
     const fs = createFs(this.config.backend);
-    const relRestorePath = data.targetPath ?? data.package.restorePath;
+    const relRestorePath = data.snapshotPath;
     ok(relRestorePath);
     const restorePath = resolve(relRestorePath);
-    const [snapshot] = await this.onSnapshots({
+    const [snapshot] = await this.fetchSnapshots({
       options: {
         ids: [data.options.snapshotId],
       },
@@ -424,13 +433,13 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const progress = createProgress({ onProgress: data.onProgress });
 
-    await progress.update("Scanning files");
+    progress.update("Scanning files");
     const entries = (await fs.readdir(snapshotName)).filter(
       (v) => v.endsWith(".tar") || v.endsWith(".tar.gz"),
     );
     const tarStats = meta?.tarStats || {};
     for (const file in tarStats) progress.total += tarStats[file].files;
-    await progress.update(`Scanned files: ${progress.total}`);
+    progress.update(`Scanned files: ${progress.total}`);
 
     if (data.options.verbose) logExec(`Unpacking files to ${restorePath}`);
 
@@ -439,7 +448,13 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       try {
         const sourceEntry = `${snapshotName}/${entry}`;
         if (!fs.isLocal()) {
-          const tempDir = await this.mkTmpDir("remote-restore", entry);
+          const tempDir = await mkTmpDir(
+            datatruckRepositoryName,
+            "repo",
+            "restore",
+            "remote-fs",
+            entry,
+          );
           tempEntry = `${tempDir}/${entry}`;
           await fs.download(sourceEntry, tempEntry);
         }
@@ -449,8 +464,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           output: restorePath,
           decompress: entry.endsWith(".tar.gz"),
           verbose: data.options.verbose,
-          onEntry: async (data) =>
-            await progress.update(
+          onEntry: (data) =>
+            progress.update(
               entry.endsWith(".tar.gz") ? "Extracting" : "Unpacking",
               data.path,
             ),
@@ -460,6 +475,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       }
     }
 
-    await progress.update("Finished");
+    progress.update("Finished");
   }
 }

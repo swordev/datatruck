@@ -1,9 +1,9 @@
 import type { ConfigType } from "../Config/Config";
-import { RepositoryFactory } from "../Factory/RepositoryFactory";
+import { createRepo } from "../Factory/RepositoryFactory";
 import { filterRepository } from "../utils/datatruck/config";
 import { IfRequireKeys } from "../utils/ts";
 
-export type InitActionOptionsType = {
+export type InitActionOptions = {
   repositoryNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;
@@ -12,7 +12,7 @@ export type InitActionOptionsType = {
 export class InitAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, InitActionOptionsType>,
+    readonly options: IfRequireKeys<TRequired, InitActionOptions>,
   ) {}
 
   async exec() {
@@ -23,32 +23,32 @@ export class InitAction<TRequired extends boolean = true> {
       error: Error | null;
     }[] = [];
 
-    for (const repo of this.config.repositories) {
-      if (!filterRepository(repo, "init")) continue;
+    for (const repoConfig of this.config.repositories) {
+      if (!filterRepository(repoConfig, "init")) continue;
       if (
         this.options.repositoryNames &&
-        !this.options.repositoryNames.includes(repo.name)
+        !this.options.repositoryNames.includes(repoConfig.name)
       )
         continue;
       if (
         this.options.repositoryTypes &&
-        !this.options.repositoryTypes.includes(repo.type)
+        !this.options.repositoryTypes.includes(repoConfig.type)
       )
         continue;
-      const repoInstance = RepositoryFactory(repo);
+      const repo = createRepo(repoConfig);
       let initError: Error | null = null;
 
       try {
-        await repoInstance.onInit({
+        await repo.init({
           options: this.options,
         });
       } catch (error) {
         initError = error as Error;
       }
       result.push({
-        repositoryName: repo.name,
-        repositoryType: repo.type,
-        repositorySource: repoInstance.onGetSource(),
+        repositoryName: repoConfig.name,
+        repositoryType: repoConfig.type,
+        repositorySource: repo.getSource(),
         error: initError,
       });
     }

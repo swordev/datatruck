@@ -1,16 +1,16 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryConfigEnabledActionType } from "../Config/RepositoryConfig";
-import { RepositoryFactory } from "../Factory/RepositoryFactory";
-import { SnapshotResultType } from "../Repository/RepositoryAbstract";
+import { createRepo } from "../Factory/RepositoryFactory";
+import { Snapshot } from "../Repository/RepositoryAbstract";
 import { filterRepository } from "../utils/datatruck/config";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { IfRequireKeys } from "../utils/ts";
 
 export type SnapshotGroupByType = keyof Pick<
-  SnapshotExtendedType,
+  ExtendedSnapshot,
   "packageName" | "repositoryName" | "repositoryType"
 >;
-export type SnapshotsActionOptionsType = {
+export type SnapshotsActionOptions = {
   ids?: string[];
   repositoryNames?: string[];
   packageNames?: string[];
@@ -29,34 +29,34 @@ export type SnapshotsActionOptionsType = {
   groupBy?: SnapshotGroupByType[];
 };
 
-export type SnapshotExtendedType = {
+export type ExtendedSnapshot = {
   shortId: string;
   repositoryName: string;
   repositoryType: string;
-} & SnapshotResultType;
+} & Snapshot;
 
 export class SnapshotsAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, SnapshotsActionOptionsType>,
+    readonly options: IfRequireKeys<TRequired, SnapshotsActionOptions>,
   ) {}
 
   async exec(sourceAction?: RepositoryConfigEnabledActionType) {
     if (!sourceAction) sourceAction = "snapshots";
-    let result: SnapshotExtendedType[] = [];
-    for (const repo of this.config.repositories) {
-      if (!filterRepository(repo, sourceAction)) continue;
+    let result: ExtendedSnapshot[] = [];
+    for (const repoConfig of this.config.repositories) {
+      if (!filterRepository(repoConfig, sourceAction)) continue;
       if (
         this.options.repositoryNames &&
-        !this.options.repositoryNames.includes(repo.name)
+        !this.options.repositoryNames.includes(repoConfig.name)
       )
         continue;
       if (
         this.options.repositoryTypes &&
-        !this.options.repositoryTypes.includes(repo.type)
+        !this.options.repositoryTypes.includes(repoConfig.type)
       )
         continue;
-      const repoInstance = RepositoryFactory(repo);
+      const repo = createRepo(repoConfig);
       const configPackageNames = this.config.packages.map((pkg) => pkg.name);
 
       const packageNames = this.options.packageConfig
@@ -65,7 +65,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
           ) || configPackageNames
         : this.options.packageNames;
 
-      const snapshots = await repoInstance.onSnapshots({
+      const snapshots = await repo.fetchSnapshots({
         options: {
           ...this.options,
           packageNames,
@@ -77,9 +77,9 @@ export class SnapshotsAction<TRequired extends boolean = true> {
           ({
             ...ss,
             shortId: ss.id.slice(0, 8),
-            repositoryName: repo.name,
-            repositoryType: repo.type,
-          }) as SnapshotExtendedType,
+            repositoryName: repoConfig.name,
+            repositoryType: repoConfig.type,
+          }) as ExtendedSnapshot,
       );
       result.push(...extentedItems);
     }

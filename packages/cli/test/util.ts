@@ -1,7 +1,8 @@
 import { ConfigType } from "../src/Config/Config";
 import { RepositoryConfigType } from "../src/Config/RepositoryConfig";
 import { createDatatruckServer } from "../src/utils/datatruck/server";
-import { mkTmpDir, writeJSONFile } from "../src/utils/fs";
+import { writeJSONFile } from "../src/utils/fs";
+import { mkTmpDir } from "../src/utils/temp";
 import "./toEqualMessage";
 import FastGlob from "fast-glob";
 import { mkdir, readFile, rm, writeFile } from "fs/promises";

@@ -2,11 +2,11 @@ import { ConfigAction } from "../Action/ConfigAction";
 import { createDatatruckServer } from "../utils/datatruck/server";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type StartServerCommandOptionsType<TResolved = false> = {};
+export type StartServerCommandOptions<TResolved = false> = {};
 
 export class StartServerCommand extends CommandAbstract<
-  StartServerCommandOptionsType<false>,
-  StartServerCommandOptionsType<true>
+  StartServerCommandOptions<false>,
+  StartServerCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({});

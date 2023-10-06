@@ -6,7 +6,7 @@ import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type ConfigCommandOptionsType<TResolved = false> = {
+export type ConfigCommandOptions<TResolved = false> = {
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
@@ -20,8 +20,8 @@ export type ConfigCommandLogType = {
 }[];
 
 export class ConfigCommand extends CommandAbstract<
-  ConfigCommandOptionsType<false>,
-  ConfigCommandOptionsType<true>
+  ConfigCommandOptions<false>,
+  ConfigCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({

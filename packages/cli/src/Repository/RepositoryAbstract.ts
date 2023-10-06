@@ -1,21 +1,20 @@
-import type { BackupActionOptionsType } from "../Action/BackupAction";
-import type { InitActionOptionsType } from "../Action/InitAction";
-import type { RestoreActionOptionsType } from "../Action/RestoreAction";
+import type { BackupActionOptions } from "../Action/BackupAction";
+import type { InitActionOptions } from "../Action/InitAction";
+import type { RestoreActionOptions } from "../Action/RestoreAction";
 import type {
-  SnapshotExtendedType,
-  SnapshotsActionOptionsType,
+  ExtendedSnapshot,
+  SnapshotsActionOptions,
 } from "../Action/SnapshotsAction";
 import type { PackageConfigType } from "../Config/PackageConfig";
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { mkTmpDir } from "../utils/fs";
 import { Progress } from "../utils/progress";
 
-export type SnapshotType = {
+export type PreSnapshot = {
   id: string;
   date: string;
 };
 
-export type SnapshotResultType = SnapshotType & {
+export type Snapshot = PreSnapshot & {
   originalId: string;
   packageName: string;
   packageTaskName: string | undefined;
@@ -23,45 +22,44 @@ export type SnapshotResultType = SnapshotType & {
   size: number;
 };
 
-export type InitDataType = {
-  options: InitActionOptionsType;
+export type RepoInitData = {
+  options: InitActionOptions;
 };
 
-export type SnapshotsDataType = {
+export type RepoFetchSnapshotsData = {
   options: Pick<
-    SnapshotsActionOptionsType,
+    SnapshotsActionOptions,
     "ids" | "packageNames" | "packageTaskNames" | "verbose" | "tags"
   >;
 };
 
-export type CopyBackupType<TRepositoryConfig> = {
-  options: BackupActionOptionsType;
-  snapshot: SnapshotType;
+export type RepoCopyData<TRepositoryConfig> = {
+  options: BackupActionOptions;
+  snapshot: PreSnapshot;
   package: PackageConfigType;
   mirrorRepositoryConfig: TRepositoryConfig;
-  onProgress: (data: Progress) => Promise<void>;
+  onProgress: (data: Progress) => void;
 };
 
-export type BackupDataType<TPackageConfig> = {
-  options: BackupActionOptionsType;
-  snapshot: SnapshotType;
-  package: PackageConfigType;
-  targetPath: string | undefined;
+export type RepoBackupData<TPackageConfig> = {
+  options: BackupActionOptions;
+  snapshot: PreSnapshot;
+  package: Omit<PackageConfigType, "path"> & { path: string };
   packageConfig: TPackageConfig | undefined;
-  onProgress: (data: Progress) => Promise<void>;
+  onProgress: (data: Progress) => void;
 };
 
-export type RestoreDataType<TPackageConfig> = {
-  options: RestoreActionOptionsType;
-  snapshot: SnapshotType;
+export type RepoRestoreData<TPackageConfig> = {
+  options: RestoreActionOptions;
+  snapshot: PreSnapshot;
   package: PackageConfigType;
-  targetPath: string | undefined;
+  snapshotPath: string;
   packageConfig: TPackageConfig;
-  onProgress: (data: Progress) => Promise<void>;
+  onProgress: (data: Progress) => void;
 };
 
-export type PruneDataType = {
-  snapshot: SnapshotExtendedType;
+export type RepoPruneData = {
+  snapshot: ExtendedSnapshot;
   options: { verbose?: boolean };
 };
 
@@ -89,20 +87,14 @@ export type SnapshotTagObjectType = {
 
 export abstract class RepositoryAbstract<TConfig> {
   readonly config: TConfig;
-  readonly tmpDirs: string[] = [];
   constructor(readonly repository: RepositoryConfigType) {
     this.config = repository.config as never;
   }
-  async mkTmpDir(prefix: string, id?: string) {
-    const dir = await mkTmpDir(prefix, id);
-    this.tmpDirs.push(dir);
-    return dir;
-  }
-  abstract onGetSource(): string;
-  abstract onInit(data: InitDataType): Promise<void>;
-  abstract onPrune(data: PruneDataType): Promise<void>;
-  abstract onSnapshots(data: SnapshotsDataType): Promise<SnapshotResultType[]>;
-  abstract onCopyBackup(data: CopyBackupType<TConfig>): Promise<void>;
-  abstract onBackup(data: BackupDataType<unknown>): Promise<void>;
-  abstract onRestore(data: RestoreDataType<unknown>): Promise<void>;
+  abstract getSource(): string;
+  abstract init(data: RepoInitData): Promise<void>;
+  abstract prune(data: RepoPruneData): Promise<void>;
+  abstract fetchSnapshots(data: RepoFetchSnapshotsData): Promise<Snapshot[]>;
+  abstract copy(data: RepoCopyData<TConfig>): Promise<void>;
+  abstract backup(data: RepoBackupData<unknown>): Promise<void>;
+  abstract restore(data: RepoRestoreData<unknown>): Promise<void>;
 }

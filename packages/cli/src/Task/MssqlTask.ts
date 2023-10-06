@@ -1,10 +1,10 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { resolveDatabaseName } from "../utils/datatruck/config";
-import { mkdirIfNotExists, readDir } from "../utils/fs";
+import { readDir } from "../utils/fs";
 import { exec } from "../utils/process";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
-import { ok } from "assert";
+import { mkTmpDir } from "../utils/temp";
+import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { readFile } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
@@ -88,10 +88,18 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
       .filter((database) => !privateDatabases.includes(database));
   }
 
-  override async onBackup(data: BackupDataType) {
+  override async backup(data: TaskBackupData) {
     this.verbose = data.options.verbose;
-    const targetPath = data.package.path;
-    ok(typeof targetPath === "string");
+
+    if (data.package.path)
+      throw new Error(`Path is not required: ${data.package.path}`);
+
+    const snapshotPath = await mkTmpDir(
+      mssqlTaskName,
+      "task",
+      "backup",
+      "snapshot",
+    );
 
     const databaseNames = (await this.fetchDatabaseNames()).filter(
       (databaseName) =>
@@ -101,28 +109,22 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
           !isMatch(databaseName, this.config.excludeDatabases)),
     );
 
-    await mkdirIfNotExists(targetPath);
-
     for (const databaseName of databaseNames) {
       const databasePath = join(
-        targetPath,
+        snapshotPath,
         `${databaseName}${MssqlTask.SUFFIX}`,
       );
       await this.exec(
         `BACKUP DATABASE [${databaseName}] TO DISK='${databasePath}' WITH FORMAT`,
       );
     }
+    return { snapshotPath };
   }
 
-  override async onRestore(data: RestoreDataType) {
+  override async restore(data: TaskRestoreData) {
     this.verbose = data.options.verbose;
-    const restorePath = data.package.restorePath;
-
-    ok(typeof restorePath === "string");
-
-    await mkdirIfNotExists(restorePath);
-
-    const files = await readDir(restorePath);
+    const snapshotPath = data.snapshotPath;
+    const files = await readDir(snapshotPath);
 
     for (const file of files) {
       if (!file.endsWith(MssqlTask.SUFFIX)) continue;
@@ -135,7 +137,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
           snapshotId: data.options.snapshotId,
           snapshotDate: data.snapshot.date,
         });
-      const databasePath = join(restorePath, file);
+      const databasePath = join(snapshotPath, file);
       const exists = await this.fetchDatabaseNames(databaseName);
       if (exists.length)
         throw new AppError(`Target database already exists: ${databaseName}`);

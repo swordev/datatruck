@@ -1,9 +1,9 @@
 import { SnapshotGroupByType } from "../../Action/SnapshotsAction";
-import { SnapshotResultType } from "../../Repository/RepositoryAbstract";
+import { Snapshot } from "../../Repository/RepositoryAbstract";
 import { filterByLast, FilterByLastOptionsType } from "../date";
 import { groupBy } from "../object";
 
-export function groupAndFilter<TSnapshot extends SnapshotResultType>(
+export function groupAndFilter<TSnapshot extends Snapshot>(
   snapshots: TSnapshot[],
   groupByKey?: SnapshotGroupByType[],
   filter?:

@@ -1,8 +1,9 @@
 import { AppError } from "../Error/AppError";
 import { logExec } from "./cli";
-import { existsFile, fetchData, mkTmpDir, mkdirIfNotExists } from "./fs";
+import { existsFile, fetchData, mkdirIfNotExists } from "./fs";
 import { exec, logExecStdout } from "./process";
 import { createMatchFilter, undefIfEmpty } from "./string";
+import { mkTmpDir } from "./temp";
 import { ChildProcess } from "child_process";
 import { randomBytes } from "crypto";
 import { createReadStream, createWriteStream } from "fs";
@@ -44,7 +45,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
 
   async function createSqlConfig() {
     if (sqlConfigPath) return sqlConfigPath;
-    const dir = await mkTmpDir("mysql-cli");
+    const dir = await mkTmpDir("mysql", "config");
     const password = await fetchData(options.password, (p) => p.path);
     const data = [
       `[client]`,

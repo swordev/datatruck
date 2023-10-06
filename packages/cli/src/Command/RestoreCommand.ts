@@ -1,9 +1,6 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { RestoreAction } from "../Action/RestoreAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { ConsoleSessionDriver } from "../SessionDriver/ConsoleSessionDriver";
-import { SqliteSessionDriver } from "../SessionDriver/SqliteSessionDriver";
-import { RestoreSessionManager } from "../SessionManager/RestoreSessionManager";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
@@ -78,24 +75,13 @@ export class RestoreCommand extends CommandAbstract<
       tags: this.options.tag,
       verbose: verbose > 0,
       restorePath: this.options.restorePath,
-    });
-
-    const sessionManager = new RestoreSessionManager({
-      driver: new SqliteSessionDriver({
-        verbose: verbose > 1,
-      }),
-      altDrivers: [
-        new ConsoleSessionDriver({
-          verbose: verbose > 0,
-          progress: this.globalOptions.progress,
-        }),
-      ],
-      verbose: verbose > 1,
+      tty: this.globalOptions.tty,
+      progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
     });
 
-    const result = await restore.exec(sessionManager);
-
-    return result.errors.length ? 1 : 0;
+    const list = await restore.exec();
+    await list.run();
+    return list.errors.length ? 1 : 0;
   }
 }

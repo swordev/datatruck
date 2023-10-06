@@ -1,28 +1,25 @@
-import { AppError } from "../Error/AppError";
 import { Git } from "../utils/Git";
 import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
-  existsDir,
   fastFolderSizeAsync,
   mkdirIfNotExists,
   parsePackageFile,
-  tmpDir,
 } from "../utils/fs";
 import { checkMatch, makePathPatterns } from "../utils/string";
+import { mkTmpDir, tmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
-  BackupDataType,
-  InitDataType,
-  RestoreDataType,
-  SnapshotsDataType,
-  SnapshotResultType,
+  RepoBackupData,
+  RepoInitData,
+  RepoRestoreData,
+  RepoFetchSnapshotsData,
+  Snapshot,
   SnapshotTagEnum,
   SnapshotTagObjectType,
-  PruneDataType,
-  CopyBackupType,
+  RepoPruneData,
+  RepoCopyData,
 } from "./RepositoryAbstract";
-import { ok } from "assert";
 import fg from "fast-glob";
 import { copyFile, rm, mkdir } from "fs/promises";
 import { JSONSchema7 } from "json-schema";
@@ -57,7 +54,7 @@ export const gitPackageRepositoryDefinition: JSONSchema7 = {
 export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
   static refPrefix = "dt";
 
-  override onGetSource() {
+  override getSource() {
     return this.config.repo;
   }
 
@@ -93,9 +90,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     return `${GitRepository.refPrefix}/${packageName}`;
   }
 
-  override async onInit(data: InitDataType) {
+  override async init(data: RepoInitData) {
     const git = new Git({
-      dir: tmpDir(GitRepository.name + "-snapshot"),
+      dir: tmpDir(gitRepositoryName, "repository", "init"),
       log: data.options.verbose,
     });
 
@@ -123,9 +120,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       await git.push({ branchName });
     }
   }
-  override async onPrune(data: PruneDataType) {
+  override async prune(data: RepoPruneData) {
     const git = new Git({
-      dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
+      dir: await mkTmpDir(gitRepositoryName, "repo", "prune"),
       log: data.options.verbose,
     });
 
@@ -150,9 +147,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     await git.exec(["push", "origin", branchName, "--force-with-lease"]);
     await git.exec(["push", "--delete", "origin", data.snapshot.originalId]);
   }
-  override async onSnapshots(data: SnapshotsDataType) {
+  override async fetchSnapshots(data: RepoFetchSnapshotsData) {
     const git = new Git({
-      dir: await this.mkTmpDir(GitRepository.name + "-snapshot"),
+      dir: await mkTmpDir(gitRepositoryName, "repo", "snapshots"),
       log: data.options.verbose,
     });
 
@@ -194,21 +191,13 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
           size: Number(parsedTag.size) || 0,
         });
         return result;
-      }, [] as SnapshotResultType[])
+      }, [] as Snapshot[])
       .sort((a, b) => a.date.localeCompare(b.date));
   }
-  override async onBackup(
-    data: BackupDataType<GitPackageRepositoryConfigType>,
-  ) {
+  override async backup(data: RepoBackupData<GitPackageRepositoryConfigType>) {
     const pkg = data.package;
-    const sourcePath = data.targetPath ?? pkg.path;
-
-    ok(typeof sourcePath === "string");
-
-    if (!(await existsDir(sourcePath)))
-      throw new AppError(`Package path not exists: ${sourcePath}`);
-
-    const tmpPath = await this.mkTmpDir(GitRepository.name + "-backup");
+    const path = pkg.path;
+    const tmpPath = await mkTmpDir(gitRepositoryName, "repo", "backup");
     const branchName = GitRepository.buildBranchName(data.package.name);
 
     const git = new Git({
@@ -234,7 +223,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     const backupPathsOptions: BackupPathsOptions = {
       package: data.package,
       snapshot: data.snapshot,
-      targetPath: sourcePath,
+      path: path,
       verbose: data.options.verbose,
     };
 
@@ -248,7 +237,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       : undefined;
 
     const stream = await fg(include, {
-      cwd: sourcePath,
+      cwd: path,
       ignore: exclude,
       dot: true,
     });
@@ -256,7 +245,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     let files = 0;
 
     for await (const entry of stream) {
-      const source = join(sourcePath, entry);
+      const source = join(path, entry);
       const target = join(tmpPath, entry);
       const dir = dirname(target);
       if (!createdPaths.includes(dir)) {
@@ -295,21 +284,15 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
     await git.push({ branchName });
     await git.pushTags();
 
-    await rm(tmpPath, {
-      recursive: true,
-    });
+    await rm(tmpPath, { recursive: true });
   }
-  override onCopyBackup(
-    data: CopyBackupType<GitRepositoryConfigType>,
-  ): Promise<void> {
+  override copy(data: RepoCopyData<GitRepositoryConfigType>): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  override async onRestore(
-    data: RestoreDataType<GitPackageRepositoryConfigType>,
+  override async restore(
+    data: RepoRestoreData<GitPackageRepositoryConfigType>,
   ) {
-    const restorePath = data.targetPath ?? data.package.restorePath;
-
-    ok(restorePath);
+    const restorePath = data.snapshotPath;
 
     const tagName = GitRepository.buildSnapshotTagName({
       id: data.snapshot.id,

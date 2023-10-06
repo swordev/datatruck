@@ -4,13 +4,14 @@ import {
   existsDir,
   existsFile,
   cpy,
-  ensureEmptyDir,
   forEachFile,
   mkdirIfNotExists,
+  initEmptyDir,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { exec } from "../utils/process";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
+import { mkTmpDir } from "../utils/temp";
+import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { createWriteStream } from "fs";
 import { copyFile, rm } from "fs/promises";
@@ -91,26 +92,27 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
   private get command() {
     return this.config.command ?? "git";
   }
-  override async onBeforeBackup() {
-    return {
-      targetPath: await this.mkTmpDir(GitTask.name),
-    };
-  }
-  override async onBackup(data: BackupDataType) {
+
+  override async backup(data: TaskBackupData) {
+    if (!data.package.path) throw new Error(`Path is required`);
+    const snapshotPath = await mkTmpDir(
+      gitTaskName,
+      "task",
+      "backup",
+      "snapshot",
+    );
     this.verbose = data.options.verbose;
     const config = this.config;
 
     const path = data.package.path;
-    const targetPath = data.targetPath;
 
     ok(typeof path === "string");
-    ok(typeof targetPath === "string");
 
     // Bundle
 
-    const bundlePath = join(targetPath, "repo.bundle");
+    const bundlePath = join(snapshotPath, "repo.bundle");
 
-    await data.onProgress({
+    data.onProgress({
       relative: {
         description: "Creating bundle",
       },
@@ -130,7 +132,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     // Config
 
     if (this.config.includeConfig ?? true) {
-      const configPath = join(targetPath, "repo.config");
+      const configPath = join(snapshotPath, "repo.config");
       await copyFile(join(path, ".git", "config"), configPath);
     }
 
@@ -166,7 +168,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     for (const option of lsFilesConfig) {
       if (!option.include) continue;
-      option.pathsPath = join(targetPath, `repo.${option.name}-paths.txt`);
+      option.pathsPath = join(snapshotPath, `repo.${option.name}-paths.txt`);
       const stream = createWriteStream(option.pathsPath);
       let streamError: Error | undefined;
       stream.on("error", (e) => (streamError = e));
@@ -218,7 +220,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     for (const option of lsFilesConfig) {
       if (!option.include) continue;
 
-      const outPath = join(targetPath, `repo.${option.name}`);
+      const outPath = join(snapshotPath, `repo.${option.name}`);
 
       await mkdirIfNotExists(outPath);
 
@@ -231,12 +233,12 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
           path: option.pathsPath!,
           basePath: path,
         },
-        targetPath: outPath,
+        outPath: outPath,
         skipNotFoundError: true,
         concurrency: this.config.fileCopyConcurrency,
         onPath: async ({ entryPath }) => {
           currentFiles++;
-          await data.onProgress({
+          data.onProgress({
             relative: {
               description: "Copying file",
               payload: entryPath,
@@ -252,39 +254,36 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
       await rm(option.pathsPath!);
     }
+    return { snapshotPath };
   }
 
-  override async onBeforeRestore() {
+  override async prepareRestore() {
     return {
-      targetPath: await this.mkTmpDir(GitTask.name),
+      snapshotPath: await mkTmpDir(gitTaskName, "task", "restore", "snapshot"),
     };
   }
 
-  override async onRestore(data: RestoreDataType) {
+  override async restore(data: TaskRestoreData) {
     this.verbose = data.options.verbose;
 
-    const restorePath = data.package.restorePath;
-    const targetPath = data.targetPath;
-
-    ok(typeof restorePath === "string");
-    ok(typeof targetPath === "string");
-
-    await mkdirIfNotExists(restorePath);
-    await ensureEmptyDir(restorePath);
+    const snapshotPath = data.snapshotPath;
+    const restorePath = await initEmptyDir(
+      data.package.restorePath ?? data.package.path,
+    );
 
     // Stats
 
     let totalFiles = 0;
     let currentFiles = 0;
 
-    await forEachFile(targetPath, () => totalFiles++, true);
+    await forEachFile(snapshotPath, () => totalFiles++, true);
 
     const incrementProgress = async (
       description?: string,
       item?: string,
       count = true,
     ) => {
-      await data.onProgress({
+      data.onProgress({
         absolute: {
           total: totalFiles,
           current: Math.max(currentFiles, 0),
@@ -297,7 +296,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     // Bundle
 
-    const bundlePath = join(targetPath, "repo.bundle");
+    const bundlePath = join(snapshotPath, "repo.bundle");
 
     await exec(
       this.command,
@@ -314,7 +313,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
 
     // Config
 
-    const configPath = join(targetPath, "repo.config");
+    const configPath = join(snapshotPath, "repo.config");
 
     if (await existsFile(configPath)) {
       await copyFile(configPath, join(restorePath, ".git", "config"));
@@ -324,7 +323,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
     // ls-files
 
     for (const name of ["untracked", "modified", "ignored"]) {
-      const sourcePath = join(targetPath, `repo.${name}`);
+      const sourcePath = join(snapshotPath, `repo.${name}`);
       if (await existsDir(sourcePath)) {
         if (data.options.verbose)
           logExec(`Copying ${name} files to ${restorePath}`);
@@ -333,7 +332,7 @@ export class GitTask extends TaskAbstract<GitTaskConfigType> {
             type: "glob",
             sourcePath,
           },
-          targetPath: restorePath,
+          outPath: restorePath,
           concurrency: this.config.fileCopyConcurrency,
           onProgress: async (progress) =>
             await incrementProgress(

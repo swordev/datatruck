@@ -1,4 +1,4 @@
-import { PruneActionsOptionsType } from "../Action/PruneAction";
+import { PruneActionsOptions } from "../Action/PruneAction";
 import { SnapshotGroupByType } from "../Action/SnapshotsAction";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { JSONSchema7 } from "json-schema";
@@ -29,7 +29,7 @@ export const prunePolicyConfigDefinition: JSONSchema7 = {
 };
 
 export type PrunePolicyConfigType = Pick<
-  PruneActionsOptionsType,
+  PruneActionsOptions,
   | "keepDaily"
   | "keepHourly"
   | "keepMinutely"

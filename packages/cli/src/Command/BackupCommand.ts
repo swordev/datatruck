@@ -1,15 +1,11 @@
 import { BackupAction } from "../Action/BackupAction";
 import { ConfigAction } from "../Action/ConfigAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { AppError } from "../Error/AppError";
-import { ConsoleSessionDriver } from "../SessionDriver/ConsoleSessionDriver";
-import { SqliteSessionDriver } from "../SessionDriver/SqliteSessionDriver";
-import { BackupSessionManager } from "../SessionManager/BackupSessionManager";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type BackupCommandOptionsType<TResolved = false> = {
+export type BackupCommandOptions<TResolved = false> = {
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
@@ -20,8 +16,8 @@ export type BackupCommandOptionsType<TResolved = false> = {
 };
 
 export class BackupCommand extends CommandAbstract<
-  BackupCommandOptionsType<false>,
-  BackupCommandOptionsType<true>
+  BackupCommandOptions<false>,
+  BackupCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({
@@ -72,29 +68,13 @@ export class BackupCommand extends CommandAbstract<
       dryRun: this.options.dryRun,
       verbose: verbose > 0,
       date: this.options.date,
-    });
-
-    const sessionManager = new BackupSessionManager({
-      driver: new SqliteSessionDriver({
-        verbose: verbose > 1,
-      }),
-      altDrivers: [
-        new ConsoleSessionDriver({
-          verbose: verbose > 0,
-          progress: this.globalOptions.progress,
-        }),
-      ],
-      verbose: verbose > 1,
+      tty: this.globalOptions.tty,
+      progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
     });
 
-    const result = await backup.exec(sessionManager);
-    if (result.errors.length) {
-      return 1;
-    } else if (!result.total) {
-      throw new AppError("None package config found");
-    } else {
-      return 0;
-    }
+    const list = await backup.exec();
+    await list.run();
+    return list.errors.length ? 1 : 0;
   }
 }

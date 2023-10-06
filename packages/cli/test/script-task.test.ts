@@ -1,6 +1,7 @@
 import { createActionInterface } from "../src/Factory/CommandFactory";
-import { mkTmpDir } from "../src/utils/fs";
+import { scriptTaskCode } from "../src/Task/ScriptTask";
 import { parseStringList } from "../src/utils/string";
+import { mkTmpDir } from "../src/utils/temp";
 import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";
 import { readFile, readdir, writeFile } from "fs/promises";
 import { describe, expect, it } from "vitest";
@@ -32,7 +33,12 @@ describe(
                     {
                       type: "node",
                       config: {
-                        code: "require('fs').writeFileSync(dtt.targetPath + '/file.txt', 'test');",
+                        code: scriptTaskCode(({ dtt }) => {
+                          require("fs").writeFileSync(
+                            dtt.snapshotPath + "/file.txt",
+                            "test",
+                          );
+                        }),
                       },
                     },
                   ],
@@ -43,7 +49,14 @@ describe(
                         vars: {
                           storePath,
                         },
-                        code: `require("fs").cpSync(dtt.targetPath + "/file.txt", storePath + "/file.txt");`,
+                        code: scriptTaskCode<{ storePath: string }>(
+                          ({ dtt, storePath }) => {
+                            require("fs").cpSync(
+                              dtt.snapshotPath + "/file.txt",
+                              storePath + "/file.txt",
+                            );
+                          },
+                        ),
                       },
                     },
                   ],
@@ -89,11 +102,18 @@ describe(
                         vars: {
                           backupPath,
                         },
-                        code: [
-                          "require('assert').strict.equal(dtt.targetPath, backupPath)",
-                          "require('assert').strict.equal(dtt.targetPath, dtt.package.path)",
-                          "require('fs').writeFileSync(dtt.package.path + '/file2.txt', 'test2')",
-                        ],
+                        code: scriptTaskCode<{ backupPath: string }>(
+                          ({ dtt, backupPath }) => {
+                            const { strict } = require("assert");
+                            const { writeFileSync } = require("fs");
+                            strict.equal(dtt.snapshotPath, backupPath);
+                            strict.equal(dtt.snapshotPath, dtt.package.path);
+                            writeFileSync(
+                              dtt.package.path + "/file2.txt",
+                              "test2",
+                            );
+                          },
+                        ),
                       },
                     },
                   ],
@@ -104,11 +124,21 @@ describe(
                         vars: {
                           restorePath,
                         },
-                        code: [
-                          "require('assert').strict.equal(dtt.targetPath, restorePath)",
-                          "require('assert').strict.equal(dtt.targetPath, dtt.package.restorePath)",
-                          "require('fs').writeFileSync(dtt.package.restorePath + '/file3.txt', 'test3')",
-                        ],
+                        code: scriptTaskCode<{ restorePath: string }>(
+                          ({ dtt, restorePath }) => {
+                            const { strict } = require("assert");
+                            const { writeFileSync } = require("fs");
+                            strict.equal(dtt.snapshotPath, restorePath);
+                            strict.equal(
+                              dtt.snapshotPath,
+                              dtt.package.restorePath,
+                            );
+                            writeFileSync(
+                              dtt.package.restorePath + "/file3.txt",
+                              "test3",
+                            );
+                          },
+                        ),
                       },
                     },
                   ],

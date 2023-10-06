@@ -8,7 +8,7 @@ import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type InitCommandOptionsType<TResolved = false> = {
+export type InitCommandOptions<TResolved = false> = {
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
 };
@@ -16,8 +16,8 @@ export type InitCommandOptionsType<TResolved = false> = {
 export type InitCommandLogType = Unwrap<InitAction["exec"]>;
 
 export class InitCommand extends CommandAbstract<
-  InitCommandOptionsType<false>,
-  InitCommandOptionsType<true>
+  InitCommandOptions<false>,
+  InitCommandOptions<true>
 > {
   override onOptions() {
     return this.returnsOptions({

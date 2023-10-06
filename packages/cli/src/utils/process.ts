@@ -335,8 +335,8 @@ export async function exec(
     }
 
     if (typeof options?.cwd === "string" && !(await existsDir(options.cwd)))
-      throw new Error(
-        `Current working directory does not exist: ${options.cwd}`,
+      return reject(
+        new Error(`Current working directory does not exist: ${options.cwd}`),
       );
 
     if (pipe?.stream instanceof ReadStream && "onReadProgress" in pipe) {

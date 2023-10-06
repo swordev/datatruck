@@ -1,5 +1,5 @@
 import { ConfigAction } from "./Action/ConfigAction";
-import { GlobalOptionsType } from "./Command/CommandAbstract";
+import { GlobalOptions } from "./Command/CommandAbstract";
 import { AppError } from "./Error/AppError";
 import {
   CommandEnum,
@@ -9,16 +9,27 @@ import {
 import globalData from "./globalData";
 import { FormatType } from "./utils/DataFormat";
 import { OptionsType, showCursorCommand } from "./utils/cli";
-import { sessionTmpDir, parsePackageFile } from "./utils/fs";
+import { parsePackageFile } from "./utils/fs";
 import { onExit } from "./utils/process";
 import { snakeCase } from "./utils/string";
+import { sessionTmpDir } from "./utils/temp";
 import { red } from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";
 import { dirname, isAbsolute, join, sep } from "path";
 
 function getGlobalOptions() {
-  return program.opts() as Omit<GlobalOptionsType<true>, "config"> & {
+  const result = program.opts() as Omit<GlobalOptions<false>, "config"> & {
+    config: string;
+  };
+  return {
+    ...result,
+    tty: result.tty === "auto" ? "auto" : result.tty === "true",
+    progress:
+      result.progress === "auto" || result.progress === "interval"
+        ? result.progress
+        : result.progress === "true",
+  } as Omit<GlobalOptions<true>, "config"> & {
     config: string;
   };
 }
@@ -99,9 +110,10 @@ program.option(
   "Config path",
   process.env["DATATRUCK_CONFIG"] ?? (cwd.endsWith(sep) ? cwd : `${cwd}${sep}`),
 );
+program.option("--tty <value>", "TTY mode (auto, true, false)", "auto");
 program.option(
   "--progress <value>",
-  "Progress type (auto, plain, tty)",
+  "Progress type (auto, true, false, interval)",
   "auto",
 );
 program.option("--progress-interval <ms>", "Progress interval", Number, 1000);
@@ -117,9 +129,7 @@ makeCommand(CommandEnum.init).alias("i");
 makeCommand(CommandEnum.snapshots).alias("s");
 makeCommand(CommandEnum.prune).alias("p");
 makeCommand(CommandEnum.backup).alias("b");
-makeCommand(CommandEnum.backupSessions).alias("bs");
 makeCommand(CommandEnum.restore).alias("r");
-makeCommand(CommandEnum.restoreSessions).alias("rs");
 makeCommand(CommandEnum.cleanCache).alias("cc");
 
 export function buildArgs<TCommand extends keyof OptionsMapType>(

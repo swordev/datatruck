@@ -1,11 +1,11 @@
+import { createWriteStreamPool } from "../../src/utils/fs";
 import {
-  createWriteStreamPool,
   isTmpDir,
   mkTmpDir,
   rmTmpDir,
   sessionTmpDir,
   tmpDir,
-} from "../../src/utils/fs";
+} from "../../src/utils/temp";
 import { randomBytes } from "crypto";
 import { mkdir, readFile, rm, rmdir } from "fs/promises";
 import { tmpdir } from "os";

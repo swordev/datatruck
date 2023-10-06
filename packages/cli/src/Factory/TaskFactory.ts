@@ -11,7 +11,7 @@ import {
 import { ScriptTask, scriptTaskName } from "../Task/ScriptTask";
 import type { TaskAbstract } from "../Task/TaskAbstract";
 
-export function TaskFactory(task: TaskConfigType): TaskAbstract {
+export function createTask(task: TaskConfigType): TaskAbstract {
   if (task.name === gitTaskName) {
     return new GitTask(task.config ?? {});
   } else if (task.name === mariadbTaskName) {

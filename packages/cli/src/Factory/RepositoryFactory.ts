@@ -11,7 +11,7 @@ import {
   resticRepositoryName,
 } from "../Repository/ResticRepository";
 
-export function RepositoryFactory(
+export function createRepo(
   repository: RepositoryConfigType,
 ): RepositoryAbstract<any> {
   const type = repository.type;

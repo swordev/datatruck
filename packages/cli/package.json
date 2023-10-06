@@ -17,10 +17,9 @@
     "dayjs": "^1.11.10",
     "fast-folder-size": "^2.2.0",
     "fast-glob": "^3.3.1",
+    "listr2": "^7.0.1",
     "micromatch": "^4.0.5",
-    "mysql2": "^3.6.1",
-    "sqlite": "^5.0.1",
-    "sqlite3": "^5.1.6"
+    "mysql2": "^3.6.1"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",
@@ -40,9 +39,6 @@
     "node": ">=16.0.0"
   },
   "x-wspa": {
-    "distFiles": [
-      "migrations"
-    ],
     "pkgManifest": {
       "bin": {
         "datatruck": "bin.js",

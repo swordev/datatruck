@@ -1,16 +1,16 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { RepositoryFactory } from "../Factory/RepositoryFactory";
+import { createRepo } from "../Factory/RepositoryFactory";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { groupBy } from "../utils/object";
 import { IfRequireKeys } from "../utils/ts";
 import {
-  SnapshotExtendedType,
+  ExtendedSnapshot,
   SnapshotsAction,
-  SnapshotsActionOptionsType,
+  SnapshotsActionOptions,
 } from "./SnapshotsAction";
 
-export type PruneActionsOptionsType = {
+export type PruneActionsOptions = {
   ids?: string[];
   packageNames?: string[];
   repositoryNames?: string[];
@@ -24,16 +24,16 @@ export type PruneActionsOptionsType = {
   keepMonthly?: number;
   keepYearly?: number;
   verbose?: boolean;
-  groupBy?: SnapshotsActionOptionsType["groupBy"];
+  groupBy?: SnapshotsActionOptions["groupBy"];
   dryRun?: boolean;
   longId?: boolean;
   returnsAll?: boolean;
 };
 
-export type PruneResultType = {
+export type PruneResult = {
   total: number;
   prune: number;
-  snapshots: (SnapshotExtendedType & {
+  snapshots: (ExtendedSnapshot & {
     exclusionReasons: string[];
   })[];
 };
@@ -41,18 +41,16 @@ export type PruneResultType = {
 export class PruneAction<TRequired extends boolean = true> {
   constructor(
     readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, PruneActionsOptionsType>,
+    readonly options: IfRequireKeys<TRequired, PruneActionsOptions>,
   ) {}
 
-  async confirm(snapshots: PruneResultType["snapshots"]) {
+  async confirm(snapshots: PruneResult["snapshots"]) {
     const repository = groupBy(this.config.repositories, "name", true);
 
     for (const snapshot of snapshots) {
       if (!snapshot.exclusionReasons?.length) {
-        const repoInstance = RepositoryFactory(
-          repository[snapshot.repositoryName],
-        );
-        await repoInstance.onPrune({
+        const repo = createRepo(repository[snapshot.repositoryName]);
+        await repo.prune({
           snapshot: snapshot,
           options: { verbose: this.options.verbose },
         });
@@ -66,7 +64,7 @@ export class PruneAction<TRequired extends boolean = true> {
       this.options,
     );
     const snapshots = await snapshotsAction.exec("prune");
-    const snapshotsDeleted: PruneResultType["snapshots"] = [];
+    const snapshotsDeleted: PruneResult["snapshots"] = [];
     const reasons: Record<number, string[]> = {};
     const inputFilter = {
       last: this.options.keepLast,
@@ -107,7 +105,7 @@ export class PruneAction<TRequired extends boolean = true> {
       reasons,
     );
 
-    const result: PruneResultType = {
+    const result: PruneResult = {
       total: snapshots.length,
       prune: 0,
       snapshots: snapshotsDeleted,

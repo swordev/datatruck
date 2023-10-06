@@ -1,4 +1,4 @@
-import { GlobalOptionsType } from "../Command/CommandAbstract";
+import { GlobalOptions } from "../Command/CommandAbstract";
 import type { ConfigType } from "../Config/Config";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
@@ -8,16 +8,15 @@ import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
 import { IfRequireKeys } from "../utils/ts";
 import Ajv from "ajv";
 import { ok } from "assert";
-import { normalize } from "path";
 
-export type ConfigActionOptionsType = {
+export type ConfigActionOptions = {
   path: string;
   verbose?: boolean;
 };
 
 export class ConfigAction<TRequired extends boolean = true> {
   constructor(
-    readonly options: IfRequireKeys<TRequired, ConfigActionOptionsType>,
+    readonly options: IfRequireKeys<TRequired, ConfigActionOptions>,
   ) {}
 
   static validate(config: ConfigType) {
@@ -69,12 +68,6 @@ export class ConfigAction<TRequired extends boolean = true> {
     config = Object.assign({}, config);
     config.packages = config.packages.map((pkg) => {
       pkg = Object.assign({}, pkg);
-      if (!pkg.restorePath)
-        pkg.restorePath = pkg.path
-          ? pkg.path
-          : normalize(`{temp}/{snapshotId}-{action}/{packageName}`);
-      if (!pkg.path)
-        pkg.path = normalize(`{temp}/{snapshotId}-{action}/{packageName}`);
       pkg.repositoryNames =
         pkg.repositoryNames ?? config.repositories.map((repo) => repo.name);
       ok(Array.isArray(pkg.repositoryNames));
@@ -85,7 +78,7 @@ export class ConfigAction<TRequired extends boolean = true> {
     return config;
   }
 
-  static async fromGlobalOptions(globalOptions: GlobalOptionsType<true>) {
+  static async fromGlobalOptions(globalOptions: GlobalOptions<true>) {
     if (typeof globalOptions.config === "string") {
       const configAction = new ConfigAction({
         path: globalOptions.config,

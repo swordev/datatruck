@@ -5,17 +5,27 @@ import {
   ResolveDatabaseNameParamsType,
   resolveDatabaseName,
 } from "../utils/datatruck/config";
-import { readDir, safeRename } from "../utils/fs";
+import {
+  ensureEmptyDir,
+  mkdirIfNotExists,
+  readDir,
+  safeRename,
+} from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { createMysqlCli } from "../utils/mysql";
 import { endsWith } from "../utils/string";
+import { mkTmpDir } from "../utils/temp";
 import {
   SqlDumpTaskConfigType,
   TargetDatabaseType,
   sqlDumpTaskDefinition,
 } from "./SqlDumpTaskAbstract";
-import { BackupDataType, RestoreDataType, TaskAbstract } from "./TaskAbstract";
-import { ok } from "assert";
+import {
+  TaskBackupData,
+  TaskPrepareRestoreData,
+  TaskRestoreData,
+  TaskAbstract,
+} from "./TaskAbstract";
 import { chmod, mkdir, readdir, rm } from "fs/promises";
 import { join } from "path";
 
@@ -48,7 +58,14 @@ const suffix = {
 };
 
 export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
-  override async onBackup(data: BackupDataType) {
+  override async backup(data: TaskBackupData) {
+    const snapshotPath =
+      data.package.path ??
+      (await mkTmpDir(mysqlDumpTaskName, "task", "backup", "snapshot"));
+
+    await mkdirIfNotExists(snapshotPath);
+    await ensureEmptyDir(snapshotPath);
+
     const sql = await createMysqlCli({
       ...this.config,
       database: undefined,
@@ -60,13 +77,8 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       this.config.excludeTables,
     );
 
-    const outputPath = data.package.path;
-    ok(typeof outputPath === "string");
-
     const concurrency = this.config.concurrency ?? 4;
     const dataFormat = this.config.dataFormat ?? "sql";
-
-    await mkdir(outputPath, { recursive: true });
 
     const sharedDir =
       dataFormat === "csv"
@@ -77,8 +89,8 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       await runParallel({
         items: tableNames,
         concurrency,
-        onChange: async ({ processed: proccesed, buffer }) =>
-          await data.onProgress({
+        onChange: ({ processed: proccesed, buffer }) =>
+          data.onProgress({
             relative: {
               description:
                 buffer.size > 1 ? `Exporting (${buffer.size})` : "Exporting",
@@ -122,17 +134,17 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
                 );
               await safeRename(
                 join(tableSharedPath, schemaFile),
-                join(outputPath, `${tableName}${suffix.tableSchema}`),
+                join(snapshotPath, `${tableName}${suffix.tableSchema}`),
               );
               await safeRename(
                 join(tableSharedPath, dataFile),
-                join(outputPath, `${tableName}${suffix.tableData}`),
+                join(snapshotPath, `${tableName}${suffix.tableData}`),
               );
             } finally {
               await rm(tableSharedPath, { recursive: true });
             }
           } else {
-            const outPath = join(outputPath, `${tableName}${suffix.table}`);
+            const outPath = join(snapshotPath, `${tableName}${suffix.table}`);
             await sql.dump({
               output: outPath,
               items: [tableName],
@@ -160,11 +172,11 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         },
       });
     } else {
-      await data.onProgress({
+      data.onProgress({
         relative: { description: "Exporting" },
       });
       await sql.dump({
-        output: join(outputPath, `${this.config.database}${suffix.database}`),
+        output: join(snapshotPath, `${this.config.database}${suffix.database}`),
         items: tableNames,
         database: this.config.database,
         onProgress: (progress) =>
@@ -179,25 +191,34 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
     }
 
     if (this.config.storedPrograms ?? true) {
-      await data.onProgress({
+      data.onProgress({
         relative: { description: "Exporting stored programs" },
       });
       await sql.dump({
         database: this.config.database,
-        output: join(outputPath, `${this.config.database}${suffix.stored}`),
+        output: join(snapshotPath, `${this.config.database}${suffix.stored}`),
         onlyStoredPrograms: true,
       });
     }
+    return {
+      snapshotPath,
+    };
   }
-  override async onRestore(data: RestoreDataType) {
+  override async prepareRestore(data: TaskPrepareRestoreData) {
+    return {
+      snapshotPath:
+        data.package.restorePath ??
+        (await mkTmpDir(mysqlDumpTaskName, "task", "restore", "snapshot")),
+    };
+  }
+  override async restore(data: TaskRestoreData) {
     const sql = await createMysqlCli({
       ...this.config,
       database: undefined,
       verbose: data.options.verbose,
     });
 
-    const restorePath = data.package.restorePath;
-    ok(typeof restorePath === "string");
+    const snapshotPath = data.snapshotPath;
 
     const params: ResolveDatabaseNameParamsType = {
       packageName: data.package.name,
@@ -218,7 +239,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       });
 
     const suffixes = Object.values(suffix);
-    const files = (await readDir(restorePath)).filter((f) =>
+    const files = (await readDir(snapshotPath)).filter((f) =>
       endsWith(f, suffixes),
     );
 
@@ -258,7 +279,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
 
     await sql.createDatabase(database);
 
-    if (data.options.verbose) logExec("readdir", [restorePath]);
+    if (data.options.verbose) logExec("readdir", [snapshotPath]);
 
     const concurrency = this.config.concurrency ?? 1;
 
@@ -270,8 +291,8 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       onFinished: () => {
         processed++;
       },
-      onChange: async ({ buffer }) =>
-        await data.onProgress({
+      onChange: ({ buffer }) =>
+        data.onProgress({
           relative: {
             description:
               buffer.size > 1 ? `Importing (${buffer.size})` : "Importing",
@@ -285,7 +306,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         }),
       onItem: async ({ item: file, controller }) => {
         await sql.importFile({
-          path: join(restorePath, file),
+          path: join(snapshotPath, file),
           database: database.name,
           onSpawn: (p) => (controller.stop = () => p.kill()),
         });
@@ -298,8 +319,8 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       onFinished: () => {
         processed++;
       },
-      onChange: async ({ buffer }) =>
-        await data.onProgress({
+      onChange: ({ buffer }) =>
+        data.onProgress({
           relative: {
             description:
               buffer.size > 1 ? `Importing (${buffer.size})` : "Importing",
@@ -312,7 +333,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
           },
         }),
       onItem: async ({ item: file, controller }) => {
-        const filePath = join(restorePath, file);
+        const filePath = join(snapshotPath, file);
         const tableName = file.slice(0, suffix.tableData.length * -1);
         const sharedFilePath = join(
           sharedDir!,
