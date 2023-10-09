@@ -3,6 +3,6 @@ coverage
 lib
 backup*
 node_modules
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 /datatruck*.ts
 /datatruck*.json
