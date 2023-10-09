@@ -97,6 +97,6 @@ describe("ensureFreeDiskSpace", async () => {
   it("fails", async () => {
     await expect(
       ensureFreeDiskSpace(["."], disk.free + offset),
-    ).resolves.toThrowError();
+    ).rejects.toThrowError();
   });
 });
