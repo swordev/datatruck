@@ -113,17 +113,22 @@ export type ListTarOptions = {
 };
 
 export async function listTar(options: ListTarOptions) {
+  const vendor = await getTarVendor(true, options.verbose);
   let total = 0;
   await exec(
     "tar",
-    ["-tf", toLocalPath(options.input), "--force-local"],
+    [
+      "-tf",
+      toLocalPath(options.input),
+      ...(vendor === "bsdtar" ? [] : ["--force-local"]),
+    ],
     {},
     {
       log: options.verbose,
       stdout: {
         parseLines: "skip-empty",
         onData: (path) => {
-          options.onEntry?.({ path });
+          options.onEntry?.({ path: normalizeTarPath(path) });
           total++;
         },
       },
@@ -178,6 +183,19 @@ export async function createTar(options: CreateTarOptions) {
       }),
   };
 
+  const onData = (line: string) => {
+    current++;
+    let path = vendor === "bsdtar" ? line.slice(2) : line;
+    options.onEntry?.({
+      path: normalizeTarPath(path),
+      progress: {
+        total,
+        current,
+        percent: progressPercent(total, current),
+      },
+    });
+  };
+
   await exec(
     "tar",
     [
@@ -188,8 +206,9 @@ export async function createTar(options: CreateTarOptions) {
       toLocalPath(options.output),
       "-T",
       toLocalPath(options.includeList),
-      "--ignore-failed-read",
-      "--force-local",
+      // https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=172293
+      ...(vendor === "bsdtar" ? [] : ["--ignore-failed-read"]),
+      ...(vendor === "bsdtar" ? [] : ["--force-local"]),
       ...(compress && compress.cores > 1
         ? [
             "-I",
@@ -216,24 +235,16 @@ export async function createTar(options: CreateTarOptions) {
     },
     {
       log: options.verbose ? { envNames: Object.keys(env) } : false,
-      stderr: { toExitCode: true },
-      stdout: options.onEntry
+      ...(vendor === "bsdtar"
         ? {
-            parseLines: "skip-empty",
-            onData: (line) => {
-              current++;
-              const path = vendor === "bsdtar" ? line.slice(2) : line;
-              options.onEntry?.({
-                path,
-                progress: {
-                  total,
-                  current,
-                  percent: progressPercent(total, current),
-                },
-              });
-            },
+            stderr: options.onEntry
+              ? { toExitCode: true, parseLines: "skip-empty", onData }
+              : { toExitCode: true },
           }
-        : undefined,
+        : {
+            stderr: { toExitCode: true },
+            stdout: { parseLines: "skip-empty", onData },
+          }),
     },
   );
 }
@@ -243,6 +254,13 @@ export async function createTar(options: CreateTarOptions) {
  */
 function toLocalPath(path: string) {
   return platform() === "win32" ? path.replace(/\\/g, "/") : path;
+}
+
+/**
+ * bsdtar (only windows?) fails if path ends with slash
+ */
+export function normalizeTarPath(path: string) {
+  return path.endsWith("/") ? path.slice(0, -1) : path;
 }
 
 export async function extractTar(options: ExtractOptions) {
@@ -261,6 +279,19 @@ export async function extractTar(options: ExtractOptions) {
   }));
 
   let current = 0;
+  const vendor = await getTarVendor(true, options.verbose);
+  const onData = (line: string) => {
+    const path = vendor === "bsdtar" ? line.slice(2) : line;
+    current++;
+    options.onEntry?.({
+      path: normalizeTarPath(path),
+      progress: {
+        total,
+        current,
+        percent: progressPercent(total, current),
+      },
+    });
+  };
   await exec(
     "tar",
     [
@@ -268,7 +299,7 @@ export async function extractTar(options: ExtractOptions) {
       toLocalPath(options.input),
       "-C",
       toLocalPath(options.output),
-      "--force-local",
+      ...(vendor === "bsdtar" ? [] : ["--force-local"]),
       ...(decompress && decompress.cores > 1
         ? ["-I", `"pigz -p ${decompress.cores}"`]
         : []),
@@ -281,25 +312,16 @@ export async function extractTar(options: ExtractOptions) {
     },
     {
       log: options.verbose,
-      stderr: {
-        toExitCode: true,
-      },
-      stdout: options.onEntry
+      ...(vendor === "bsdtar"
         ? {
-            parseLines: "skip-empty",
-            onData: (path) => {
-              current++;
-              options.onEntry?.({
-                path,
-                progress: {
-                  total,
-                  current,
-                  percent: progressPercent(total, current),
-                },
-              });
-            },
+            stderr: options.onEntry
+              ? { toExitCode: true, parseLines: "skip-empty", onData }
+              : { toExitCode: true },
           }
-        : undefined,
+        : {
+            stderr: { toExitCode: true },
+            stdout: { parseLines: "skip-empty", onData },
+          }),
     },
   );
 }

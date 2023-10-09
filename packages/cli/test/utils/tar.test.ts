@@ -4,6 +4,7 @@ import {
   extractTar,
   checkPigzLib,
   CompressOptions,
+  getTarVendor,
 } from "../../src/utils/tar";
 import { mkTmpDir } from "../../src/utils/temp";
 import { createFileChanger } from "../util";
@@ -16,7 +17,11 @@ async function createIncludeList(include: string[]) {
   const includeDirPath = await mkTmpDir("test");
   const includeList = join(includeDirPath, "files.txt");
 
-  await writeFile(includeList, ["notfound", ...include].join("\n"));
+  const vendor = await getTarVendor();
+  await writeFile(
+    includeList,
+    [...(vendor === "bsdtar" ? [] : ["notfound"]), ...include].join("\n"),
+  );
   return { include, includeList };
 }
 
@@ -70,7 +75,7 @@ describe("tar", async () => {
       const createProgress: { path: string }[] = [];
 
       const { include, includeList } = await createIncludeList([
-        "emptyFolder/",
+        "emptyFolder",
         "folder1/file1",
         "folder1/file2",
         "folder2/file3",
@@ -130,7 +135,7 @@ describe("createTar", () => {
   it("ignores recursive files and applies permissions to folders", async () => {
     const { path, update } = await createFileChanger();
     const { include, includeList } = await createIncludeList([
-      "data/",
+      "data",
       "data/file2",
     ]);
     const output = join(path, "output.tar.gz");

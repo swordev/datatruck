@@ -11,7 +11,12 @@ import {
   createProgress,
 } from "../utils/fs";
 import { checkMatch, match, makePathPatterns } from "../utils/string";
-import { extractTar, createTar, CompressOptions } from "../utils/tar";
+import {
+  extractTar,
+  createTar,
+  CompressOptions,
+  normalizeTarPath,
+} from "../utils/tar";
 import { mkTmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
@@ -298,7 +303,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         scanner.total++;
         stream.writeLine(packIndex, ".");
       }
-      stream.writeLine(packIndex, entry.path);
+      stream.writeLine(packIndex, normalizeTarPath(entry.path));
       return true;
     });
 
