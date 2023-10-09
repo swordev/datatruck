@@ -1,7 +1,5 @@
 pnpm-lock.yaml
 # .gitignore
-.history
-.wireit
 coverage
 lib
 backup

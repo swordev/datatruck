@@ -20,10 +20,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "wireit",
-    "build:schema": "wireit",
-    "build:ts": "wireit",
-    "clean": "wspa clean && rimraf .wireit",
+    "build": "pnpm build:ts && pnpm build:schema",
+    "build:schema": "node ./packages/cli/scripts/gen-schema.js",
+    "build:ts": "tsc -b tsconfig.build.json --pretty",
+    "clean": "wspa clean",
     "compose": "wspa compose",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
@@ -46,40 +46,10 @@
     "rimraf": "^5.0.1",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
-    "vitest": "^0.34.4",
-    "wireit": "^0.14.0"
+    "vitest": "^0.34.4"
   },
   "engine": {
     "node": ">=18.0.0"
-  },
-  "wireit": {
-    "build": {
-      "dependencies": [
-        "build:ts",
-        "build:schema"
-      ]
-    },
-    "build:schema": {
-      "dependencies": [
-        "build:ts"
-      ],
-      "command": "node ./packages/cli/scripts/gen-schema.js"
-    },
-    "build:ts": {
-      "command": "tsc -b tsconfig.build.json --pretty",
-      "clean": "if-file-deleted",
-      "files": [
-        "packages/*/src/**/*.ts",
-        "packages/*/src/tsconfig.json"
-      ],
-      "output": [
-        "packages/*/lib/**",
-        "packages/*/.tsbuildinfo"
-      ],
-      "packageLocks": [
-        "pnpm-lock.yaml"
-      ]
-    }
   },
   "x-wspa": {
     "extends": "@wspa/config/auto",

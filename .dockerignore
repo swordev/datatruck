@@ -2,8 +2,6 @@
 backup*
 **/.git
 **/.dockerignore
-**/.history
-**/.wireit
 **/.pnpm-store
 **/coverage
 **/lib
