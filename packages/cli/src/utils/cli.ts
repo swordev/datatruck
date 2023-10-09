@@ -2,20 +2,7 @@ import chalk from "chalk";
 import { cyan, grey } from "chalk";
 import { createInterface } from "readline";
 
-export function clearLastLine() {
-  process.stdout.moveCursor(0, -1);
-  process.stdout.clearLine(1);
-}
-
-export const spinnerChars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-
 export const showCursorCommand = "\u001B[?25h";
-export const clearCommand = "\r\x1b[K";
-export const hideCursorCommand = "\x1B[?25l";
-
-export function renderSpinner(counter: number) {
-  return spinnerChars[counter % (spinnerChars.length - 1)];
-}
 
 export function renderProgressBar(
   progress: number,
@@ -46,20 +33,6 @@ export function renderProgressBar(
   }
 
   return cyan(result);
-}
-
-export function logVars(data: Record<string, any>) {
-  let first = true;
-  for (const key in data) {
-    if (first) {
-      console.info();
-      first = false;
-    }
-    const value = data[key];
-    console.info(
-      `${chalk.cyan(key)}${chalk.grey(":")} ${chalk.white(value ?? "")}`,
-    );
-  }
 }
 
 export function logExec(
@@ -137,28 +110,6 @@ export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
     }
   }
   return result;
-}
-
-export function truncate(text: string, limit: number): [string, boolean] {
-  let inColor = false;
-  let visibleLength = 0;
-  if (limit >= text.length) return [text, false];
-  for (let index = 0; index < text.length; ++index) {
-    const c = text[index];
-    if (c === "\x1B") {
-      inColor = true;
-    } else if (inColor) {
-      if (c === "m") {
-        inColor = false;
-      }
-    } else {
-      visibleLength++;
-    }
-    if (visibleLength === limit) {
-      return [text.slice(0, index) + (inColor ? `\x1B[39m` : ""), true];
-    }
-  }
-  return [text, false];
 }
 
 export function confirm(message: string) {

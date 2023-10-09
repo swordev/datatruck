@@ -6,16 +6,12 @@ export type ParsePathsOptions = {
   cwd?: string;
   verbose?: boolean;
   vars?: Record<string, any>;
+  tempDir?: () => Promise<string>;
 };
 
 export async function parsePaths(
   values: (string | Step)[],
-  options: {
-    cwd?: string;
-    verbose?: boolean;
-    vars?: Record<string, any>;
-    tempDir?: () => Promise<string>;
-  },
+  options: ParsePathsOptions,
 ) {
   let paths: string[] = [];
   for (const value of values) {

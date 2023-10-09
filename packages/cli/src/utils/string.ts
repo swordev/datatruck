@@ -131,18 +131,6 @@ export function formatDateTime(datetime: string) {
   return result;
 }
 
-export function splitLines(input: string, satinize = true) {
-  const lines = input.split(/\r?\n/);
-  return satinize
-    ? input.split(/\r?\n/).reduce((result, value) => {
-        value = value.trim();
-        if (value.length) result.push(value);
-
-        return result;
-      }, [] as string[])
-    : lines;
-}
-
 export function undefIfEmpty(input: string) {
   return input.length ? input : undefined;
 }
