@@ -15,7 +15,7 @@ import { GargabeCollector } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { ok } from "assert";
 import { randomUUID } from "crypto";
-import { ListrTask } from "listr2";
+import { ListrTask, PRESET_TIMER, PRESET_TIMESTAMP } from "listr2";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
@@ -225,11 +225,16 @@ export class BackupAction<TRequired extends boolean = true> {
             collectErrors: "minimal",
             rendererOptions: {
               collapseErrors: false,
+              timer: PRESET_TIMER,
             },
           }
         : {
             renderer: "simple",
             collectErrors: "minimal",
+            rendererOptions: {
+              timestamp: PRESET_TIMESTAMP,
+              timer: PRESET_TIMER,
+            },
           },
     )
       .onBeforeRun(() => pm.start())
