@@ -53,7 +53,7 @@ export class PruneCommand extends CommandAbstract<
       },
       id: {
         description: "Filter by snapshot id",
-        option: "-i,--id",
+        option: "-i,--id <snapshotId>",
         parser: parseStringList,
       },
       keepMinutely: {

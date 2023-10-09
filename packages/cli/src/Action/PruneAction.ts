@@ -59,14 +59,23 @@ export class PruneAction<TRequired extends boolean = true> {
   }
 
   async exec() {
-    const snapshotsAction = new SnapshotsAction<false>(
-      this.config,
-      this.options,
-    );
+    const snapshotsAction = new SnapshotsAction<false>(this.config, {
+      groupBy: this.options.groupBy,
+      ids: this.options.ids,
+      packageNames: this.options.packageNames,
+      repositoryNames: this.options.repositoryNames,
+      repositoryTypes: this.options.repositoryTypes,
+      tags: this.options.tags,
+      verbose: this.options.verbose,
+    });
+
     const snapshots = await snapshotsAction.exec("prune");
     const snapshotsDeleted: PruneResult["snapshots"] = [];
     const reasons: Record<number, string[]> = {};
-    const inputFilter = {
+    const idFilter = {
+      id: this.options.ids,
+    };
+    const keepFilter = {
       last: this.options.keepLast,
       lastMinutely: this.options.keepMinutely,
       lastHourly: this.options.keepHourly,
@@ -75,35 +84,45 @@ export class PruneAction<TRequired extends boolean = true> {
       lastWeekly: this.options.keepWeekly,
       lastYearly: this.options.keepYearly,
     };
-
-    const hasInputFilter = Object.values(inputFilter).some(Number);
-    const usePrunePolicyConfig =
-      !hasInputFilter && this.options.groupBy?.includes("packageName");
-
-    const keepSnapshots = groupAndFilter(
-      snapshots,
-      this.options.groupBy,
-      usePrunePolicyConfig
-        ? (groupedSnapshots) => {
-            const [firstSnapshot] = groupedSnapshots;
-            const packageName = firstSnapshot.packageName;
-            const config = this.config.packages.find(
-              (pkg) => pkg.name === packageName,
-            );
-            const prunePolicy = config?.prunePolicy ?? {};
-            return {
-              last: prunePolicy.keepLast,
-              lastMinutely: prunePolicy.keepMinutely,
-              lastHourly: prunePolicy.keepHourly,
-              lastDaily: prunePolicy.keepDaily,
-              lastMonthly: prunePolicy.keepMonthly,
-              lastWeekly: prunePolicy.keepWeekly,
-              lastYearly: prunePolicy.keepYearly,
-            };
-          }
-        : inputFilter,
-      reasons,
+    const hasIdFilter = Object.values(idFilter).some(
+      (v) => typeof v !== "undefined",
     );
+    const hasKeepFilter = Object.values(keepFilter).some(
+      (v) => typeof v !== "undefined",
+    );
+
+    if (hasIdFilter && hasKeepFilter)
+      throw new Error(`Snapshot id filter can not be used with 'keep' filters`);
+
+    const usePrunePolicyConfig =
+      !hasKeepFilter && this.options.groupBy?.includes("packageName");
+
+    const keepSnapshots = hasKeepFilter
+      ? groupAndFilter(
+          snapshots,
+          this.options.groupBy,
+          usePrunePolicyConfig
+            ? (groupedSnapshots) => {
+                const [firstSnapshot] = groupedSnapshots;
+                const packageName = firstSnapshot.packageName;
+                const config = this.config.packages.find(
+                  (pkg) => pkg.name === packageName,
+                );
+                const prunePolicy = config?.prunePolicy ?? {};
+                return {
+                  last: prunePolicy.keepLast,
+                  lastMinutely: prunePolicy.keepMinutely,
+                  lastHourly: prunePolicy.keepHourly,
+                  lastDaily: prunePolicy.keepDaily,
+                  lastMonthly: prunePolicy.keepMonthly,
+                  lastWeekly: prunePolicy.keepWeekly,
+                  lastYearly: prunePolicy.keepYearly,
+                };
+              }
+            : keepFilter,
+          reasons,
+        )
+      : [];
 
     const result: PruneResult = {
       total: snapshots.length,
@@ -115,7 +134,6 @@ export class PruneAction<TRequired extends boolean = true> {
 
     for (const snapshot of snapshots) {
       const prune = !keepSnapshots.includes(snapshot);
-
       if (prune) result.prune++;
 
       if (prune || this.options.returnsAll)
