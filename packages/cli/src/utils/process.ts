@@ -49,6 +49,7 @@ export interface ExecSettingsInterface {
   };
   stderr?: {
     save?: boolean;
+    parseLines?: boolean | "skip-empty";
     onData?: (data: string) => void;
     toExitCode?: boolean;
   };
@@ -366,6 +367,7 @@ export async function exec(
     let finishListeners = 1;
     if (pipe?.stream instanceof WriteStream) finishListeners++;
     if (settings.stdout?.parseLines) finishListeners++;
+    if (settings.stderr?.parseLines) finishListeners++;
 
     let streamError: Error | undefined;
 
@@ -444,9 +446,17 @@ export async function exec(
       }
     }
 
-    if (log.stdout || settings.stdout) {
-      if (!p.stdout) throw new Error(`stdout is not defined`);
-      const parseLines = settings.stdout?.parseLines;
+    const stdConfig = {
+      stdout: { log: log.stdout, settings: settings.stdout },
+      stderr: { log: log.stderr, settings: settings.stderr },
+    };
+
+    for (const inType in stdConfig) {
+      const type = inType as "stdout" | "stderr";
+      const enabled = log[type] || settings[type];
+      if (!enabled) continue;
+      if (!p[type]) throw new Error(`${type} is not defined`);
+      const parseLines = settings[type]?.parseLines;
       const skipEmptyLines = parseLines === "skip-empty";
       const onData = (inData: string | Buffer) => {
         let data = inData.toString();
@@ -454,43 +464,30 @@ export async function exec(
           if (skipEmptyLines && !data.trim().length) return;
           data = `${inData}\n`;
         }
-        if (log.stdout)
+        if (log[type])
           logExecStdout({
             data,
             stderr: log.allToStderr,
             colorize: log.colorize,
           });
-        if (settings.stdout?.save) spawnData.stdout += data;
-        if (settings.stdout?.onData) settings.stdout.onData(inData.toString());
+
+        if (
+          settings[type]?.save ||
+          (type === "stderr" && settings[type]?.toExitCode)
+        )
+          spawnData[type] += data;
+
+        if (settings[type]?.onData) settings[type]!.onData!(inData.toString());
       };
       if (parseLines) {
         const rl = createInterface({
-          input: p.stdout!,
+          input: p[type]!,
         });
         rl.on("line", onData);
         rl.on("close", tryFinish);
-      } else if (
-        log.stdout ||
-        settings.stdout?.save ||
-        settings.stdout?.onData
-      ) {
-        p.stdout.on("data", onData);
+      } else if (log[type] || settings[type]?.save || settings[type]?.onData) {
+        p[type]!.on("data", onData);
       }
-    }
-
-    if (log.stderr || settings.stderr) {
-      if (!p.stderr) throw new Error(`stderr is not defined`);
-      p.stderr.on("data", (data: Buffer) => {
-        if (log.stderr)
-          logExecStdout({
-            data: data.toString(),
-            stderr: log.allToStderr,
-            colorize: log.colorize,
-          });
-        if (settings.stderr?.save || settings.stderr?.toExitCode)
-          spawnData.stderr += data.toString();
-        if (settings.stderr?.onData) settings.stderr.onData(data.toString());
-      });
     }
 
     p.on("error", (error) => (spawnError = error)).on("close", (exitCode) => {
