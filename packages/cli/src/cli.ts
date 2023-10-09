@@ -130,6 +130,7 @@ makeCommand(CommandEnum.snapshots).alias("s");
 makeCommand(CommandEnum.prune).alias("p");
 makeCommand(CommandEnum.backup).alias("b");
 makeCommand(CommandEnum.restore).alias("r");
+makeCommand(CommandEnum.copy).alias("cp");
 makeCommand(CommandEnum.cleanCache).alias("cc");
 
 export function buildArgs<TCommand extends keyof OptionsMapType>(

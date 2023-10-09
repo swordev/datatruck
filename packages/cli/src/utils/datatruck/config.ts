@@ -18,6 +18,19 @@ export function findRepositoryOrFail(
   return repo;
 }
 
+export function ensureSameRepositoryType(
+  a: RepositoryConfigType,
+  b: RepositoryConfigType,
+) {
+  if (a.type !== b.type) {
+    const names = [a.name, b.name].join(" and ");
+    const types = [a.type, b.type].join(" != ");
+    throw new Error(
+      `Incompatible repository types between ${names} (${types})`,
+    );
+  }
+}
+
 export function filterRepository(
   repository: RepositoryConfigType,
   action?: RepositoryConfigEnabledActionType,

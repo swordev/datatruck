@@ -7,6 +7,7 @@ import {
   ConfigCommandLogType,
   ConfigCommandOptions,
 } from "../Command/ConfigCommand";
+import { CopyCommand, CopyCommandOptionsType } from "../Command/CopyCommand";
 import {
   InitCommand,
   InitCommandLogType,
@@ -35,6 +36,7 @@ export enum CommandEnum {
   prune = "prune",
   backup = "backup",
   restore = "restore",
+  copy = "copy",
   cleanCache = "clean-cache",
   startServer = "start-server",
 }
@@ -46,6 +48,7 @@ export type OptionsMapType = {
   [CommandEnum.prune]: PruneCommandOptions;
   [CommandEnum.backup]: BackupCommandOptions;
   [CommandEnum.restore]: RestoreCommandOptionsType;
+  [CommandEnum.copy]: CopyCommandOptionsType;
   [CommandEnum.cleanCache]: CleanCacheActionOptions;
   [CommandEnum.startServer]: StartServerCommandOptions;
 };
@@ -147,6 +150,8 @@ export function CommandConstructorFactory(type: CommandEnum) {
     return BackupCommand;
   } else if (type === CommandEnum.restore) {
     return RestoreCommand;
+  } else if (type === CommandEnum.copy) {
+    return CopyCommand;
   } else if (type === CommandEnum.cleanCache) {
     return CleanCacheCommand;
   } else if (type === CommandEnum.startServer) {
