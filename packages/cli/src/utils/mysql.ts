@@ -1,6 +1,6 @@
 import { AppError } from "../Error/AppError";
 import { logExec } from "./cli";
-import { existsFile, fetchData, mkdirIfNotExists } from "./fs";
+import { existsFile, fetchData, mkdirIfNotExists, readPartialFile } from "./fs";
 import { exec, logExecStdout } from "./process";
 import { createMatchFilter, undefIfEmpty } from "./string";
 import { mkTmpDir } from "./temp";
@@ -30,6 +30,28 @@ function flatQuery(query: string, params?: any[]) {
         return param ? JSON.stringify(param) : "?";
       })
     : query;
+}
+
+export async function assertDumpFile(path: string) {
+  const headerContents = await readPartialFile(path, [0, 100]);
+  const footerContents = await readPartialFile(path, [-100]);
+
+  const successHeader = headerContents.split(/\r?\n/).some((line) => {
+    const firstLine = line.trim().toLowerCase();
+    return (
+      firstLine.startsWith("-- mysql dump") ||
+      firstLine.startsWith("-- mariadb dump")
+    );
+  });
+
+  if (!successHeader) throw new AppError("No start line found");
+
+  const successFooter = footerContents
+    .split(/\r?\n/)
+    .some((line) => line.trim().toLowerCase().startsWith("-- dump completed"));
+
+  if (!successFooter)
+    throw new AppError("No end line found (incomplete backup)");
 }
 
 export async function createMysqlCli(options: MysqlCliOptions) {
@@ -356,6 +378,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     changeDatabase,
     fetchAll,
     dump,
+    assertDumpFile,
     fetchTableNames,
     importFile,
     isDatabaseEmpty,

@@ -168,6 +168,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
                 },
               }),
             });
+            await sql.assertDumpFile(outPath);
           }
         },
       });
@@ -175,8 +176,12 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       data.onProgress({
         relative: { description: "Exporting" },
       });
+      const outPath = join(
+        snapshotPath,
+        `${this.config.database}${suffix.database}`,
+      );
       await sql.dump({
-        output: join(snapshotPath, `${this.config.database}${suffix.database}`),
+        output: outPath,
         items: tableNames,
         database: this.config.database,
         onProgress: (progress) =>
@@ -188,17 +193,23 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
             },
           }),
       });
+      await sql.assertDumpFile(outPath);
     }
 
     if (this.config.storedPrograms ?? true) {
       data.onProgress({
         relative: { description: "Exporting stored programs" },
       });
+      const outPath = join(
+        snapshotPath,
+        `${this.config.database}${suffix.stored}`,
+      );
       await sql.dump({
         database: this.config.database,
-        output: join(snapshotPath, `${this.config.database}${suffix.stored}`),
+        output: outPath,
         onlyStoredPrograms: true,
       });
+      await sql.assertDumpFile(outPath);
     }
     return {
       snapshotPath,
