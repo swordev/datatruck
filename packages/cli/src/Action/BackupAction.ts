@@ -224,6 +224,7 @@ export class BackupAction<TRequired extends boolean = true> {
             renderer: "default",
             collectErrors: "minimal",
             rendererOptions: {
+              collapseSubtasks: false,
               collapseErrors: false,
               timer: PRESET_TIMER,
             },
