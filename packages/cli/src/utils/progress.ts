@@ -1,6 +1,7 @@
 import { renderProgressBar } from "./cli";
 import bytes from "bytes";
 import { grey } from "chalk";
+import { emitKeypressEvents } from "readline";
 
 export type ProgressStats = {
   percent?: number;
@@ -17,7 +18,8 @@ export type Progress = {
 };
 
 export class ProgressManager {
-  protected lastCall: number | undefined;
+  protected lastSaltLine: number | undefined;
+  protected keydownListener: ((data: Buffer) => void) | undefined;
   readonly tty: boolean;
   readonly enabled: boolean | "interval";
   constructor(
@@ -43,25 +45,40 @@ export class ProgressManager {
           ? true
           : "interval"
         : !!options.enabled;
-    /*process.stdin?.setRawMode(true);
-    process.stdin?.on("data", (inKey) => {
-      const key = inKey.toString();
-      if (key === "\u0003") {
-        process.exit(1);
-      } else if (/^(\r\n)|\r|\n$/.test(key)) {
-        this.lastCall = undefined;
-      }
-    });*/
   }
   protected checkInterval() {
     if (
-      this.lastCall &&
-      (performance.now() - this.lastCall || 0) <
+      this.lastSaltLine &&
+      (performance.now() - this.lastSaltLine || 0) <
         (this.options.interval ?? 5_000)
     )
       return false;
-    this.lastCall = performance.now();
+    this.lastSaltLine = performance.now();
     return true;
+  }
+  start() {
+    emitKeypressEvents(process.stdin);
+    process.stdin?.setRawMode(true);
+    process.stdin?.resume();
+    process.stdin?.setEncoding("utf8");
+    process.stdin?.on(
+      "keypress",
+      (this.keydownListener = (inKey) => {
+        const key = inKey.toString();
+        if (key === "\u0003") {
+          process.stdin.setRawMode(false);
+          process.emit("SIGINT");
+        } else if (/^(\r\n)|\r|\n$/.test(key)) {
+          this.lastSaltLine = undefined;
+        }
+      }),
+    );
+  }
+  dispose() {
+    if (this.keydownListener) {
+      process.stdin?.off("keypress", this.keydownListener);
+      this.keydownListener = undefined;
+    }
   }
   update(progress: Progress, cb: (text: string) => void) {
     if (!this.enabled) return;

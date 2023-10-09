@@ -3,6 +3,7 @@ import { PackageConfigType } from "../Config/PackageConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
+import { Listr3 } from "../utils/async";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -14,7 +15,7 @@ import { GargabeCollector } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { ok } from "assert";
 import { randomUUID } from "crypto";
-import { Listr, ListrTask } from "listr2";
+import { ListrTask } from "listr2";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
@@ -97,7 +98,7 @@ export class BackupAction<TRequired extends boolean = true> {
       interval: options.progressInterval,
     });
 
-    return new Listr(
+    return new Listr3(
       [
         {
           title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
@@ -147,7 +148,10 @@ export class BackupAction<TRequired extends boolean = true> {
                                 this.config,
                                 repoName,
                               );
-                              pkg = { ...pkg, path: snapshotPath ?? pkg.path };
+                              pkg = {
+                                ...pkg,
+                                path: snapshotPath ?? pkg.path,
+                              };
                               ok(pkg.path);
                               await ensureExistsDir(pkg.path);
                               await gc.cleanupOnFinish(async () => {
@@ -227,6 +231,8 @@ export class BackupAction<TRequired extends boolean = true> {
             renderer: "simple",
             collectErrors: "minimal",
           },
-    );
+    )
+      .onBeforeRun(() => pm.start())
+      .onAfterRun(() => pm.dispose());
   }
 }

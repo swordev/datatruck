@@ -1,7 +1,39 @@
 import { PromisePool } from "@supercharge/promise-pool";
+import {
+  Listr,
+  ListrContext,
+  ListrPrimaryRendererValue,
+  ListrRendererValue,
+  ListrSecondaryRendererValue,
+} from "listr2";
 
 type ControllerItem = { stop?: () => void };
 type ItemBuffer<T> = Map<T, ControllerItem>;
+
+export class Listr3<
+  Ctx = ListrContext,
+  Renderer extends ListrRendererValue = ListrPrimaryRendererValue,
+  FallbackRenderer extends ListrRendererValue = ListrSecondaryRendererValue,
+> extends Listr<Ctx, Renderer, FallbackRenderer> {
+  protected beforeRun: (() => any) | undefined;
+  protected afterRun: (() => any) | undefined;
+  onBeforeRun(cb: () => any) {
+    this.beforeRun = cb;
+    return this;
+  }
+  onAfterRun(cb: () => any) {
+    this.afterRun = cb;
+    return this;
+  }
+  override async run(context?: Ctx): Promise<Ctx> {
+    await this.beforeRun?.();
+    try {
+      return await super.run(context);
+    } finally {
+      await this.afterRun?.();
+    }
+  }
+}
 
 export async function runParallel<T>(options: {
   items: T[];

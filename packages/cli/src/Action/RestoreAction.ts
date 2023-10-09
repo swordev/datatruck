@@ -4,6 +4,7 @@ import { AppError } from "../Error/AppError";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
+import { Listr3 } from "../utils/async";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -15,7 +16,7 @@ import { GargabeCollector } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
-import { Listr, ListrTask } from "listr2";
+import { ListrTask } from "listr2";
 
 export type RestoreActionOptions = {
   snapshotId: string;
@@ -140,7 +141,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     const packages = this.getPackages(snapshot);
     const snapshotAndConfigs = this.assocConfigs(packages, snapshots);
 
-    return new Listr(
+    return new Listr3(
       [
         {
           title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
@@ -224,6 +225,8 @@ export class RestoreAction<TRequired extends boolean = true> {
             renderer: "simple",
             collectErrors: "minimal",
           },
-    );
+    )
+      .onBeforeRun(() => pm.start())
+      .onAfterRun(() => pm.dispose());
   }
 }
