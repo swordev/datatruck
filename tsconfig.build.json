@@ -2,10 +2,10 @@
   "files": [],
   "references": [
     {
-      "path": "packages/cli/tsconfig.build.json"
+      "path": "./packages/cli/tsconfig.build.json"
     },
     {
-      "path": "packages/datatruck"
+      "path": "./packages/datatruck"
     }
   ]
 }
