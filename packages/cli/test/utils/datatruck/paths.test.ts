@@ -22,10 +22,16 @@ describe("parsePaths", () => {
         [
           {
             type: "process",
-            config: {
-              command: "echo",
-              args: ["file1"],
-            },
+            config:
+              platform() === "win32"
+                ? {
+                    command: "cmd",
+                    args: ["/c", "echo file1"],
+                  }
+                : {
+                    command: "echo",
+                    args: ["file1"],
+                  },
           },
         ],
         options,
@@ -58,10 +64,16 @@ describe("parsePaths", () => {
           "file1",
           {
             type: "process",
-            config: {
-              command: "echo",
-              args: ["file2"],
-            },
+            config:
+              platform() === "win32"
+                ? {
+                    command: "cmd",
+                    args: ["/c", "echo file2"],
+                  }
+                : {
+                    command: "echo",
+                    args: ["file2"],
+                  },
           },
           "file3",
         ],
