@@ -2,9 +2,9 @@
   "name": "@datatruck/cli",
   "version": "0.27.0",
   "scripts": {
-    "build": "tsc -b",
-    "clean": "tsc -b --clean",
-    "watch": "tsc -b -w"
+    "build": "tsc -b tsconfig.build.json",
+    "clean": "tsc -b tsconfig.build.json --clean",
+    "watch": "tsc -b tsconfig.build.json -w"
   },
   "dependencies": {
     "@supercharge/promise-pool": "^3.1.0",
