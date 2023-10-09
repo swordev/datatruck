@@ -58,7 +58,7 @@ export class ProgressManager {
   }
   start() {
     emitKeypressEvents(process.stdin);
-    process.stdin?.setRawMode(true);
+    process.stdin?.setRawMode?.(true);
     process.stdin?.resume();
     process.stdin?.setEncoding("utf8");
     process.stdin?.on(
@@ -66,7 +66,7 @@ export class ProgressManager {
       (this.keydownListener = (inKey) => {
         const key = inKey.toString();
         if (key === "\u0003") {
-          process.stdin.setRawMode(false);
+          process.stdin.setRawMode?.(false);
           process.emit("SIGINT");
         } else if (/^(\r\n)|\r|\n$/.test(key)) {
           this.lastSaltLine = undefined;
