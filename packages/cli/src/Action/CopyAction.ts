@@ -8,6 +8,7 @@ import {
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
 import { ProgressManager } from "../utils/progress";
+import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { ListrTask, PRESET_TIMER, PRESET_TIMESTAMP } from "listr2";
 
@@ -31,6 +32,7 @@ export class CopyAction<TRequired extends boolean = true> {
 
   async exec() {
     const { options } = this;
+    const { minFreeDiskSpace } = this.config;
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
@@ -38,6 +40,8 @@ export class CopyAction<TRequired extends boolean = true> {
       interval: options.progressInterval,
     });
     let sourceRepoConfig!: RepositoryConfigType;
+
+    if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
     return new Listr3(
       [
@@ -106,6 +110,11 @@ export class CopyAction<TRequired extends boolean = true> {
                             if (currentCopies.length)
                               return task.skip(
                                 `Already exists at ${mirrorRepositoryConfig.name}`,
+                              );
+                            if (minFreeDiskSpace)
+                              await mirrorRepo.ensureFreeDiskSpace(
+                                mirrorRepositoryConfig.config,
+                                minFreeDiskSpace,
                               );
                             await repo.copy({
                               mirrorRepositoryConfig:

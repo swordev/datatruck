@@ -1,5 +1,5 @@
 import globalData from "../globalData";
-import { tryRm } from "./fs";
+import { ensureFreeDiskSpace, mkdirIfNotExists } from "./fs";
 import { randomUUID } from "crypto";
 import { mkdir, rm } from "fs/promises";
 import { join } from "path";
@@ -10,6 +10,12 @@ export function parentTmpDir() {
 
 export function sessionTmpDir() {
   return join(parentTmpDir(), process.pid.toString());
+}
+
+export async function ensureFreeDiskTempSpace(size: number | string) {
+  const path = sessionTmpDir();
+  await mkdirIfNotExists(sessionTmpDir());
+  await ensureFreeDiskSpace([path], size);
 }
 
 export function isTmpDir(path: string) {

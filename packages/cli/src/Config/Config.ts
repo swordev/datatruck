@@ -6,6 +6,7 @@ import type { JSONSchema7 } from "json-schema";
 
 export type ConfigType = {
   tempDir?: string;
+  minFreeDiskSpace?: string | number;
   repositories: RepositoryConfigType[];
   packages: PackageConfigType[];
   server?: DatatruckServerOptions;
@@ -18,6 +19,7 @@ export const configDefinition: JSONSchema7 = {
   properties: {
     $schema: { type: "string" },
     tempDir: { type: "string" },
+    minFreeDiskSpace: { anyOf: [{ type: "integer" }, { type: "string" }] },
     repositories: {
       type: "array",
       items: makeRef(DefinitionEnum.repository),

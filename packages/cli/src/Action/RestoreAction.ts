@@ -10,9 +10,9 @@ import {
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
-import { initEmptyDir } from "../utils/fs";
+import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { ProgressManager } from "../utils/progress";
-import { GargabeCollector } from "../utils/temp";
+import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
@@ -127,12 +127,15 @@ export class RestoreAction<TRequired extends boolean = true> {
 
   async exec() {
     const { options } = this;
+    const { minFreeDiskSpace } = this.config;
     const pm = new ProgressManager({
       verbose: this.options.verbose,
       tty: options.tty,
       enabled: options.progress,
       interval: options.progressInterval,
     });
+
+    if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
     if (!options.snapshotId) throw new AppError("Snapshot id is required");
     const snapshots = this.groupSnapshots(await this.findSnapshots());
@@ -174,6 +177,8 @@ export class RestoreAction<TRequired extends boolean = true> {
                   snapshotPath = taskResult?.snapshotPath;
                 }
                 await initEmptyDir(snapshotPath);
+                if (minFreeDiskSpace)
+                  await ensureFreeDiskSpace([snapshotPath!], minFreeDiskSpace);
                 await repo.restore({
                   options,
                   snapshot,

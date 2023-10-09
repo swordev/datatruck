@@ -1,4 +1,8 @@
-import { createWriteStreamPool } from "../../src/utils/fs";
+import {
+  createWriteStreamPool,
+  ensureFreeDiskSpace,
+  fetchDiskStats,
+} from "../../src/utils/fs";
 import {
   isTmpDir,
   mkTmpDir,
@@ -10,6 +14,7 @@ import { randomBytes } from "crypto";
 import { mkdir, readFile, rm, rmdir } from "fs/promises";
 import { tmpdir } from "os";
 import { join, normalize } from "path";
+import { it } from "vitest";
 import { describe, expect, test } from "vitest";
 
 describe("isTmpDir", () => {
@@ -78,5 +83,20 @@ describe("createWriteStreamPool", () => {
       await rm(path, { recursive: true });
       throw error;
     }
+  });
+});
+
+describe("ensureFreeDiskSpace", async () => {
+  const disk = await fetchDiskStats(".");
+  const offset = 5 * 1024 * 1024;
+  it("passes", async () => {
+    await expect(
+      ensureFreeDiskSpace(["."], disk.free - offset),
+    ).resolves.toBeUndefined();
+  });
+  it("fails", async () => {
+    await expect(
+      ensureFreeDiskSpace(["."], disk.free + offset),
+    ).resolves.toThrowError();
   });
 });

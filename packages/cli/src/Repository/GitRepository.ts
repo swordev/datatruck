@@ -3,6 +3,8 @@ import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   fastFolderSizeAsync,
+  fetchDiskStats,
+  isLocalDir,
   mkdirIfNotExists,
   parsePackageFile,
 } from "../utils/fs";
@@ -56,6 +58,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
 
   override getSource() {
     return this.config.repo;
+  }
+  override async fetchDiskStats(config: GitRepositoryConfigType) {
+    if (isLocalDir(config.repo)) return await fetchDiskStats(config.repo);
   }
 
   static buildSnapshotTagName(

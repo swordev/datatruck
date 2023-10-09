@@ -11,7 +11,7 @@ import {
 } from "../utils/datatruck/config";
 import { ensureExistsDir } from "../utils/fs";
 import { ProgressManager } from "../utils/progress";
-import { GargabeCollector } from "../utils/temp";
+import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { ok } from "assert";
 import { randomUUID } from "crypto";
@@ -91,12 +91,15 @@ export class BackupAction<TRequired extends boolean = true> {
     let snapshot = this.prepareSnapshot();
     let packages = this.getPackages(snapshot);
     const { options } = this;
+    const { minFreeDiskSpace } = this.config;
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
       enabled: options.progress,
       interval: options.progressInterval,
     });
+
+    if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
     return new Listr3(
       [
@@ -144,7 +147,7 @@ export class BackupAction<TRequired extends boolean = true> {
                             title: `Creating backup in ${repoName}`,
                             exitOnError: false,
                             task: async (_, task) => {
-                              const repo = findRepositoryOrFail(
+                              const repoConfig = findRepositoryOrFail(
                                 this.config,
                                 repoName,
                               );
@@ -155,15 +158,21 @@ export class BackupAction<TRequired extends boolean = true> {
                               ok(pkg.path);
                               await ensureExistsDir(pkg.path);
                               await gc.cleanupOnFinish(async () => {
-                                await createRepo(repo).backup({
+                                const repo = createRepo(repoConfig);
+                                if (minFreeDiskSpace)
+                                  await repo.ensureFreeDiskSpace(
+                                    repoConfig.config,
+                                    minFreeDiskSpace,
+                                  );
+                                await repo.backup({
                                   options: this.options,
                                   snapshot,
                                   package: pkg as any,
                                   packageConfig: pkg.repositoryConfigs?.find(
                                     (config) =>
-                                      config.type === repo.type &&
+                                      config.type === repoConfig.type &&
                                       (!config.names ||
-                                        config.names.includes(repo.name)),
+                                        config.names.includes(repoConfig.name)),
                                   )?.config,
                                   onProgress: (progress) =>
                                     pm.update(
@@ -187,20 +196,28 @@ export class BackupAction<TRequired extends boolean = true> {
                             title: `Copying backup into ${mirror.name}`,
                             exitOnError: false,
                             task: async () => {
-                              const repo = findRepositoryOrFail(
+                              const repoConfig = findRepositoryOrFail(
                                 this.config,
                                 mirror.sourceName,
                               );
-                              const mirrorRepo = findRepositoryOrFail(
+                              const mirrorRepoConfig = findRepositoryOrFail(
                                 this.config,
                                 mirror.name,
                               );
                               await gc.cleanup(async () => {
-                                await createRepo(repo).copy({
+                                const repo = createRepo(repoConfig);
+                                const mirrorRepo = createRepo(mirrorRepoConfig);
+                                if (minFreeDiskSpace)
+                                  await mirrorRepo.ensureFreeDiskSpace(
+                                    mirrorRepoConfig.config,
+                                    minFreeDiskSpace,
+                                  );
+                                await repo.copy({
                                   options: this.options,
                                   package: pkg,
                                   snapshot,
-                                  mirrorRepositoryConfig: mirrorRepo.config,
+                                  mirrorRepositoryConfig:
+                                    mirrorRepoConfig.config,
                                   onProgress: (progress) =>
                                     pm.update(
                                       progress,

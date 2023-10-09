@@ -2,6 +2,7 @@ import { progressPercent } from "./math";
 import { rootPath } from "./path";
 import { Progress } from "./progress";
 import { eachLimit } from "async";
+import bytes from "bytes";
 import fastFolderSize from "fast-folder-size";
 import FastGlob, { Entry, Options } from "fast-glob";
 import { createReadStream, Dirent, ReadStream, Stats } from "fs";
@@ -19,6 +20,7 @@ import {
   rm,
   writeFile,
   rename,
+  statfs,
 } from "fs/promises";
 import { release } from "os";
 import { dirname, join, normalize, resolve } from "path";
@@ -650,4 +652,42 @@ export async function initEmptyDir(path: string | undefined) {
   await mkdirIfNotExists(path);
   await ensureEmptyDir(path);
   return path;
+}
+
+export type DiskStats = { total: number; free: number };
+
+export async function fetchDiskStats(path: string): Promise<DiskStats> {
+  const fs = await statfs(path);
+  const total = fs.bsize * fs.blocks;
+  const free = fs.bsize * fs.bavail;
+  return { total, free };
+}
+
+export async function checkFreeDiskSpace(
+  stat: DiskStats,
+  inSize: string | number,
+) {
+  const humanSize = typeof inSize === "number" ? bytes(inSize) : inSize;
+  const size = bytes.parse(inSize);
+
+  if (stat.free < size)
+    throw new Error(
+      `Free disk space is less than ${humanSize}: ${bytes(stat.free)}/${bytes(
+        stat.total,
+      )}`,
+    );
+}
+
+export async function ensureFreeDiskSpace(
+  input: string[] | DiskStats,
+  inSize: number | string,
+) {
+  if (Array.isArray(input)) {
+    for (const path of input) {
+      const stat = await fetchDiskStats(path);
+      await checkFreeDiskSpace(stat, inSize);
+    }
+  } else {
+    await checkFreeDiskSpace(input, inSize);
+  }
 }

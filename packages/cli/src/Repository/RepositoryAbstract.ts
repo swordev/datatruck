@@ -7,7 +7,8 @@ import type {
 } from "../Action/SnapshotsAction";
 import type { PackageConfigType } from "../Config/PackageConfig";
 import type { RepositoryConfigType } from "../Config/RepositoryConfig";
-import { Progress } from "../utils/progress";
+import { ensureFreeDiskSpace, type DiskStats } from "../utils/fs";
+import type { Progress } from "../utils/progress";
 
 export type PreSnapshot = {
   id: string;
@@ -91,6 +92,14 @@ export abstract class RepositoryAbstract<TConfig> {
     this.config = repository.config as never;
   }
   abstract getSource(): string;
+  abstract fetchDiskStats(config: TConfig): Promise<DiskStats | undefined>;
+  async ensureFreeDiskSpace(
+    config: TConfig,
+    minFreeDiskSpace: number | string,
+  ) {
+    const diskStats = await this.fetchDiskStats(config);
+    if (diskStats) await ensureFreeDiskSpace(diskStats, minFreeDiskSpace);
+  }
   abstract init(data: RepoInitData): Promise<void>;
   abstract prune(data: RepoPruneData): Promise<void>;
   abstract fetchSnapshots(data: RepoFetchSnapshotsData): Promise<Snapshot[]>;

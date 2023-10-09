@@ -1,4 +1,11 @@
-import { ensureEmptyDir, existsDir, existsFile, mkdirIfNotExists } from "./fs";
+import {
+  DiskStats,
+  ensureEmptyDir,
+  existsDir,
+  existsFile,
+  fetchDiskStats,
+  mkdirIfNotExists,
+} from "./fs";
 import { cp, readFile, readdir, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";
 
@@ -16,7 +23,11 @@ export abstract class AbstractFs {
   resolvePath(path: string) {
     return resolve(join(this.options.backend ?? ".", resolvePath(path)));
   }
+
   abstract isLocal(): boolean;
+  isRemote() {
+    return !this.isLocal();
+  }
   abstract existsDir(path: string): Promise<boolean>;
   abstract mkdir(path: string): Promise<void>;
   abstract readFile(path: string): Promise<string>;
@@ -25,8 +36,9 @@ export abstract class AbstractFs {
   abstract readdir(path: string): Promise<string[]>;
   abstract ensureEmptyDir(path: string): Promise<void>;
   abstract writeFile(path: string, contents: string): Promise<void>;
-  abstract upload(url: string, path: string): Promise<void>;
-  abstract download(url: string, path: string): Promise<void>;
+  abstract upload(source: string, target: string): Promise<void>;
+  abstract download(source: string, target: string): Promise<void>;
+  abstract fetchDiskStats(source: string): Promise<DiskStats>;
 }
 
 export class LocalFs extends AbstractFs {
@@ -58,6 +70,9 @@ export class LocalFs extends AbstractFs {
   }
   async rmAll(path: string) {
     await rm(this.resolvePath(path), { recursive: true });
+  }
+  async fetchDiskStats(source: string) {
+    return await fetchDiskStats(this.resolvePath(source));
   }
   async upload(source: string, target: string) {
     await cp(source, this.resolvePath(target));

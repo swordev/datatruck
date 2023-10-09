@@ -4,6 +4,7 @@ import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   fastglobToGitIgnore,
+  fetchDiskStats,
   mkdirIfNotExists,
   parsePackageFile,
   writeGitIgnoreList,
@@ -159,7 +160,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   override getSource() {
     return formatUri({ ...this.config.repository, password: undefined });
   }
-
+  override async fetchDiskStats(config: ResticRepositoryConfigType) {
+    if (config.repository.backend === "local" && config.repository.path)
+      return fetchDiskStats(config.repository.path);
+  }
   override async init(data: RepoInitData) {
     const restic = new Restic({
       env: await this.buildEnv(),

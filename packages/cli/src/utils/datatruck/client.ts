@@ -1,3 +1,4 @@
+import { DiskStats } from "../fs";
 import { downloadFile, fetchJson, post, uploadFile } from "../http";
 import { AbstractFs, FsOptions, LocalFs } from "../virtual-fs";
 import { headerKey } from "./server";
@@ -59,6 +60,9 @@ export class RemoteFs extends AbstractFs {
   }
   async rmAll(path: string) {
     await this.fetchJson("rmAll", [path]);
+  }
+  async fetchDiskStats(path: string): Promise<DiskStats> {
+    return await this.fetchJson("fetchDiskStats", [path]);
   }
   async upload(source: string, target: string) {
     await uploadFile(`${this.url}/upload`, source, {

@@ -135,6 +135,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return this.config.backend;
   }
 
+  override fetchDiskStats(config: DatatruckRepositoryConfigType) {
+    const fs = createFs(config.backend);
+    return fs.fetchDiskStats(".");
+  }
+
   override async init(data: RepoInitData) {
     const fs = createFs(this.config.backend);
     await fs.mkdir(".");
