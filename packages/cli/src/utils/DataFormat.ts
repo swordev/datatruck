@@ -11,20 +11,24 @@ export class DataFormat<TItem extends Record<string, unknown>> {
   constructor(
     readonly options: {
       items: TItem[];
-      json?: (item: TItem) => any;
+      json?: { data: any } | ((item: TItem) => any);
       table: {
         labels: string[];
-        handler: (item: TItem) => (string | number | null | undefined)[];
+        handler: (
+          item: TItem,
+          prev: TItem | undefined,
+        ) => (string | number | null | undefined)[];
       };
     },
   ) {}
 
+  protected getJson() {
+    return typeof this.options.json === "function"
+      ? this.options.items.map(this.options.json)
+      : this.options.json?.data || this.options.items;
+  }
   protected formatToJson() {
-    return JSON.stringify(
-      this.options.json
-        ? this.options.items.map(this.options.json)
-        : this.options.items,
-    );
+    return JSON.stringify(this.getJson());
   }
 
   protected formatToPrettyJson() {
@@ -37,20 +41,23 @@ export class DataFormat<TItem extends Record<string, unknown>> {
         breakLength: Infinity,
         compact: false,
       },
-      this.options.items,
+      this.getJson(),
     );
   }
 
   protected formatToYaml() {
-    return require("yaml").stringify(this.options.items);
+    return require("yaml").stringify(this.getJson());
   }
 
   protected formatToTable() {
     const table = new Table({
       head: this.options.table.labels,
     });
-    for (const item of this.options.items)
-      table.push(this.options.table.handler(item));
+    let prev: TItem | undefined = undefined;
+    for (const item of this.options.items) {
+      table.push(this.options.table.handler(item, prev));
+      prev = item;
+    }
     return table.toString();
   }
 
@@ -70,7 +77,7 @@ export class DataFormat<TItem extends Record<string, unknown>> {
       return this.formatToYaml();
     } else if (format.startsWith(customPrefix)) {
       const code = format.slice(customPrefix.length);
-      return runCustomCode(this.options.items, code);
+      return runCustomCode(this.getJson(), code);
     } else if (format.startsWith(tplPrefix)) {
       const name = format.slice(tplPrefix.length);
       const tpl = options?.tpl || {};
