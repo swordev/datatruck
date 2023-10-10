@@ -1,3 +1,4 @@
+import { ProgressManager } from "./progress";
 import {
   Listr,
   ListrContext,
@@ -22,14 +23,16 @@ export class Listr3<Ctx = ListrContext> extends Listr<
   "default",
   "simple"
 > {
-  protected beforeRun: ((list: this) => any) | undefined;
-  protected afterRun: ((list: this) => any) | undefined;
-  constructor(options: { ctx?: Ctx; tty?: () => boolean }) {
+  constructor(
+    readonly $options: { ctx?: Ctx; progressManager?: ProgressManager },
+  ) {
     super([], {
-      ctx: options.ctx,
+      ctx: $options.ctx,
       renderer: "default",
       collectErrors: "minimal",
-      fallbackRendererCondition: options.tty,
+      ...($options.progressManager && {
+        fallbackRendererCondition: () => !$options.progressManager!.tty,
+      }),
       fallbackRenderer: "simple",
       fallbackRendererOptions: {
         logger: new List3Logger(),
@@ -44,14 +47,6 @@ export class Listr3<Ctx = ListrContext> extends Listr<
       },
     });
   }
-  onBeforeRun(cb: (list: this) => any) {
-    this.beforeRun = cb;
-    return this;
-  }
-  onAfterRun(cb: (list: this) => any) {
-    this.afterRun = cb;
-    return this;
-  }
   override add(
     tasks:
       | ListrTask<Ctx, ListrGetRendererClassFromValue<"default">>
@@ -61,11 +56,11 @@ export class Listr3<Ctx = ListrContext> extends Listr<
     return this;
   }
   override async run(context?: Ctx): Promise<Ctx> {
-    await this.beforeRun?.(this);
     try {
+      this.$options.progressManager?.start();
       return await super.run(context);
     } finally {
-      await this.afterRun?.(this);
+      this.$options.progressManager?.dispose();
     }
   }
 }

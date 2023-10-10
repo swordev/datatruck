@@ -101,142 +101,138 @@ export class BackupAction<TRequired extends boolean = true> {
 
     if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
-    return new Listr3({ tty: () => pm.tty })
-      .onBeforeRun(() => pm.start())
-      .onAfterRun(() => pm.dispose())
-      .add([
-        {
-          title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
-          task: (_, task) => {},
-        },
-        {
-          title: `Packages: ${packages.length}`,
-          task: (_, task) => {
-            return task.newListr(
-              packages.map((pkg) => {
-                return {
-                  title: `${pkg.name}`,
-                  exitOnError: false,
-                  task: (_, task) => {
-                    let snapshotPath: string | undefined;
-                    const gc = new GargabeCollector();
-                    const { repoNames, mirrors } = this.splitRepositories(
-                      pkg.repositoryNames ?? [],
-                    );
+    return new Listr3({ progressManager: pm }).add([
+      {
+        title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
+        task: (_, task) => {},
+      },
+      {
+        title: `Packages: ${packages.length}`,
+        task: (_, task) => {
+          return task.newListr(
+            packages.map((pkg) => {
+              return {
+                title: `${pkg.name}`,
+                exitOnError: false,
+                task: (_, task) => {
+                  let snapshotPath: string | undefined;
+                  const gc = new GargabeCollector();
+                  const { repoNames, mirrors } = this.splitRepositories(
+                    pkg.repositoryNames ?? [],
+                  );
 
-                    return task.newListr([
-                      {
-                        enabled: !!pkg.task,
-                        title: `Executing ${pkg.task?.name} task`,
-                        task: async (_, listTask) => {
-                          await gc.cleanupIfFail(async () => {
-                            const taskResult = await createTask(
-                              pkg.task!,
-                            ).backup({
+                  return task.newListr([
+                    {
+                      enabled: !!pkg.task,
+                      title: `Executing ${pkg.task?.name} task`,
+                      task: async (_, listTask) => {
+                        await gc.cleanupIfFail(async () => {
+                          const taskResult = await createTask(pkg.task!).backup(
+                            {
                               options,
                               package: pkg,
                               snapshot,
                               onProgress: (p) =>
                                 pm.update(p, (t) => (listTask.output = t)),
+                            },
+                          );
+                          snapshotPath = taskResult?.snapshotPath;
+                        });
+                      },
+                    },
+                    ...repoNames.map(
+                      (repoName) =>
+                        ({
+                          title: `Creating backup in ${repoName}`,
+                          exitOnError: false,
+                          task: async (_, task) => {
+                            const repoConfig = findRepositoryOrFail(
+                              this.config,
+                              repoName,
+                            );
+                            pkg = {
+                              ...pkg,
+                              path: snapshotPath ?? pkg.path,
+                            };
+                            ok(pkg.path);
+                            await ensureExistsDir(pkg.path);
+                            await gc.cleanupOnFinish(async () => {
+                              const repo = createRepo(repoConfig);
+                              if (minFreeDiskSpace)
+                                await repo.ensureFreeDiskSpace(
+                                  repoConfig.config,
+                                  minFreeDiskSpace,
+                                );
+                              await repo.backup({
+                                options: this.options,
+                                snapshot,
+                                package: pkg as any,
+                                packageConfig: pkg.repositoryConfigs?.find(
+                                  (config) =>
+                                    config.type === repoConfig.type &&
+                                    (!config.names ||
+                                      config.names.includes(repoConfig.name)),
+                                )?.config,
+                                onProgress: (progress) =>
+                                  pm.update(
+                                    progress,
+                                    (text) => (task.output = text),
+                                  ),
+                              });
                             });
-                            snapshotPath = taskResult?.snapshotPath;
-                          });
-                        },
-                      },
-                      ...repoNames.map(
-                        (repoName) =>
-                          ({
-                            title: `Creating backup in ${repoName}`,
-                            exitOnError: false,
-                            task: async (_, task) => {
-                              const repoConfig = findRepositoryOrFail(
-                                this.config,
-                                repoName,
-                              );
-                              pkg = {
-                                ...pkg,
-                                path: snapshotPath ?? pkg.path,
-                              };
-                              ok(pkg.path);
-                              await ensureExistsDir(pkg.path);
-                              await gc.cleanupOnFinish(async () => {
-                                const repo = createRepo(repoConfig);
-                                if (minFreeDiskSpace)
-                                  await repo.ensureFreeDiskSpace(
-                                    repoConfig.config,
-                                    minFreeDiskSpace,
-                                  );
-                                await repo.backup({
-                                  options: this.options,
-                                  snapshot,
-                                  package: pkg as any,
-                                  packageConfig: pkg.repositoryConfigs?.find(
-                                    (config) =>
-                                      config.type === repoConfig.type &&
-                                      (!config.names ||
-                                        config.names.includes(repoConfig.name)),
-                                  )?.config,
-                                  onProgress: (progress) =>
-                                    pm.update(
-                                      progress,
-                                      (text) => (task.output = text),
-                                    ),
-                                });
+                          },
+                        }) satisfies ListrTask,
+                    ),
+                    {
+                      title: "Cleaning task files",
+                      exitOnError: false,
+                      enabled: gc.pending,
+                      task: async () => await gc.cleanup(),
+                    },
+                    ...mirrors.map(
+                      (mirror) =>
+                        ({
+                          title: `Copying backup into ${mirror.name}`,
+                          exitOnError: false,
+                          task: async () => {
+                            const repoConfig = findRepositoryOrFail(
+                              this.config,
+                              mirror.sourceName,
+                            );
+                            const mirrorRepoConfig = findRepositoryOrFail(
+                              this.config,
+                              mirror.name,
+                            );
+                            await gc.cleanup(async () => {
+                              const repo = createRepo(repoConfig);
+                              const mirrorRepo = createRepo(mirrorRepoConfig);
+                              if (minFreeDiskSpace)
+                                await mirrorRepo.ensureFreeDiskSpace(
+                                  mirrorRepoConfig.config,
+                                  minFreeDiskSpace,
+                                );
+                              await repo.copy({
+                                options: this.options,
+                                package: pkg,
+                                snapshot,
+                                mirrorRepositoryConfig: mirrorRepoConfig.config,
+                                onProgress: (progress) =>
+                                  pm.update(
+                                    progress,
+                                    (text) => (task.output = text),
+                                  ),
                               });
-                            },
-                          }) satisfies ListrTask,
-                      ),
-                      {
-                        title: "Cleaning task files",
-                        exitOnError: false,
-                        enabled: gc.pending,
-                        task: async () => await gc.cleanup(),
-                      },
-                      ...mirrors.map(
-                        (mirror) =>
-                          ({
-                            title: `Copying backup into ${mirror.name}`,
-                            exitOnError: false,
-                            task: async () => {
-                              const repoConfig = findRepositoryOrFail(
-                                this.config,
-                                mirror.sourceName,
-                              );
-                              const mirrorRepoConfig = findRepositoryOrFail(
-                                this.config,
-                                mirror.name,
-                              );
-                              await gc.cleanup(async () => {
-                                const repo = createRepo(repoConfig);
-                                const mirrorRepo = createRepo(mirrorRepoConfig);
-                                if (minFreeDiskSpace)
-                                  await mirrorRepo.ensureFreeDiskSpace(
-                                    mirrorRepoConfig.config,
-                                    minFreeDiskSpace,
-                                  );
-                                await repo.copy({
-                                  options: this.options,
-                                  package: pkg,
-                                  snapshot,
-                                  mirrorRepositoryConfig:
-                                    mirrorRepoConfig.config,
-                                  onProgress: (progress) =>
-                                    pm.update(
-                                      progress,
-                                      (text) => (task.output = text),
-                                    ),
-                                });
-                              });
-                            },
-                          }) satisfies ListrTask,
-                      ),
-                    ]);
-                  },
-                } satisfies ListrTask;
-              }),
-            );
-          },
+                            });
+                          },
+                        }) satisfies ListrTask,
+                    ),
+                  ]);
+                },
+              } satisfies ListrTask;
+            }),
+          );
         },
-      ]);
+      },
+    ]);
   }
 }

@@ -43,101 +43,97 @@ export class CopyAction<TRequired extends boolean = true> {
 
     if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
-    return new Listr3({ tty: () => pm.tty })
-      .onBeforeRun(() => pm.start())
-      .onAfterRun(() => pm.dispose())
-      .add([
-        {
-          title: "Fetching snapshot",
-          task: async (_, task) => {
-            sourceRepoConfig = findRepositoryOrFail(
-              this.config,
-              this.options.repositoryName,
-            );
-            const repo = createRepo(sourceRepoConfig);
-            const snapshots = await repo.fetchSnapshots({
-              options: {
-                ids: this.options.ids,
-                packageNames: this.options.packageNames,
-                packageTaskNames: this.options.packageTaskNames,
-              },
-            });
-            task.title = `Snapshots found: ${snapshots.length}`;
-            if (!snapshots.length) throw new Error("No snapshots found");
-            return task.newListr(
-              snapshots.map((snapshot) => {
-                return {
-                  exitOnError: false,
-                  title: `Copying snapshot ${
-                    snapshot.packageName
-                  } (${snapshot.id.slice(0, 8)})`,
-                  task: async (_, task) => {
-                    const repositoryNames2 =
-                      this.options.repositoryNames2 ||
-                      this.config.repositories
-                        .filter(
-                          (r) =>
-                            r.name !== sourceRepoConfig.name &&
-                            r.type === sourceRepoConfig.type &&
-                            filterRepository(r, "backup"),
-                        )
-                        .map((r) => r.name);
-                    if (!repositoryNames2.length)
-                      throw new Error(`No repositories founds`);
-                    return task.newListr(
-                      repositoryNames2.map((repo2) => {
-                        return {
-                          title: `Copying to ${repo2}`,
-                          exitOnError: false,
-                          task: async (_, task) => {
-                            const mirrorRepositoryConfig = findRepositoryOrFail(
-                              this.config,
-                              repo2,
-                            );
-                            const mirrorRepo = createRepo(
-                              mirrorRepositoryConfig,
-                            );
-                            ensureSameRepositoryType(
-                              sourceRepoConfig,
-                              mirrorRepositoryConfig,
-                            );
-                            const currentCopies =
-                              await mirrorRepo.fetchSnapshots({
-                                options: {
-                                  ids: [snapshot.id],
+    return new Listr3({ progressManager: pm }).add([
+      {
+        title: "Fetching snapshot",
+        task: async (_, task) => {
+          sourceRepoConfig = findRepositoryOrFail(
+            this.config,
+            this.options.repositoryName,
+          );
+          const repo = createRepo(sourceRepoConfig);
+          const snapshots = await repo.fetchSnapshots({
+            options: {
+              ids: this.options.ids,
+              packageNames: this.options.packageNames,
+              packageTaskNames: this.options.packageTaskNames,
+            },
+          });
+          task.title = `Snapshots found: ${snapshots.length}`;
+          if (!snapshots.length) throw new Error("No snapshots found");
+          return task.newListr(
+            snapshots.map((snapshot) => {
+              return {
+                exitOnError: false,
+                title: `Copying snapshot ${
+                  snapshot.packageName
+                } (${snapshot.id.slice(0, 8)})`,
+                task: async (_, task) => {
+                  const repositoryNames2 =
+                    this.options.repositoryNames2 ||
+                    this.config.repositories
+                      .filter(
+                        (r) =>
+                          r.name !== sourceRepoConfig.name &&
+                          r.type === sourceRepoConfig.type &&
+                          filterRepository(r, "backup"),
+                      )
+                      .map((r) => r.name);
+                  if (!repositoryNames2.length)
+                    throw new Error(`No repositories founds`);
+                  return task.newListr(
+                    repositoryNames2.map((repo2) => {
+                      return {
+                        title: `Copying to ${repo2}`,
+                        exitOnError: false,
+                        task: async (_, task) => {
+                          const mirrorRepositoryConfig = findRepositoryOrFail(
+                            this.config,
+                            repo2,
+                          );
+                          const mirrorRepo = createRepo(mirrorRepositoryConfig);
+                          ensureSameRepositoryType(
+                            sourceRepoConfig,
+                            mirrorRepositoryConfig,
+                          );
+                          const currentCopies = await mirrorRepo.fetchSnapshots(
+                            {
+                              options: {
+                                ids: [snapshot.id],
 
-                                  packageNames: [snapshot.packageName],
-                                },
-                              });
-                            if (currentCopies.length)
-                              return task.skip(
-                                `Already exists at ${mirrorRepositoryConfig.name}`,
-                              );
-                            if (minFreeDiskSpace)
-                              await mirrorRepo.ensureFreeDiskSpace(
-                                mirrorRepositoryConfig.config,
-                                minFreeDiskSpace,
-                              );
-                            await repo.copy({
-                              mirrorRepositoryConfig:
-                                mirrorRepositoryConfig.config,
-                              options: { verbose: this.options.verbose },
-                              package: { name: snapshot.packageName },
-                              snapshot,
-                              onProgress: (p) =>
-                                pm.update(p, (d) => (task.output = d)),
-                            });
-                            task.title = `Snapshot copied to ${mirrorRepositoryConfig.name}`;
-                          },
-                        } satisfies ListrTask;
-                      }),
-                    );
-                  },
-                } satisfies ListrTask;
-              }),
-            );
-          },
+                                packageNames: [snapshot.packageName],
+                              },
+                            },
+                          );
+                          if (currentCopies.length)
+                            return task.skip(
+                              `Already exists at ${mirrorRepositoryConfig.name}`,
+                            );
+                          if (minFreeDiskSpace)
+                            await mirrorRepo.ensureFreeDiskSpace(
+                              mirrorRepositoryConfig.config,
+                              minFreeDiskSpace,
+                            );
+                          await repo.copy({
+                            mirrorRepositoryConfig:
+                              mirrorRepositoryConfig.config,
+                            options: { verbose: this.options.verbose },
+                            package: { name: snapshot.packageName },
+                            snapshot,
+                            onProgress: (p) =>
+                              pm.update(p, (d) => (task.output = d)),
+                          });
+                          task.title = `Snapshot copied to ${mirrorRepositoryConfig.name}`;
+                        },
+                      } satisfies ListrTask;
+                    }),
+                  );
+                },
+              } satisfies ListrTask;
+            }),
+          );
         },
-      ]);
+      },
+    ]);
   }
 }
