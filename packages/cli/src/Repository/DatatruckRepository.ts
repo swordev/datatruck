@@ -10,6 +10,7 @@ import {
   tryRm,
   createProgress,
 } from "../utils/fs";
+import { progressPercent } from "../utils/math";
 import { checkMatch, match, makePathPatterns } from "../utils/string";
 import {
   extractTar,
@@ -396,7 +397,20 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const entries = await sourceFs.readdir(snapshotName);
 
+    const total = entries.length;
+
+    let current = 0;
     for (const entry of entries) {
+      data.onProgress({
+        absolute: {
+          current,
+          description: "Copying",
+          payload: entry,
+          total,
+          percent: progressPercent(total, current),
+        },
+      });
+      current++;
       const sourceEntry = `${snapshotName}/${entry}`;
       if (targetFs.isLocal()) {
         await sourceFs.download(sourceEntry, targetFs.resolvePath(sourceEntry));
