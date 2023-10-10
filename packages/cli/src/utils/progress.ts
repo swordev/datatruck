@@ -1,4 +1,5 @@
 import { renderProgressBar } from "./cli";
+import { Timer, createTimer } from "./date";
 import bytes from "bytes";
 import { grey } from "chalk";
 import { emitKeypressEvents } from "readline";
@@ -18,7 +19,8 @@ export type Progress = {
 };
 
 export class ProgressManager {
-  protected lastSaltLine: number | undefined;
+  protected timer = createTimer();
+  protected interval: Timer | undefined = createTimer();
   protected keydownListener: ((data: Buffer) => void) | undefined;
   readonly tty: boolean;
   readonly enabled: boolean | "interval";
@@ -46,17 +48,11 @@ export class ProgressManager {
           : "interval"
         : !!options.enabled;
   }
-  protected checkInterval() {
-    if (
-      this.lastSaltLine &&
-      (performance.now() - this.lastSaltLine || 0) <
-        (this.options.interval ?? 5_000)
-    )
-      return false;
-    this.lastSaltLine = performance.now();
-    return true;
+  elapsed() {
+    return this.timer.elapsed();
   }
   start() {
+    this.timer.reset();
     emitKeypressEvents(process.stdin);
     process.stdin?.setRawMode?.(true);
     process.stdin?.resume();
@@ -69,12 +65,13 @@ export class ProgressManager {
           process.stdin.setRawMode?.(false);
           process.emit("SIGINT");
         } else if (/^(\r\n)|\r|\n$/.test(key)) {
-          this.lastSaltLine = undefined;
+          this.interval = undefined;
         }
       }),
     );
   }
   dispose() {
+    this.timer.stop();
     if (this.keydownListener) {
       process.stdin?.off("keypress", this.keydownListener);
       this.keydownListener = undefined;
@@ -82,7 +79,13 @@ export class ProgressManager {
   }
   update(progress: Progress, cb: (text: string) => void) {
     if (!this.enabled) return;
-    if (this.enabled === "interval" && !this.checkInterval()) return;
+    if (this.enabled === "interval") {
+      if (this.interval) {
+        if (!this.interval.reset(this.options.interval ?? 5_000)) return;
+      } else {
+        this.interval = createTimer();
+      }
+    }
     cb(renderProgress(progress, this.tty).join("\n"));
   }
 }

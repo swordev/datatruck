@@ -87,15 +87,26 @@ export function filterByLast<TItem extends { date: string }>(
   return items.filter((item) => validItems.includes(item));
 }
 
-export function createChron() {
-  let startTime: number | undefined;
-  return {
-    start: () => (startTime = Date.now()),
-    elapsed: (formatted?: boolean) => {
-      if (!startTime) throw new Error(`Chron was not started`);
-      const seconds = (Date.now() - startTime) / 1000;
-      if (formatted) return formatSeconds(seconds);
-      return seconds;
+export type Timer = {
+  reset: (min?: number) => boolean;
+  check: (min: number) => boolean;
+  elapsed: () => number;
+  stop: () => void;
+};
+
+export function createTimer() {
+  let startTime = Date.now();
+  let endTime: number | undefined;
+  const timer: Timer = {
+    elapsed: () => (endTime || Date.now()) - startTime,
+    check: (ms: number) => timer.elapsed() > ms,
+    stop: () => (endTime = Date.now()),
+    reset: (min?: number) => {
+      if (typeof min === "number" && !timer.check(min)) return false;
+      startTime = Date.now();
+      endTime = undefined;
+      return true;
     },
   };
+  return timer;
 }
