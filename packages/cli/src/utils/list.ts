@@ -24,7 +24,11 @@ export class Listr3<Ctx = ListrContext> extends Listr<
   "simple"
 > {
   constructor(
-    readonly $options: { ctx?: Ctx; progressManager?: ProgressManager },
+    readonly $options: {
+      ctx?: Ctx;
+      progressManager?: ProgressManager;
+      onAfterRun?: () => void;
+    },
   ) {
     super([], {
       ctx: $options.ctx,
@@ -60,6 +64,7 @@ export class Listr3<Ctx = ListrContext> extends Listr<
       this.$options.progressManager?.start();
       return await super.run(context);
     } finally {
+      this.$options.onAfterRun?.();
       this.$options.progressManager?.dispose();
     }
   }

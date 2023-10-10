@@ -1,10 +1,11 @@
-import { formatSeconds } from "./string";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import $duration from "dayjs/plugin/duration";
 import isoWeek from "dayjs/plugin/isoWeek";
 
 dayjs.extend(isoWeek);
 dayjs.extend(advancedFormat);
+dayjs.extend($duration);
 
 export type FilterByLastOptionsType = {
   last?: number;
@@ -109,4 +110,8 @@ export function createTimer() {
     },
   };
   return timer;
+}
+
+export function duration(ms: number) {
+  return dayjs.duration(ms, "ms").format("HH:mm:ss");
 }
