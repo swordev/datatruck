@@ -12,14 +12,14 @@
     "async": "^3.2.4",
     "bytes": "^3.1.2",
     "chalk": "^4.1.2",
-    "cli-table3": "^0.6.3",
     "commander": "^11.0.0",
     "dayjs": "^1.11.10",
     "fast-folder-size": "^2.2.0",
     "fast-glob": "^3.3.1",
     "listr2": "^7.0.1",
     "micromatch": "^4.0.5",
-    "mysql2": "^3.6.1"
+    "mysql2": "^3.6.1",
+    "tty-table": "^4.2.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",

@@ -64,13 +64,15 @@ export function logExec(
 }
 
 export function resultColumn(
-  error: Error | null | string,
-  state?: "started" | "ended",
+  error: Error | null | string | boolean | undefined,
 ) {
-  return error ? "❌" : state === "started" ? " ? " : "✅";
+  return error ? chalk.red("Χ") : chalk.green("✓");
 }
 
-export function errorColumn(error: Error | null | string, verbose: number) {
+export function errorColumn(
+  error: Error | null | string | undefined,
+  verbose: number,
+) {
   let message: string | null = null;
   if (typeof error === "string") {
     message = error;

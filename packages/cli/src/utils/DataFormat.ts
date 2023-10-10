@@ -1,5 +1,5 @@
 import { AppError } from "../Error/AppError";
-import Table from "cli-table3";
+import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";
 
 export type FormatType = "json" | "pjson" | "table" | "yaml" | "custom" | "tpl";
@@ -7,25 +7,19 @@ export type FormatType = "json" | "pjson" | "table" | "yaml" | "custom" | "tpl";
 const customPrefix = "custom=";
 const tplPrefix = "tpl=";
 
-export class DataFormat<TItem extends Record<string, unknown>> {
+export class DataFormat {
   constructor(
     readonly options: {
-      items: TItem[];
-      json?: { data: any } | ((item: TItem) => any);
-      table: {
-        labels: string[];
-        handler: (
-          item: TItem,
-          prev: TItem | undefined,
-        ) => (string | number | null | undefined)[];
+      json: any;
+      table?: {
+        headers: Header[];
+        rows: () => (string | number | null | undefined)[][];
       };
     },
   ) {}
 
   protected getJson() {
-    return typeof this.options.json === "function"
-      ? this.options.items.map(this.options.json)
-      : this.options.json?.data || this.options.items;
+    return this.options.json;
   }
   protected formatToJson() {
     return JSON.stringify(this.getJson());
@@ -50,15 +44,13 @@ export class DataFormat<TItem extends Record<string, unknown>> {
   }
 
   protected formatToTable() {
-    const table = new Table({
-      head: this.options.table.labels,
-    });
-    let prev: TItem | undefined = undefined;
-    for (const item of this.options.items) {
-      table.push(this.options.table.handler(item, prev));
-      prev = item;
-    }
-    return table.toString();
+    if (!this.options.table) throw new Error(`Table format incompatible`);
+    const table = TtyTable(
+      this.options.table.headers,
+      this.options.table.rows(),
+      {},
+    );
+    return table.render();
   }
 
   format(

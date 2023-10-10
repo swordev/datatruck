@@ -43,26 +43,23 @@ export class InitCommand extends CommandAbstract<
     });
     const response: InitCommandLogType = await init.exec();
     const dataFormat = new DataFormat({
-      items: response,
-      json: (item) => ({
-        ...item,
-        error: item.error ? getErrorProperties(item.error) : null,
-      }),
+      json: response,
       table: {
-        labels: [
-          "   ",
-          "Repository name",
-          "Repository type",
-          "Repository source",
-          "",
+        headers: [
+          { value: "", width: 3 },
+          { value: "Repository name" },
+          { value: "Repository type" },
+          { value: "Repository source" },
+          { value: "Error", width: 50 },
         ],
-        handler: (item) => [
-          resultColumn(item.error),
-          item.repositoryName,
-          item.repositoryType,
-          item.repositorySource,
-          errorColumn(item.error, verbose),
-        ],
+        rows: () =>
+          response.map((item) => [
+            resultColumn(item.error),
+            item.repositoryName,
+            item.repositoryType,
+            item.repositorySource,
+            errorColumn(item.error, verbose),
+          ]),
       },
     });
 

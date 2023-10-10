@@ -64,14 +64,19 @@ export class ConfigCommand extends CommandAbstract<
     }));
 
     const dataFormat = new DataFormat({
-      items: summaryConfig,
+      json: config,
       table: {
-        labels: ["Package", "Repository", "Task"],
-        handler: (item) => [
-          item.packageName,
-          item.repositoryNames.join(", "),
-          item.taskName ?? "",
+        headers: [
+          { value: "Package" },
+          { value: "Repository" },
+          { value: "Task" },
         ],
+        rows: () =>
+          summaryConfig.map((item) => [
+            item.packageName,
+            item.repositoryNames.join(", "),
+            item.taskName ?? "",
+          ]),
       },
     });
 

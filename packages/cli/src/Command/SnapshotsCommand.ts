@@ -143,26 +143,27 @@ export class SnapshotsCommand extends CommandAbstract<
     });
     const items = await snapshots.exec();
     const dataFormat = new DataFormat({
-      items,
+      json: items,
       table: {
-        labels: [
-          "Id.",
-          "Date",
-          "Package",
-          "Task",
-          "Size",
-          "Repository",
-          "Repository type",
+        headers: [
+          { value: "Id.", width: (this.options.longId ? 32 : 8) + 2 },
+          { value: "Date", width: 23 + 2 },
+          { value: "Package" },
+          { value: "Task" },
+          { value: "Size" },
+          { value: "Repository" },
+          { value: "Repository type" },
         ],
-        handler: (item) => [
-          this.options.longId ? item.id : item.id.slice(0, 8),
-          item.date.replace("T", " ").replace("Z", ""),
-          item.packageName,
-          item.packageTaskName || "",
-          bytes(item.size),
-          item.repositoryName,
-          item.repositoryType,
-        ],
+        rows: () =>
+          items.map((item) => [
+            this.options.longId ? item.id : item.id.slice(0, 8),
+            item.date.replace("T", " ").replace("Z", ""),
+            item.packageName,
+            item.packageTaskName || "",
+            bytes(item.size),
+            item.repositoryName,
+            item.repositoryType,
+          ]),
       },
     });
 

@@ -152,24 +152,25 @@ export class PruneCommand extends CommandAbstract<
 
     const pruneResult = await prune.exec();
     const dataFormat = new DataFormat({
-      items: pruneResult.snapshots,
+      json: pruneResult,
       table: {
-        labels: [
-          "Id.",
-          "Date",
-          "Package",
-          "Repository",
-          "Repository type",
-          "Exclusion reasons",
+        headers: [
+          { value: "Id.", width: (this.options.longId ? 32 : 8) + 2 },
+          { value: "Date", width: 23 + 2 },
+          { value: "Package" },
+          { value: "Repository" },
+          { value: "Repository type" },
+          { value: "Exclusion reasons" },
         ],
-        handler: (item) => [
-          this.options.longId ? item.id : item.id.slice(0, 8),
-          item.date.replace("T", " ").replace("Z", ""),
-          item.packageName,
-          item.repositoryName,
-          item.repositoryType,
-          item.exclusionReasons?.join(", ") ?? "",
-        ],
+        rows: () =>
+          pruneResult.snapshots.map((item) => [
+            this.options.longId ? item.id : item.id.slice(0, 8),
+            item.date.replace("T", " ").replace("Z", ""),
+            item.packageName,
+            item.repositoryName,
+            item.repositoryType,
+            item.exclusionReasons?.join(", ") ?? "",
+          ]),
       },
     });
 
