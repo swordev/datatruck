@@ -10,7 +10,7 @@ import {
 import { ProgressManager } from "../utils/progress";
 import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
-import { ListrTask, PRESET_TIMER, PRESET_TIMESTAMP } from "listr2";
+import { ListrTask } from "listr2";
 
 export type CopyActionOptionsType = {
   ids: string[];
@@ -43,8 +43,10 @@ export class CopyAction<TRequired extends boolean = true> {
 
     if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
-    return new Listr3(
-      [
+    return new Listr3({ tty: () => pm.tty })
+      .onBeforeRun(() => pm.start())
+      .onAfterRun(() => pm.dispose())
+      .add([
         {
           title: "Fetching snapshot",
           task: async (_, task) => {
@@ -136,28 +138,6 @@ export class CopyAction<TRequired extends boolean = true> {
             );
           },
         },
-      ],
-      pm.tty
-        ? {
-            renderer: "default",
-            collectErrors: "minimal",
-
-            rendererOptions: {
-              collapseSubtasks: false,
-              collapseErrors: false,
-              timer: PRESET_TIMER,
-            },
-          }
-        : {
-            renderer: "simple",
-            collectErrors: "minimal",
-            rendererOptions: {
-              timestamp: PRESET_TIMESTAMP,
-              timer: PRESET_TIMER,
-            },
-          },
-    )
-      .onBeforeRun(() => pm.start())
-      .onAfterRun(() => pm.dispose());
+      ]);
   }
 }

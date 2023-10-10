@@ -2,35 +2,74 @@ import { PromisePool } from "@supercharge/promise-pool";
 import {
   Listr,
   ListrContext,
-  ListrPrimaryRendererValue,
-  ListrRendererValue,
-  ListrSecondaryRendererValue,
+  ListrGetRendererClassFromValue,
+  ListrLogger,
+  ListrTask,
+  PRESET_TIMER,
+  PRESET_TIMESTAMP,
+  ProcessOutput,
 } from "listr2";
 
 type ControllerItem = { stop?: () => void };
 type ItemBuffer<T> = Map<T, ControllerItem>;
 
-export class Listr3<
-  Ctx = ListrContext,
-  Renderer extends ListrRendererValue = ListrPrimaryRendererValue,
-  FallbackRenderer extends ListrRendererValue = ListrSecondaryRendererValue,
-> extends Listr<Ctx, Renderer, FallbackRenderer> {
-  protected beforeRun: (() => any) | undefined;
-  protected afterRun: (() => any) | undefined;
-  onBeforeRun(cb: () => any) {
+export class List3Logger<
+  Levels extends string = string,
+> extends ListrLogger<Levels> {
+  constructor() {
+    super({ processOutput: new ProcessOutput(process.stderr, process.stderr) });
+  }
+}
+
+export class Listr3<Ctx = ListrContext> extends Listr<
+  Ctx,
+  "default",
+  "simple"
+> {
+  protected beforeRun: ((list: this) => any) | undefined;
+  protected afterRun: ((list: this) => any) | undefined;
+  constructor(options: { ctx?: Ctx; tty?: () => boolean }) {
+    super([], {
+      ctx: options.ctx,
+      renderer: "default",
+      collectErrors: "minimal",
+      fallbackRendererCondition: options.tty,
+      fallbackRenderer: "simple",
+      fallbackRendererOptions: {
+        logger: new List3Logger(),
+        timestamp: PRESET_TIMESTAMP,
+        timer: PRESET_TIMER,
+      },
+      rendererOptions: {
+        logger: new List3Logger(),
+        collapseSubtasks: false,
+        collapseErrors: false,
+        timer: PRESET_TIMER,
+      },
+    });
+  }
+  onBeforeRun(cb: (list: this) => any) {
     this.beforeRun = cb;
     return this;
   }
-  onAfterRun(cb: () => any) {
+  onAfterRun(cb: (list: this) => any) {
     this.afterRun = cb;
     return this;
   }
+  override add(
+    tasks:
+      | ListrTask<Ctx, ListrGetRendererClassFromValue<"default">>
+      | ListrTask<Ctx, ListrGetRendererClassFromValue<"default">>[],
+  ) {
+    super.add(tasks);
+    return this;
+  }
   override async run(context?: Ctx): Promise<Ctx> {
-    await this.beforeRun?.();
+    await this.beforeRun?.(this);
     try {
       return await super.run(context);
     } finally {
-      await this.afterRun?.();
+      await this.afterRun?.(this);
     }
   }
 }

@@ -15,7 +15,7 @@ import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { ok } from "assert";
 import { randomUUID } from "crypto";
-import { ListrTask, PRESET_TIMER, PRESET_TIMESTAMP } from "listr2";
+import { ListrTask } from "listr2";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
@@ -101,8 +101,10 @@ export class BackupAction<TRequired extends boolean = true> {
 
     if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
 
-    return new Listr3(
-      [
+    return new Listr3({ tty: () => pm.tty })
+      .onBeforeRun(() => pm.start())
+      .onAfterRun(() => pm.dispose())
+      .add([
         {
           title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
           task: (_, task) => {},
@@ -235,27 +237,6 @@ export class BackupAction<TRequired extends boolean = true> {
             );
           },
         },
-      ],
-      pm.tty
-        ? {
-            renderer: "default",
-            collectErrors: "minimal",
-            rendererOptions: {
-              collapseSubtasks: false,
-              collapseErrors: false,
-              timer: PRESET_TIMER,
-            },
-          }
-        : {
-            renderer: "simple",
-            collectErrors: "minimal",
-            rendererOptions: {
-              timestamp: PRESET_TIMESTAMP,
-              timer: PRESET_TIMER,
-            },
-          },
-    )
-      .onBeforeRun(() => pm.start())
-      .onAfterRun(() => pm.dispose());
+      ]);
   }
 }

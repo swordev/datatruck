@@ -16,7 +16,7 @@ import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
-import { ListrTask, PRESET_TIMER, PRESET_TIMESTAMP } from "listr2";
+import { ListrTask } from "listr2";
 
 export type RestoreActionOptions = {
   snapshotId: string;
@@ -144,8 +144,10 @@ export class RestoreAction<TRequired extends boolean = true> {
     const packages = this.getPackages(snapshot);
     const snapshotAndConfigs = this.assocConfigs(packages, snapshots);
 
-    return new Listr3(
-      [
+    return new Listr3({ tty: () => pm.tty })
+      .onBeforeRun(() => pm.start())
+      .onAfterRun(() => pm.dispose())
+      .add([
         {
           title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
           task: () => {},
@@ -217,27 +219,6 @@ export class RestoreAction<TRequired extends boolean = true> {
             },
           } satisfies ListrTask;
         }),
-      ],
-      pm.tty
-        ? {
-            renderer: "default",
-            collectErrors: "minimal",
-            rendererOptions: {
-              collapseSubtasks: false,
-              collapseErrors: false,
-              timer: PRESET_TIMER,
-            },
-          }
-        : {
-            renderer: "simple",
-            collectErrors: "minimal",
-            rendererOptions: {
-              timestamp: PRESET_TIMESTAMP,
-              timer: PRESET_TIMER,
-            },
-          },
-    )
-      .onBeforeRun(() => pm.start())
-      .onAfterRun(() => pm.dispose());
+      ]);
   }
 }
