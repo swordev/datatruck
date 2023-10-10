@@ -4,13 +4,13 @@ import { AppError } from "../Error/AppError";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
-import { Listr3 } from "../utils/async";
 import {
   filterPackages,
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
+import { Listr3 } from "../utils/list";
 import { ProgressManager } from "../utils/progress";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";

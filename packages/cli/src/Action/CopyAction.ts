@@ -1,12 +1,12 @@
 import type { ConfigType } from "../Config/Config";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
-import { Listr3 } from "../utils/async";
 import {
   ensureSameRepositoryType,
   filterRepository,
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
+import { Listr3 } from "../utils/list";
 import { ProgressManager } from "../utils/progress";
 import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
