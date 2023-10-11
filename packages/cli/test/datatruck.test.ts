@@ -54,13 +54,9 @@ describe(
       });
 
       const dtt = createActionInterface({ config });
-
-      expect(await dtt.config({})).toMatchObject([
-        {
-          packageName: "main/files",
-          repositoryNames: ["datatruck"],
-        },
-      ]);
+      const config2 = await dtt.config({});
+      expect(config2.packages[0].name).toBe("main/files");
+      expect(config2.packages[0].repositoryNames).toEqual(["datatruck"]);
     });
 
     it("backups paths generated on fly", async () => {

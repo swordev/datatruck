@@ -4,7 +4,7 @@ import { CleanCacheCommand } from "../Command/CleanCacheCommand";
 import { GlobalOptions } from "../Command/CommandAbstract";
 import {
   ConfigCommand,
-  ConfigCommandLogType,
+  ConfigCommandResult,
   ConfigCommandOptions,
 } from "../Command/ConfigCommand";
 import { CopyCommand, CopyCommandOptionsType } from "../Command/CopyCommand";
@@ -54,7 +54,7 @@ export type OptionsMapType = {
 };
 
 export type LogMapType = {
-  [CommandEnum.config]: ConfigCommandLogType;
+  [CommandEnum.config]: ConfigCommandResult;
   [CommandEnum.init]: InitCommandLogType;
   [CommandEnum.snapshots]: SnapshotsCommandLogType;
 };
