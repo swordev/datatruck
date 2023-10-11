@@ -3,7 +3,7 @@ import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { filterPackages } from "../utils/datatruck/config";
 import { parseStringList } from "../utils/string";
-import { If } from "../utils/ts";
+import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type ConfigCommandOptions<TResolved = false> = {
@@ -13,11 +13,7 @@ export type ConfigCommandOptions<TResolved = false> = {
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
 };
 
-export type ConfigCommandLogType = {
-  packageName: string;
-  repositoryNames: string[];
-  taskName: string | undefined;
-}[];
+export type ConfigCommandResult = Unwrap<ConfigAction["exec"]>;
 
 export class ConfigCommand extends CommandAbstract<
   ConfigCommandOptions<false>,
@@ -57,7 +53,7 @@ export class ConfigCommand extends CommandAbstract<
       repositoryTypes: this.options.repositoryType,
     });
 
-    const summaryConfig: ConfigCommandLogType = packages.flatMap((pkg) => ({
+    const summaryConfig = packages.flatMap((pkg) => ({
       packageName: pkg.name,
       repositoryNames: pkg.repositoryNames ?? [],
       taskName: pkg.task?.name,

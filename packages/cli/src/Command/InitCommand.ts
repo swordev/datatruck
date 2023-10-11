@@ -13,7 +13,7 @@ export type InitCommandOptions<TResolved = false> = {
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
 };
 
-export type InitCommandLogType = Unwrap<InitAction["exec"]>;
+export type InitCommandResult = Unwrap<InitAction["exec"]>;
 
 export class InitCommand extends CommandAbstract<
   InitCommandOptions<false>,
@@ -41,7 +41,7 @@ export class InitCommand extends CommandAbstract<
       repositoryTypes: this.options.repositoryType,
       verbose: verbose > 0,
     });
-    const response: InitCommandLogType = await init.exec();
+    const response: InitCommandResult = await init.exec();
     const dataFormat = new DataFormat({
       json: response,
       table: {

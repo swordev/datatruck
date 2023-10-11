@@ -10,7 +10,7 @@ import {
 import { CopyCommand, CopyCommandOptionsType } from "../Command/CopyCommand";
 import {
   InitCommand,
-  InitCommandLogType,
+  InitCommandResult,
   InitCommandOptions,
 } from "../Command/InitCommand";
 import { PruneCommand, PruneCommandOptions } from "../Command/PruneCommand";
@@ -20,7 +20,7 @@ import {
 } from "../Command/RestoreCommand";
 import {
   SnapshotsCommand,
-  SnapshotsCommandLogType,
+  SnapshotsCommandResult,
   SnapshotsCommandOptions,
 } from "../Command/SnapshotsCommand";
 import {
@@ -55,8 +55,8 @@ export type OptionsMapType = {
 
 export type LogMapType = {
   [CommandEnum.config]: ConfigCommandResult;
-  [CommandEnum.init]: InitCommandLogType;
-  [CommandEnum.snapshots]: SnapshotsCommandLogType;
+  [CommandEnum.init]: InitCommandResult;
+  [CommandEnum.snapshots]: SnapshotsCommandResult;
 };
 
 export function CommandFactory<TCommand extends keyof OptionsMapType>(

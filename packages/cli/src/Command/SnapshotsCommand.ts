@@ -26,7 +26,7 @@ export type SnapshotsCommandOptions<TResolved = false> = {
   tag?: If<TResolved, string[]>;
 };
 
-export type SnapshotsCommandLogType = Unwrap<SnapshotsAction["exec"]>;
+export type SnapshotsCommandResult = Unwrap<SnapshotsAction["exec"]>;
 
 export class SnapshotsCommand extends CommandAbstract<
   SnapshotsCommandOptions<false>,
