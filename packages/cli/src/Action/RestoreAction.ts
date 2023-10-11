@@ -3,7 +3,8 @@ import { PackageConfigType } from "../Config/PackageConfig";
 import { AppError } from "../Error/AppError";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
-import { Snapshot } from "../Repository/RepositoryAbstract";
+import { PreSnapshot, Snapshot } from "../Repository/RepositoryAbstract";
+import { TaskAbstract } from "../Task/TaskAbstract";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -11,7 +12,7 @@ import {
 } from "../utils/datatruck/config";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3 } from "../utils/list";
-import { ProgressManager } from "../utils/progress";
+import { Progress, ProgressManager } from "../utils/progress";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
@@ -124,7 +125,54 @@ export class RestoreAction<TRequired extends boolean = true> {
       action: "restore",
     });
   }
+  protected async restore(data: {
+    pkg: PackageConfigType;
+    task: TaskAbstract | undefined;
+    snapshot: RestoreSnapshot;
+    gc: GargabeCollector;
+    onProgress: (progress: Progress) => void;
+  }) {
+    let { snapshot, pkg, task } = data;
+    const repoConfig = findRepositoryOrFail(
+      this.config,
+      snapshot.repositoryName,
+    );
+    const repo = createRepo(repoConfig);
 
+    if (!this.options.restorePath) pkg = { ...pkg, restorePath: pkg.path };
+
+    let snapshotPath = pkg.restorePath ?? pkg.path;
+
+    await data.gc.cleanupIfFail(async () => {
+      if (task) {
+        const taskResult = await task.prepareRestore({
+          options: this.options,
+          package: pkg,
+          snapshot,
+        });
+        snapshotPath = taskResult?.snapshotPath;
+      }
+      await initEmptyDir(snapshotPath);
+      if (this.config.minFreeDiskSpace)
+        await ensureFreeDiskSpace(
+          [snapshotPath!],
+          this.config.minFreeDiskSpace,
+        );
+      await repo.restore({
+        options: this.options,
+        snapshot: data.snapshot,
+        package: pkg,
+        snapshotPath: snapshotPath!,
+        packageConfig: pkg.repositoryConfigs?.find(
+          (config) =>
+            config.type === repoConfig.type &&
+            (!config.names || config.names.includes(repoConfig.name)),
+        )?.config,
+        onProgress: data.onProgress,
+      });
+    });
+    return { snapshotPath };
+  }
   async exec() {
     const { options } = this;
     const { minFreeDiskSpace } = this.config;
@@ -151,65 +199,53 @@ export class RestoreAction<TRequired extends boolean = true> {
       },
       ...snapshotAndConfigs.map(([snapshot, pkg]) => {
         return {
-          title: `Restoring ${pkg.name}`,
+          title: `Restore ${pkg.name} snapshot`,
           exitOnError: false,
           task: async (_, listTask) => {
-            const repoConfig = findRepositoryOrFail(
-              this.config,
-              snapshot.repositoryName,
-            );
             const gc = new GargabeCollector();
-            const repo = createRepo(repoConfig);
-            const task = pkg.task ? createTask(pkg.task) : undefined;
-
-            if (!options.restorePath) pkg = { ...pkg, restorePath: pkg.path };
-
-            let snapshotPath = pkg.restorePath ?? pkg.path;
-
-            await gc.cleanupIfFail(async () => {
-              if (task) {
-                const taskResult = await task!.prepareRestore({
-                  options,
-                  package: pkg,
-                  snapshot,
-                });
-                snapshotPath = taskResult?.snapshotPath;
-              }
-              await initEmptyDir(snapshotPath);
-              if (minFreeDiskSpace)
-                await ensureFreeDiskSpace([snapshotPath!], minFreeDiskSpace);
-              await repo.restore({
-                options,
+            let snapshotPath: string | undefined;
+            let task: TaskAbstract | undefined;
+            try {
+              task = pkg.task ? createTask(pkg.task) : undefined;
+              const restore = await this.restore({
+                gc,
+                pkg,
+                task,
                 snapshot,
-                package: pkg,
-                snapshotPath: snapshotPath!,
-                packageConfig: pkg.repositoryConfigs?.find(
-                  (config) =>
-                    config.type === repoConfig.type &&
-                    (!config.names || config.names.includes(repoConfig.name)),
-                )?.config,
                 onProgress: (p) => pm.update(p, (t) => (listTask.output = t)),
               });
-            });
-
-            if (!task) await gc.cleanup();
+              snapshotPath = restore.snapshotPath;
+              if (!task) {
+                await gc.cleanup();
+                return;
+              }
+              listTask.title = `Snapshot restored: ${pkg.name}`;
+            } catch (error) {
+              listTask.title = `Restore failed: ${pkg.name}`;
+              throw error;
+            }
 
             return listTask.newListr([
               {
-                title: `Executing task ${pkg.task?.name}`,
-                enabled: !!task,
+                title: `Execute ${pkg.task?.name} task`,
                 task: async (_, listTask) => {
-                  await gc.cleanup(async () => {
-                    ok(snapshotPath);
-                    await task!.restore({
-                      package: pkg,
-                      options,
-                      snapshot,
-                      snapshotPath,
-                      onProgress: (p) =>
-                        pm.update(p, (t) => (listTask.output = t)),
+                  try {
+                    await gc.cleanup(async () => {
+                      ok(snapshotPath);
+                      await task!.restore({
+                        package: pkg,
+                        options,
+                        snapshot,
+                        snapshotPath,
+                        onProgress: (p) =>
+                          pm.update(p, (t) => (listTask.output = t)),
+                      });
                     });
-                  });
+                    listTask.title = `Task executed: ${pkg.task?.name}`;
+                  } catch (error) {
+                    listTask.title = `Task failed: ${pkg.task?.name}`;
+                    throw error;
+                  }
                 },
               },
             ]);

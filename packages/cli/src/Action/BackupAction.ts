@@ -277,10 +277,18 @@ export class BackupAction<TRequired extends boolean = true> {
                         }) satisfies ListrTask,
                     ),
                     {
-                      title: "Cleaning task files",
+                      title: "Clean task files",
                       exitOnError: false,
                       enabled: gc.pending,
-                      task: async () => await gc.cleanup(),
+                      task: async (_, task) => {
+                        try {
+                          await gc.cleanup();
+                          task.title = "Task files cleaned";
+                        } catch (error) {
+                          task.title = "Task files clean failed";
+                          throw error;
+                        }
+                      },
                     },
                     ...repositories
                       .filter((r) => r.mirrors.length)
