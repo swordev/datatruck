@@ -1,5 +1,9 @@
 import { CleanCacheActionOptions } from "../Action/CleanCacheAction";
-import { BackupCommand, BackupCommandOptions } from "../Command/BackupCommand";
+import {
+  BackupCommand,
+  BackupCommandOptions,
+  BackupCommandResult,
+} from "../Command/BackupCommand";
 import { CleanCacheCommand } from "../Command/CleanCacheCommand";
 import { GlobalOptions } from "../Command/CommandAbstract";
 import {
@@ -28,6 +32,8 @@ import {
   StartServerCommandOptions,
 } from "../Command/StartServerCommand";
 import { AppError } from "../Error/AppError";
+import { Streams } from "../utils/stream";
+import { Writable } from "stream";
 
 export enum CommandEnum {
   config = "config",
@@ -57,23 +63,26 @@ export type LogMapType = {
   [CommandEnum.config]: ConfigCommandResult;
   [CommandEnum.init]: InitCommandResult;
   [CommandEnum.snapshots]: SnapshotsCommandResult;
+  [CommandEnum.backup]: BackupCommandResult;
 };
 
 export function CommandFactory<TCommand extends keyof OptionsMapType>(
   type: TCommand,
   globalOptions: GlobalOptions<true>,
   options: OptionsMapType[TCommand],
+  streams?: Partial<Streams>,
 ) {
   const constructor = CommandConstructorFactory(type);
-  return new constructor(globalOptions, options as any);
+  return new constructor(globalOptions, options as any, streams);
 }
 
 export async function exec<TCommand extends keyof OptionsMapType>(
   type: TCommand,
   globalOptions: GlobalOptions<true>,
   options: OptionsMapType[TCommand],
+  streams?: Partial<Streams>,
 ) {
-  return await CommandFactory(type, globalOptions, options).onExec();
+  return await CommandFactory(type, globalOptions, options, streams).onExec();
 }
 
 export function createActionInterface(globalOptions: GlobalOptions<true>): {
@@ -84,57 +93,32 @@ export function createActionInterface(globalOptions: GlobalOptions<true>): {
   const object: Record<string, any> = {};
   for (const type of Object.values(CommandEnum)) {
     object[type] = async (options: any) => {
-      const run = () =>
-        exec(
+      let stdoutData = "";
+      const stdout = new Writable({
+        write(chunk, encoding, callback) {
+          stdoutData += chunk.toString();
+          process.stdout.write(chunk, encoding, callback);
+        },
+      }).on("data", (chunk) => (stdoutData += chunk.toString()));
+      const end = () =>
+        !stdout.closed &&
+        new Promise<void>((resolve) => stdout.end().on("close", resolve));
+      try {
+        const exitCode = await exec(
           type as CommandEnum,
           { ...globalOptions, outputFormat: "json", verbose: 1 },
           options,
+          { stdout },
         );
-      let exitCode: number;
-      let log: any;
-      if (["config", "init", "snapshots"].includes(type)) {
-        const parsed = await runAndParse(type as keyof LogMapType, run);
-        exitCode = parsed.exitCode;
-        log = parsed.log;
-      } else {
-        exitCode = await run();
+        if (exitCode !== 0) throw new Error(`Invalid exit code: ${exitCode}`);
+        await end();
+        return JSON.parse(stdoutData);
+      } finally {
+        await end();
       }
-      if (exitCode !== 0) throw new Error(`Invalid exit code: ${exitCode}`);
-      return log;
     };
   }
   return object as any;
-}
-
-export async function runAndParse<TCommand extends keyof LogMapType>(
-  type: TCommand,
-  run: () => Promise<any>,
-) {
-  const parseLog = makeParseLog(type);
-  try {
-    const exitCode = await run();
-    return { exitCode, log: parseLog() };
-  } catch (error) {
-    try {
-      parseLog();
-    } catch (_) {}
-    throw error;
-  }
-}
-
-export function makeParseLog<TCommand extends keyof LogMapType>(
-  type: TCommand,
-) {
-  const data: unknown[] = [];
-  const consoleLog = console.log;
-  console.log = console.info = (...items: unknown[]) => {
-    consoleLog.bind(console)(...items);
-    data.push(...items);
-  };
-  return function parseLog() {
-    console.log = console.info = consoleLog;
-    return JSON.parse(data.flat().join("\n")) as LogMapType[TCommand];
-  };
 }
 
 export function CommandConstructorFactory(type: CommandEnum) {

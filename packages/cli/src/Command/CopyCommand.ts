@@ -1,6 +1,8 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { CopyAction } from "../Action/CopyAction";
-import { SnapshotsAction } from "../Action/SnapshotsAction";
+import { DataFormat } from "../utils/DataFormat";
+import { errorColumn, resultColumn } from "../utils/cli";
+import { duration } from "../utils/date";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
@@ -13,7 +15,7 @@ export type CopyCommandOptionsType<TResolved = false> = {
   repository2?: If<TResolved, string[]>;
 };
 
-export type CopyCommandLogType = Unwrap<SnapshotsAction["exec"]>;
+export type CopyCommandResult = Unwrap<CopyAction["exec"]>;
 
 export class CopyCommand extends CommandAbstract<
   CopyCommandOptionsType<false>,
@@ -63,8 +65,14 @@ export class CopyCommand extends CommandAbstract<
       progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
     });
-    const list = await copy.exec();
-    await list.run();
-    return list.errors.length ? 1 : 0;
+
+    const result = await copy.exec();
+
+    if (this.globalOptions.outputFormat)
+      copy
+        .dataFormat(result, { streams: this.streams, verbose })
+        .log(this.globalOptions.outputFormat);
+
+    return result.some((item) => item.error) ? 1 : 0;
   }
 }

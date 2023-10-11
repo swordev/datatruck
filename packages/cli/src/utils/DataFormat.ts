@@ -1,22 +1,45 @@
 import { AppError } from "../Error/AppError";
+import { Streams, createStreams } from "./stream";
 import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";
 
-export type FormatType = "json" | "pjson" | "table" | "yaml" | "custom" | "tpl";
+export type FormatType =
+  | "json"
+  | "list"
+  | "pjson"
+  | "table"
+  | "yaml"
+  | "custom"
+  | "tpl";
+
+export const dataFormats: FormatType[] = [
+  "json",
+  "list",
+  "pjson",
+  "table",
+  "yaml",
+  "custom",
+  "tpl",
+];
 
 const customPrefix = "custom=";
 const tplPrefix = "tpl=";
 
 export class DataFormat {
+  protected streams: Streams;
   constructor(
     readonly options: {
+      streams?: Partial<Streams>;
       json: any;
+      list?: () => string[];
       table?: {
         headers: Header[];
         rows: () => (string | number | null | undefined)[][];
       };
     },
-  ) {}
+  ) {
+    this.streams = createStreams(options.streams);
+  }
 
   protected getJson() {
     return this.options.json;
@@ -44,7 +67,7 @@ export class DataFormat {
   }
 
   protected formatToTable() {
-    if (!this.options.table) throw new Error(`Table format incompatible`);
+    if (!this.options.table) throw new Error(`Unsupported format: table`);
     const table = TtyTable(
       this.options.table.headers,
       this.options.table.rows(),
@@ -52,7 +75,18 @@ export class DataFormat {
     );
     return table.render();
   }
-
+  protected formatToList() {
+    if (!this.options.list) throw new Error(`Unsupported format: list`);
+    return this.options.list().join("\n");
+  }
+  log(
+    format: FormatType,
+    options?: {
+      tpl?: Record<string, () => string>;
+    },
+  ) {
+    this.streams.stdout.write(`${this.format(format, options)}\n`);
+  }
   format(
     format: FormatType,
     options?: {
@@ -61,6 +95,8 @@ export class DataFormat {
   ) {
     if (format === "table") {
       return this.formatToTable();
+    } else if (format === "list") {
+      return this.formatToList();
     } else if (format === "json") {
       return this.formatToJson();
     } else if (format === "pjson") {

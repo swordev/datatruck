@@ -1,23 +1,26 @@
 import type { ConfigType } from "../Config/Config";
 import { PackageConfigType } from "../Config/PackageConfig";
-import { AppError } from "../Error/AppError";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
-import { PreSnapshot, Snapshot } from "../Repository/RepositoryAbstract";
+import { Snapshot } from "../Repository/RepositoryAbstract";
 import { TaskAbstract } from "../Task/TaskAbstract";
+import { DataFormat } from "../utils/DataFormat";
+import { errorColumn, resultColumn } from "../utils/cli";
 import {
-  filterPackages,
+  findPackageOrFail,
   findRepositoryOrFail,
-  resolvePackages,
+  resolvePackage,
 } from "../utils/datatruck/config";
+import { duration } from "../utils/date";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
-import { Listr3 } from "../utils/list";
+import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager } from "../utils/progress";
+import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
 import { ok } from "assert";
-import { ListrTask } from "listr2";
+import chalk from "chalk";
 
 export type RestoreActionOptions = {
   snapshotId: string;
@@ -32,10 +35,17 @@ export type RestoreActionOptions = {
   tty?: "auto" | boolean;
   progress?: "auto" | "interval" | boolean;
   progressInterval?: number;
+  streams?: Streams;
 };
 
 type RestoreSnapshot = Snapshot & {
   repositoryName: string;
+};
+
+type Context = {
+  snapshots: { id: string; packages: number };
+  task: { taskName: string; packageName: string };
+  restore: RestoreSnapshot;
 };
 
 export class RestoreAction<TRequired extends boolean = true> {
@@ -46,19 +56,6 @@ export class RestoreAction<TRequired extends boolean = true> {
     readonly config: ConfigType,
     readonly options: IfRequireKeys<TRequired, RestoreActionOptions>,
   ) {}
-
-  protected assocConfigs(
-    packages: PackageConfigType[],
-    snapshots: RestoreSnapshot[],
-  ): [RestoreSnapshot, PackageConfigType][] {
-    return snapshots.map((snapshot) => {
-      const pkg =
-        packages.find((pkg) => pkg.name === snapshot.packageName) ?? null;
-      if (!pkg)
-        throw new Error(`Package config not found: ${snapshot.packageName}`);
-      return [snapshot, pkg];
-    });
-  }
 
   protected async findSnapshots() {
     const result: RestoreSnapshot[] = [];
@@ -113,18 +110,6 @@ export class RestoreAction<TRequired extends boolean = true> {
       return true;
     });
   }
-
-  protected getPackages(snapshot: { date: string }) {
-    const packages = filterPackages(this.config, {
-      ...this.options,
-      sourceAction: "restore",
-    });
-    return resolvePackages(packages, {
-      snapshotId: this.options.snapshotId,
-      snapshotDate: snapshot.date,
-      action: "restore",
-    });
-  }
   protected async restore(data: {
     pkg: PackageConfigType;
     task: TaskAbstract | undefined;
@@ -173,64 +158,140 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
     return { snapshotPath };
   }
+  dataFormat(
+    result: Listr3TaskResultEnd<Context>[],
+    options: {
+      streams?: Streams;
+      verbose?: number;
+    } = {},
+  ) {
+    const renderTitle = (
+      item: Listr3TaskResultEnd<Context>,
+      color?: boolean,
+    ) => {
+      let title = item.key.slice(0, 1).toUpperCase() + item.key.slice(1);
+      return item.key === "restore" && color ? chalk.cyan(title) : title;
+    };
+    const renderData = (
+      item: Listr3TaskResultEnd<Context>,
+      color?: boolean,
+    ) => {
+      const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
+      return item.key === "snapshots"
+        ? `${item.data.id.slice(0, 8)} ${g(`${item.data.packages} packages`)}`
+        : item.key === "task"
+        ? `${item.data.packageName} ${g(item.data.taskName)}`
+        : item.key === "restore"
+        ? `${item.data.packageName} ${g(item.data.repositoryName)}`
+        : "";
+    };
+    return new DataFormat({
+      streams: options.streams,
+      json: result,
+      table: {
+        headers: [
+          { value: "", width: 3 },
+          { value: "Title", width: 15 },
+          { value: "Data" },
+          { value: "Duration", width: 10 },
+          { value: "Error", width: 50 },
+        ],
+        rows: () =>
+          result.map((item) => [
+            resultColumn(item.error),
+            renderTitle(item, true),
+            renderData(item, true),
+            duration(item.elapsed),
+            errorColumn(item.error, options.verbose),
+          ]),
+      },
+    });
+  }
   async exec() {
     const { options } = this;
-    const { minFreeDiskSpace } = this.config;
     const pm = new ProgressManager({
-      verbose: this.options.verbose,
+      verbose: options.verbose,
       tty: options.tty,
       enabled: options.progress,
       interval: options.progressInterval,
     });
 
-    if (minFreeDiskSpace) await ensureFreeDiskTempSpace(minFreeDiskSpace);
+    const l = new Listr3<Context>({
+      streams: options.streams,
+      progressManager: pm,
+    });
 
-    if (!options.snapshotId) throw new AppError("Snapshot id is required");
-    const snapshots = this.groupSnapshots(await this.findSnapshots());
-    const [snapshot] = snapshots;
-    if (!snapshot) throw new AppError("None snapshot found");
-    const packages = this.getPackages(snapshot);
-    const snapshotAndConfigs = this.assocConfigs(packages, snapshots);
+    return l
+      .add(
+        l.$task({
+          key: "snapshots",
+          data: {
+            id: "",
+            packages: 0,
+          },
+          title: {
+            initial: "Fetch snapshots",
+            started: "Fetching snapshots",
+            completed: "Snapshots fetched",
+            failed: "Snapshot fetch failed",
+          },
+          run: async (_, data) => {
+            const { minFreeDiskSpace } = this.config;
+            if (minFreeDiskSpace)
+              await ensureFreeDiskTempSpace(minFreeDiskSpace);
+            if (!options.snapshotId) throw new Error("Snapshot id is required");
+            const snapshots = this.groupSnapshots(await this.findSnapshots());
+            if (!snapshots.length) throw new Error("None snapshot found");
 
-    return new Listr3({ progressManager: pm }).add([
-      {
-        title: `Snapshot: ${snapshot.id.slice(0, 8)}`,
-        task: () => {},
-      },
-      ...snapshotAndConfigs.map(([snapshot, pkg]) => {
-        return {
-          title: `Restore ${pkg.name} snapshot`,
-          exitOnError: false,
-          task: async (_, listTask) => {
-            const gc = new GargabeCollector();
-            let snapshotPath: string | undefined;
-            let task: TaskAbstract | undefined;
-            try {
-              task = pkg.task ? createTask(pkg.task) : undefined;
-              const restore = await this.restore({
-                gc,
-                pkg,
-                task,
-                snapshot,
-                onProgress: (p) => pm.update(p, (t) => (listTask.output = t)),
-              });
-              snapshotPath = restore.snapshotPath;
-              if (!task) {
-                await gc.cleanup();
-                return;
-              }
-              listTask.title = `Snapshot restored: ${pkg.name}`;
-            } catch (error) {
-              listTask.title = `Restore failed: ${pkg.name}`;
-              throw error;
-            }
+            data.id = options.snapshotId;
+            data.packages = snapshots.length;
 
-            return listTask.newListr([
-              {
-                title: `Execute ${pkg.task?.name} task`,
-                task: async (_, listTask) => {
-                  try {
-                    await gc.cleanup(async () => {
+            return snapshots.map((snapshot) =>
+              l.$task({
+                key: "restore",
+                keyIndex: snapshot.packageName,
+                data: snapshot,
+                title: {
+                  initial: `Restore ${snapshot.packageName} snapshot`,
+                  started: `Restoring ${snapshot.packageName} snapshot`,
+                  completed: `Snapshot restored: ${snapshot.packageName}`,
+                  failed: `Snapshot restore failed: ${snapshot.packageName}`,
+                },
+                exitOnError: false,
+                run: async (listTask) => {
+                  const pkg = resolvePackage(
+                    findPackageOrFail(this.config, snapshot.packageName),
+                    {
+                      snapshotId: options.snapshotId,
+                      snapshotDate: snapshot.date,
+                      action: "restore",
+                    },
+                  );
+                  const gc = new GargabeCollector();
+                  const task = pkg.task ? createTask(pkg.task) : undefined;
+                  const restore = await this.restore({
+                    gc,
+                    pkg,
+                    task,
+                    snapshot: snapshot,
+                    onProgress: (p) =>
+                      pm.update(p, (t) => (listTask.output = t)),
+                  });
+                  if (!task) return await gc.cleanup();
+                  return l.$tasks({
+                    key: "task",
+                    keyIndex: pkg.name,
+                    data: { taskName: pkg.task!.name, packageName: pkg.name },
+                    title: {
+                      initial: `Execute ${pkg.task?.name} task`,
+                      started: `Executing ${pkg.task?.name} task`,
+                      completed: `Task executed: ${pkg.task?.name}`,
+                      failed: `Task execute failed: ${pkg.task?.name}`,
+                    },
+                    exitOnError: false,
+                    runWrapper: gc.cleanup.bind(gc),
+                    run: async (listTask) => {
+                      const { snapshotPath } = restore;
                       ok(snapshotPath);
                       await task!.restore({
                         package: pkg,
@@ -240,18 +301,14 @@ export class RestoreAction<TRequired extends boolean = true> {
                         onProgress: (p) =>
                           pm.update(p, (t) => (listTask.output = t)),
                       });
-                    });
-                    listTask.title = `Task executed: ${pkg.task?.name}`;
-                  } catch (error) {
-                    listTask.title = `Task failed: ${pkg.task?.name}`;
-                    throw error;
-                  }
+                    },
+                  });
                 },
-              },
-            ]);
+              }),
+            );
           },
-        } satisfies ListrTask;
-      }),
-    ]);
+        }),
+      )
+      .exec();
   }
 }

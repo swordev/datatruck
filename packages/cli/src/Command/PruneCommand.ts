@@ -152,6 +152,7 @@ export class PruneCommand extends CommandAbstract<
 
     const pruneResult = await prune.exec();
     const dataFormat = new DataFormat({
+      streams: this.streams,
       json: pruneResult,
       table: {
         headers: [
@@ -175,7 +176,7 @@ export class PruneCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      dataFormat.log(this.globalOptions.outputFormat);
 
     if (!this.options.confirm && !this.options.dryRun) {
       const answer = await confirm(

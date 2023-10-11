@@ -5,7 +5,7 @@ import { DataFormat } from "../utils/DataFormat";
 import { errorColumn, resultColumn } from "../utils/cli";
 import { duration } from "../utils/date";
 import { parseStringList } from "../utils/string";
-import { If } from "../utils/ts";
+import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 import chalk from "chalk";
 
@@ -18,6 +18,8 @@ export type BackupCommandOptions<TResolved = false> = {
   dryRun?: boolean;
   date?: string;
 };
+
+export type BackupCommandResult = Unwrap<BackupAction["exec"]>;
 
 export class BackupCommand extends CommandAbstract<
   BackupCommandOptions<false>,
@@ -75,84 +77,16 @@ export class BackupCommand extends CommandAbstract<
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
+      streams: this.streams,
     });
 
-    const list = await backup.exec();
-    const report = await list.run();
-    const dataFormat = new DataFormat({
-      json: report,
-      table: {
-        headers: [
-          {
-            value: "",
-            width: 3,
-          },
-          {
-            value: "Id.",
-            width: 10,
-          },
-          {
-            value: "Package",
-          },
-          {
-            value: "Repository",
-          },
-          {
-            value: "Duration",
-            width: 10,
-          },
-          {
-            value: "Error",
-            width: 50,
-          },
-        ],
-        rows: () => [
-          [
-            resultColumn(
-              report.packages.some(
-                (pkg) => pkg.error || pkg.snapshots.some((s) => s.error),
-              ),
-            ),
-            report.snapshotId,
-            chalk.gray(`(${report.packages.length} packages)`),
-            chalk.gray(
-              `(${report.packages.reduce(
-                (t, pkg) => t + pkg.snapshots.length,
-                0,
-              )} repositories)`,
-            ),
-            chalk.gray(duration(report.duration)),
-            "",
-          ],
-          ...report.packages.flatMap((pkg) => [
-            [
-              resultColumn(pkg.error || pkg.snapshots.some((s) => s.error)),
-              "",
-              pkg.name,
-              chalk.gray(`(${pkg.snapshots.length} repositories)`),
-              chalk.gray(
-                duration(pkg.snapshots.reduce((t, v) => t + v.duration, 0)),
-              ),
-              errorColumn(pkg.error, verbose),
-            ],
-            ...pkg.snapshots.map((s) => [
-              resultColumn(s.error),
-              "",
-              "",
-              s.mirrorRepository
-                ? `${s.repositoryName} (mirror)`
-                : s.repositoryName,
-              duration(s.duration),
-              errorColumn(s.error, verbose),
-            ]),
-          ]),
-        ],
-      },
-    });
+    const result = await backup.exec();
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      backup
+        .dataFormat(result, { streams: this.streams, verbose })
+        .log(this.globalOptions.outputFormat);
 
-    return list.errors.length ? 1 : 0;
+    return result.some((item) => item.error) ? 1 : 0;
   }
 }

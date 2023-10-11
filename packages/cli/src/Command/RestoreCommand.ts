@@ -1,6 +1,9 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { RestoreAction } from "../Action/RestoreAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { DataFormat } from "../utils/DataFormat";
+import { errorColumn, resultColumn } from "../utils/cli";
+import { duration } from "../utils/date";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
@@ -78,10 +81,16 @@ export class RestoreCommand extends CommandAbstract<
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
+      streams: this.streams,
     });
 
-    const list = await restore.exec();
-    await list.run();
-    return list.errors.length ? 1 : 0;
+    const result = await restore.exec();
+
+    if (this.globalOptions.outputFormat)
+      restore
+        .dataFormat(result, { streams: this.streams, verbose })
+        .log(this.globalOptions.outputFormat);
+
+    return result.some((item) => item.error) ? 1 : 0;
   }
 }

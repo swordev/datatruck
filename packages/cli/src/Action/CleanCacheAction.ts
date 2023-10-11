@@ -1,4 +1,4 @@
-import { existsDir } from "../utils/fs";
+import { existsDir, fastFolderSizeAsync } from "../utils/fs";
 import { parentTmpDir } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { rm } from "fs/promises";
@@ -13,9 +13,11 @@ export class CleanCacheAction<TRequired extends boolean = true> {
   ) {}
   async exec() {
     const path = parentTmpDir();
-    if (await existsDir(path))
-      await rm(path, {
-        recursive: true,
-      });
+    let freedSize = 0;
+    if (await existsDir(path)) {
+      freedSize = await fastFolderSizeAsync(path);
+      await rm(path, { recursive: true });
+    }
+    return { errors: [], path, freedSize };
   }
 }

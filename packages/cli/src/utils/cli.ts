@@ -65,13 +65,20 @@ export function logExec(
 
 export function resultColumn(
   error: Error | null | string | boolean | undefined,
+  color = true,
 ) {
-  return error ? chalk.red("Χ") : chalk.green("✓");
+  return error
+    ? color
+      ? chalk.red("Χ")
+      : "Χ"
+    : color
+    ? chalk.green("✓")
+    : "✓";
 }
 
 export function errorColumn(
   error: Error | null | string | undefined,
-  verbose: number,
+  verbose?: number,
 ) {
   let message: string | null = null;
   if (typeof error === "string") {

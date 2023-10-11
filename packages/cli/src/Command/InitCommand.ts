@@ -43,6 +43,7 @@ export class InitCommand extends CommandAbstract<
     });
     const response: InitCommandResult = await init.exec();
     const dataFormat = new DataFormat({
+      streams: this.streams,
       json: response,
       table: {
         headers: [
@@ -64,7 +65,7 @@ export class InitCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(dataFormat.format(this.globalOptions.outputFormat));
+      dataFormat.log(this.globalOptions.outputFormat);
 
     return 0;
   }

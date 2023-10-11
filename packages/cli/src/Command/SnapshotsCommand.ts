@@ -143,6 +143,7 @@ export class SnapshotsCommand extends CommandAbstract<
     });
     const items = await snapshots.exec();
     const dataFormat = new DataFormat({
+      streams: this.streams,
       json: items,
       table: {
         headers: [
@@ -168,15 +169,13 @@ export class SnapshotsCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(
-        dataFormat.format(this.globalOptions.outputFormat, {
-          tpl: {
-            sids: () => items.map((i) => i.id).join(),
-            ssids: () => items.map((i) => i.shortId).join(),
-            pkgNames: () => items.map((i) => i.packageName).join(),
-          },
-        }),
-      );
+      dataFormat.log(this.globalOptions.outputFormat, {
+        tpl: {
+          sids: () => items.map((i) => i.id).join(),
+          ssids: () => items.map((i) => i.shortId).join(),
+          pkgNames: () => items.map((i) => i.packageName).join(),
+        },
+      });
 
     return 0;
   }

@@ -44,9 +44,11 @@ export class ConfigCommand extends CommandAbstract<
     });
   }
   override async onExec() {
-    const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
+    const result = await ConfigAction.fromGlobalOptionsWithPath(
+      this.globalOptions,
+    );
 
-    const packages = filterPackages(config, {
+    const packages = filterPackages(result.data, {
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
       repositoryNames: this.options.repository,
@@ -60,7 +62,8 @@ export class ConfigCommand extends CommandAbstract<
     }));
 
     const dataFormat = new DataFormat({
-      json: config,
+      streams: this.streams,
+      json: result,
       table: {
         headers: [
           { value: "Package" },
@@ -77,13 +80,11 @@ export class ConfigCommand extends CommandAbstract<
     });
 
     if (this.globalOptions.outputFormat)
-      console.info(
-        dataFormat.format(this.globalOptions.outputFormat, {
-          tpl: {
-            pkgNames: () => summaryConfig.map((i) => i.packageName).join(),
-          },
-        }),
-      );
+      dataFormat.log(this.globalOptions.outputFormat, {
+        tpl: {
+          pkgNames: () => summaryConfig.map((i) => i.packageName).join(),
+        },
+      });
 
     return 0;
   }

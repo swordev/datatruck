@@ -1,6 +1,7 @@
 import { ConfigType } from "../Config/Config";
 import { FormatType } from "../utils/DataFormat";
 import { OptionsType, parseOptions } from "../utils/cli";
+import { Streams, createStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";
 
 export type GlobalOptions<TResolved = false> = {
@@ -31,11 +32,14 @@ export abstract class CommandAbstract<
   TOptions extends SimilarObject<TUnresolvedOptions>,
 > {
   readonly options: TOptions;
+  readonly streams: Streams;
   constructor(
     readonly globalOptions: GlobalOptions<true>,
     options: TUnresolvedOptions,
+    streams: Partial<Streams> = {},
   ) {
     this.options = parseOptions(options, this.onOptions());
+    this.streams = createStreams(streams);
   }
   abstract onOptions(): OptionsType<TUnresolvedOptions, TOptions>;
   protected returnsOptions(options: OptionsType<TUnresolvedOptions, TOptions>) {

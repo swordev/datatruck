@@ -78,17 +78,22 @@ export class ConfigAction<TRequired extends boolean = true> {
     return config;
   }
 
+  static async fromGlobalOptionsWithPath(globalOptions: GlobalOptions<true>) {
+    if (typeof globalOptions.config !== "string")
+      return {
+        path: null,
+        data: globalOptions.config,
+      };
+    const configAction = new ConfigAction({
+      path: globalOptions.config,
+      verbose: !!globalOptions.verbose && globalOptions.verbose > 0,
+    });
+    return await configAction.exec();
+  }
+
   static async fromGlobalOptions(globalOptions: GlobalOptions<true>) {
-    if (typeof globalOptions.config === "string") {
-      const configAction = new ConfigAction({
-        path: globalOptions.config,
-        verbose: !!globalOptions.verbose && globalOptions.verbose > 0,
-      });
-      const result = await configAction.exec();
-      return result.data;
-    } else {
-      return globalOptions.config;
-    }
+    const config = await ConfigAction.fromGlobalOptionsWithPath(globalOptions);
+    return config.data;
   }
 
   async exec() {

@@ -18,6 +18,12 @@ export function findRepositoryOrFail(
   return repo;
 }
 
+export function findPackageOrFail(config: ConfigType, packageName: string) {
+  const pkg = config.packages.find((v) => v.name === packageName);
+  if (!pkg) throw new AppError(`Package '${packageName}' not found`);
+  return pkg;
+}
+
 export function ensureSameRepositoryType(
   a: RepositoryConfigType,
   b: RepositoryConfigType,

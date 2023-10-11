@@ -25,11 +25,15 @@ export type TaskPrepareRestoreData = TaskCommonData & {
   options: RestoreActionOptions;
 };
 
-export type TaskReturn = Promise<{ snapshotPath?: string } | undefined | void>;
+export type TaskReturn = Promise<{ snapshotPath?: string } | undefined>;
 
 export abstract class TaskAbstract<TConfig = any> {
   constructor(readonly config: TConfig) {}
-  async backup(data: TaskBackupData): TaskReturn {}
-  async prepareRestore(data: TaskPrepareRestoreData): TaskReturn {}
+  async backup(data: TaskBackupData): TaskReturn {
+    return;
+  }
+  async prepareRestore(data: TaskPrepareRestoreData): TaskReturn {
+    return;
+  }
   async restore(data: TaskRestoreData) {}
 }
