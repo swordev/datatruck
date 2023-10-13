@@ -1,5 +1,8 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
+import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
+import { FormatType, dataFormats } from "../utils/DataFormat";
 import { DatatruckServerOptions } from "../utils/datatruck/server";
+import { Step } from "../utils/steps";
 import { PackageConfigType } from "./PackageConfig";
 import { RepositoryConfigType } from "./RepositoryConfig";
 import type { JSONSchema7 } from "json-schema";
@@ -10,6 +13,13 @@ export type ConfigType = {
   repositories: RepositoryConfigType[];
   packages: PackageConfigType[];
   server?: DatatruckServerOptions;
+  reports?: ReportConfig[];
+};
+
+export type ReportConfig = {
+  when?: "success" | "error";
+  format?: Exclude<FormatType, "custom" | "tpl">;
+  run: Step;
 };
 
 export const configDefinition: JSONSchema7 = {
@@ -20,6 +30,23 @@ export const configDefinition: JSONSchema7 = {
     $schema: { type: "string" },
     tempDir: { type: "string" },
     minFreeDiskSpace: { anyOf: [{ type: "integer" }, { type: "string" }] },
+    reports: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          when: { enum: ["success", "error"] },
+          format: {
+            enum: dataFormats.filter((f) => !["custom", "tpl"].includes(f)),
+          },
+          run: makeRef(
+            DefinitionEnum.scriptTask,
+            ScriptTaskDefinitionEnum.step,
+          ),
+        },
+      },
+    },
     repositories: {
       type: "array",
       items: makeRef(DefinitionEnum.repository),

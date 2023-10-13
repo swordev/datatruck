@@ -14,6 +14,7 @@ import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager } from "../utils/progress";
+import { runSteps } from "../utils/steps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -46,6 +47,7 @@ type Context = {
     repositoryName: string;
     mirrorRepositoryName: string;
   };
+  report: { type: string };
 };
 
 export class BackupAction<TRequired extends boolean = true> {
@@ -186,6 +188,8 @@ export class BackupAction<TRequired extends boolean = true> {
         ? `${item.data.packageName} ${g(item.data.mirrorRepositoryName)}`
         : item.key === "summary"
         ? `Errors: ${item.data.errors}`
+        : item.key === "report"
+        ? item.data.type
         : "";
     };
     return new DataFormat({
@@ -238,6 +242,7 @@ export class BackupAction<TRequired extends boolean = true> {
         l.$tasks({
           key: "snapshot",
           data: { id: "" },
+          exitOnError: false,
           title: {
             initial: "Prepare snapshots",
             started: "Preparing snapshots",
@@ -368,6 +373,47 @@ export class BackupAction<TRequired extends boolean = true> {
                     },
                   }),
                 ),
+                ...(this.config.reports || []).map((report, index) => {
+                  const reportIndex = index + 1;
+                  return l.$task({
+                    title: {
+                      initial: `Send report ${reportIndex}`,
+                      started: `Sending report ${reportIndex}`,
+                      completed: `Report sent: ${reportIndex}`,
+                      failed: `Report send failed: ${reportIndex}`,
+                    },
+                    key: "report",
+                    keyIndex: index,
+                    data: { type: report.run.type },
+                    exitOnError: false,
+                    run: async (task) => {
+                      const result = l
+                        .getResult()
+                        .filter((r) => r.key !== "report");
+                      const success = result.every((r) => !r.error);
+                      const enabled =
+                        !report.when ||
+                        (report.when === "success" && success) ||
+                        (report.when === "error" && !success);
+
+                      if (!enabled)
+                        return task.skip(`Report send skipped: ${reportIndex}`);
+                      const text = this.dataFormat(result).format(
+                        report.format ?? "list",
+                      );
+                      await runSteps(report.run, {
+                        verbose: this.options.verbose,
+                        process: { vars: { DTT_REPORT: text } },
+                        telegram: { vars: { TEXT: text } },
+                        node: {
+                          vars: {
+                            dtt: { report: text, result },
+                          },
+                        },
+                      });
+                    },
+                  });
+                }),
               );
             });
           },

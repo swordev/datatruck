@@ -1,3 +1,4 @@
+import { post } from "./http";
 import { exec } from "./process";
 import { render } from "./string";
 import { mkTmpDir } from "./temp";
@@ -18,6 +19,12 @@ export type NodeStepConfig = {
   code: string | string[];
 };
 
+export type TelegramMessageStepConfig = {
+  bot: string;
+  chatId: number;
+  text?: string;
+};
+
 export type Step =
   | {
       type: "process";
@@ -26,6 +33,10 @@ export type Step =
   | {
       type: "node";
       config: NodeStepConfig;
+    }
+  | {
+      type: "telegram-message";
+      config: TelegramMessageStepConfig;
     };
 
 export type StepOptions = {
@@ -36,6 +47,9 @@ export type StepOptions = {
   node?: {
     vars?: Record<string, any>;
     tempDir?: () => Promise<string>;
+  };
+  telegram?: {
+    vars?: Record<string, string>;
   };
   cwd?: string;
   onLine?: (p: string) => any;
@@ -110,6 +124,23 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
               onData: (line) => options.onLine!(line),
             },
           }),
+        },
+      );
+    } else if (step.type === "telegram-message") {
+      await post(
+        `https://api.telegram.org/bot${step.config.bot}/sendMessage`,
+        JSON.stringify({
+          chat_id: step.config.chatId.toString(),
+          text: render(
+            step.config.text ?? `{TEXT}`,
+            options.telegram?.vars || {},
+          ),
+          disable_notification: true,
+        }),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
       );
     } else {
