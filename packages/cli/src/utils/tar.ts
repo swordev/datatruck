@@ -245,7 +245,9 @@ export async function createTar(options: CreateTarOptions) {
       },
     },
     {
-      log: options.verbose ? { envNames: Object.keys(env) } : false,
+      log: options.verbose
+        ? { envNames: Object.keys(env), exec: true, stderr: true, stdout: true }
+        : false,
       ...(vendor === "bsdtar"
         ? {
             stderr: options.onEntry
