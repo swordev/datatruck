@@ -1,8 +1,8 @@
 {
   "importOrderParserPlugins": [
     "typescript",
-    "classProperties",
-    "decorators-legacy"
+    "explicitResourceManagement",
+    "classProperties"
   ],
   "plugins": [
     "@trivago/prettier-plugin-sort-imports",
