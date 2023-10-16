@@ -97,32 +97,33 @@ export class PruneAction<TRequired extends boolean = true> {
     const usePrunePolicyConfig =
       !hasKeepFilter && this.options.groupBy?.includes("packageName");
 
-    const keepSnapshots = hasKeepFilter
-      ? groupAndFilter(
-          snapshots,
-          this.options.groupBy,
-          usePrunePolicyConfig
-            ? (groupedSnapshots) => {
-                const [firstSnapshot] = groupedSnapshots;
-                const packageName = firstSnapshot.packageName;
-                const config = this.config.packages.find(
-                  (pkg) => pkg.name === packageName,
-                );
-                const prunePolicy = config?.prunePolicy ?? {};
-                return {
-                  last: prunePolicy.keepLast,
-                  lastMinutely: prunePolicy.keepMinutely,
-                  lastHourly: prunePolicy.keepHourly,
-                  lastDaily: prunePolicy.keepDaily,
-                  lastMonthly: prunePolicy.keepMonthly,
-                  lastWeekly: prunePolicy.keepWeekly,
-                  lastYearly: prunePolicy.keepYearly,
-                };
-              }
-            : keepFilter,
-          reasons,
-        )
-      : [];
+    const keepSnapshots =
+      hasKeepFilter || usePrunePolicyConfig
+        ? groupAndFilter(
+            snapshots,
+            this.options.groupBy,
+            usePrunePolicyConfig
+              ? (groupedSnapshots) => {
+                  const [firstSnapshot] = groupedSnapshots;
+                  const packageName = firstSnapshot.packageName;
+                  const config = this.config.packages.find(
+                    (pkg) => pkg.name === packageName,
+                  );
+                  const prunePolicy = config?.prunePolicy ?? {};
+                  return {
+                    last: prunePolicy.keepLast,
+                    lastMinutely: prunePolicy.keepMinutely,
+                    lastHourly: prunePolicy.keepHourly,
+                    lastDaily: prunePolicy.keepDaily,
+                    lastMonthly: prunePolicy.keepMonthly,
+                    lastWeekly: prunePolicy.keepWeekly,
+                    lastYearly: prunePolicy.keepYearly,
+                  };
+                }
+              : keepFilter,
+            reasons,
+          )
+        : [];
 
     const result: PruneResult = {
       total: snapshots.length,
