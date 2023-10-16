@@ -4,6 +4,9 @@ import { randomUUID } from "crypto";
 import { mkdir, rm } from "fs/promises";
 import { join } from "path";
 
+(Symbol as any).dispose ??= Symbol("Symbol.dispose");
+(Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
+
 export function parentTmpDir() {
   return join(globalData.tempDir, "datatruck-temp");
 }
@@ -47,6 +50,31 @@ export async function mkTmpDir(...keys: [string, ...string[]]) {
   const path = tmpDir(...keys);
   await mkdir(path, { recursive: true });
   return path;
+}
+
+export async function useTempDir(
+  ...keys: [string, ...string[]]
+): Promise<AsyncDisposable & { path: string }> {
+  const path = await mkTmpDir(...keys);
+  return {
+    path,
+    async [Symbol.asyncDispose]() {
+      try {
+        await rmTmpDir(path);
+      } catch (_) {}
+    },
+  };
+}
+
+export function useTempFile(path: string): AsyncDisposable & { path: string } {
+  return {
+    path,
+    async [Symbol.asyncDispose]() {
+      try {
+        await rm(path, { recursive: true });
+      } catch (_) {}
+    },
+  };
 }
 
 export class CleanupListener {

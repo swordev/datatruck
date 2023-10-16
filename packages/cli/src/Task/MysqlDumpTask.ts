@@ -1,4 +1,5 @@
 import { AppError } from "../Error/AppError";
+import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import {
@@ -7,6 +8,8 @@ import {
 } from "../utils/datatruck/config";
 import {
   ensureEmptyDir,
+  ensureSingleFile,
+  groupFiles,
   mkdirIfNotExists,
   readDir,
   safeRename,
@@ -14,7 +17,8 @@ import {
 import { progressPercent } from "../utils/math";
 import { createMysqlCli } from "../utils/mysql";
 import { endsWith } from "../utils/string";
-import { mkTmpDir } from "../utils/temp";
+import { CompressOptions, createTar, extractTar } from "../utils/tar";
+import { mkTmpDir, useTempDir, useTempFile } from "../utils/temp";
 import {
   SqlDumpTaskConfigType,
   TargetDatabaseType,
@@ -26,8 +30,8 @@ import {
   TaskRestoreData,
   TaskAbstract,
 } from "./TaskAbstract";
-import { chmod, mkdir, readdir, rm } from "fs/promises";
-import { join } from "path";
+import { chmod, mkdir, readdir, rm, writeFile } from "fs/promises";
+import { basename, dirname, join, relative } from "path";
 
 export const mysqlDumpTaskName = "mysql-dump";
 
@@ -41,12 +45,16 @@ export type MysqlDumpTaskConfigType = {
    * @default 1
    */
   concurrency?: number;
+  compress?: boolean | CompressOptions;
 } & SqlDumpTaskConfigType;
 
 export const mysqlDumpTaskDefinition = sqlDumpTaskDefinition({
   dataFormat: { enum: ["csv", "sql"] },
   concurrency: { type: "integer", minimum: 1 },
   csvSharedPath: { type: "string" },
+  compress: {
+    anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
+  },
 });
 
 const suffix = {
@@ -59,6 +67,24 @@ const suffix = {
 
 export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
   override async backup(data: TaskBackupData) {
+    const compressAndClean = this.config.compress
+      ? async (path: string) => {
+          data.onProgress({
+            relative: {
+              description: "Compressing",
+              payload: basename(path),
+            },
+          });
+          await createTar({
+            include: [relative(snapshotPath, path)],
+            output: `${path}.tar.gz`,
+            path: dirname(path),
+            compress: this.config.compress,
+            verbose: data.options.verbose,
+          });
+          await rm(path);
+        }
+      : undefined;
     const snapshotPath =
       data.package.path ??
       (await mkTmpDir(mysqlDumpTaskName, "task", "backup", "snapshot"));
@@ -132,14 +158,18 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
                 throw new AppError(
                   `Invalid csv dump files: ${files.join(", ")}`,
                 );
-              await safeRename(
-                join(tableSharedPath, schemaFile),
-                join(snapshotPath, `${tableName}${suffix.tableSchema}`),
+              const schemaPath = join(
+                snapshotPath,
+                `${tableName}${suffix.tableSchema}`,
               );
-              await safeRename(
-                join(tableSharedPath, dataFile),
-                join(snapshotPath, `${tableName}${suffix.tableData}`),
+              await safeRename(join(tableSharedPath, schemaFile), schemaPath);
+              await compressAndClean?.(schemaPath);
+              const tablePath = join(
+                snapshotPath,
+                `${tableName}${suffix.tableData}`,
               );
+              await safeRename(join(tableSharedPath, dataFile), tablePath);
+              await compressAndClean?.(tablePath);
             } finally {
               await rm(tableSharedPath, { recursive: true });
             }
@@ -169,6 +199,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
               }),
             });
             await sql.assertDumpFile(outPath);
+            await compressAndClean?.(outPath);
           }
         },
       });
@@ -194,6 +225,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
           }),
       });
       await sql.assertDumpFile(outPath);
+      await compressAndClean?.(outPath);
     }
 
     if (this.config.storedPrograms ?? true) {
@@ -210,6 +242,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         onlyStoredPrograms: true,
       });
       await sql.assertDumpFile(outPath);
+      await compressAndClean?.(outPath);
     }
     return {
       snapshotPath,
@@ -249,9 +282,9 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
         database: database.name,
       });
 
-    const suffixes = Object.values(suffix);
-    const files = (await readDir(snapshotPath)).filter((f) =>
-      endsWith(f, suffixes),
+    const [files, compressed] = groupFiles(
+      await readDir(snapshotPath),
+      Object.values(suffix),
     );
 
     // Database check
@@ -316,11 +349,28 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
           },
         }),
       onItem: async ({ item: file, controller }) => {
-        await sql.importFile({
-          path: join(snapshotPath, file),
-          database: database.name,
-          onSpawn: (p) => (controller.stop = () => p.kill()),
-        });
+        let path = join(snapshotPath, file);
+        const tempDir = compressed[file]
+          ? await useTempDir(mysqlDumpTaskName, "task", "restore", "decompress")
+          : undefined;
+        try {
+          if (tempDir) {
+            await extractTar({
+              input: join(snapshotPath, compressed[file]),
+              output: tempDir.path,
+              decompress: true,
+              verbose: data.options.verbose,
+            });
+            path = await ensureSingleFile(tempDir.path);
+          }
+          await sql.importFile({
+            path,
+            database: database.name,
+            onSpawn: (p) => (controller.stop = () => p.kill()),
+          });
+        } finally {
+          await tempDir?.[Symbol.asyncDispose]();
+        }
       },
     });
 
@@ -344,25 +394,36 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
           },
         }),
       onItem: async ({ item: file, controller }) => {
-        const filePath = join(snapshotPath, file);
+        const id = data.snapshot.id.slice(0, 8);
         const tableName = file.slice(0, suffix.tableData.length * -1);
-        const sharedFilePath = join(
-          sharedDir!,
-          `tmp-dtt-restore-${data.snapshot.id.slice(
-            0,
-            8,
-          )}-${tableName}.data.csv`,
-        );
+        const sharedName = `tmp-dtt-restore-${id}-${tableName}.data.csv`;
+        const temp = useTempFile(join(sharedDir!, sharedName));
+
         try {
-          await safeRename(filePath, sharedFilePath);
+          let csvFile = temp.path;
+
+          if (compressed[file]) {
+            await mkdirIfNotExists(temp.path);
+            await extractTar({
+              input: join(snapshotPath, compressed[file]),
+              output: temp.path,
+              decompress: true,
+              verbose: data.options.verbose,
+            });
+            csvFile = await ensureSingleFile(temp.path);
+          } else {
+            const sourceFile = join(snapshotPath, file);
+            await safeRename(sourceFile, temp.path);
+          }
+
           await sql.importCsvFile({
-            path: sharedFilePath,
+            path: csvFile,
             database: database.name,
             table: tableName,
             onSpawn: (p) => (controller.stop = () => p.kill()),
           });
         } finally {
-          await rm(sharedFilePath);
+          await temp[Symbol.asyncDispose]();
         }
       },
     });

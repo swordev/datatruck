@@ -1,7 +1,9 @@
 import {
   createWriteStreamPool,
   ensureFreeDiskSpace,
+  ensureSingleFile,
   fetchDiskStats,
+  groupFiles,
 } from "../../src/utils/fs";
 import {
   isTmpDir,
@@ -11,7 +13,7 @@ import {
   tmpDir,
 } from "../../src/utils/temp";
 import { randomBytes } from "crypto";
-import { mkdir, readFile, rm, rmdir } from "fs/promises";
+import { mkdir, readFile, rm, rmdir, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join, normalize } from "path";
 import { it } from "vitest";
@@ -98,5 +100,50 @@ describe("ensureFreeDiskSpace", async () => {
     await expect(
       ensureFreeDiskSpace(["."], disk.free + offset),
     ).rejects.toThrowError();
+  });
+});
+
+describe("ensureSingleFile", async () => {
+  it("passes", async () => {
+    const path = await mkTmpDir("test", "ensureSingleFile");
+    await writeFile(path + "/f1", "");
+    await expect(ensureSingleFile(path)).resolves.toBe(join(path, "f1"));
+  });
+  it("fails with empty dir", async () => {
+    const path = await mkTmpDir("test", "ensureSingleFile");
+    await expect(ensureSingleFile(path)).rejects.toThrowError();
+  });
+  it("fails with dir", async () => {
+    const path = await mkTmpDir("test", "ensureSingleFile");
+    await writeFile(path + "/f1", "");
+    await writeFile(path + "/f2", "");
+    await expect(ensureSingleFile(path)).rejects.toThrowError();
+  });
+  it("fails uncreated dir", async () => {
+    const path = await mkTmpDir("test", "ensureSingleFile");
+    await rmdir(path);
+    await expect(ensureSingleFile(path)).rejects.toThrowError();
+  });
+});
+
+describe("groupFiles", async () => {
+  it("groups files", async () => {
+    const [files, compressed] = groupFiles(
+      [
+        "a.sql",
+        "b.sql",
+        "c.sql.tar.gz",
+        "d.sql",
+        "d.sql.tar.gz",
+        "otherfile.tar.gz",
+      ],
+      [".sql"],
+    );
+
+    expect(files).toEqual(["a.sql", "b.sql", "c.sql", "d.sql"]);
+    expect(compressed).toEqual({
+      "c.sql": "c.sql.tar.gz",
+      "d.sql": "d.sql.tar.gz",
+    });
   });
 });

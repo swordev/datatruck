@@ -34,14 +34,20 @@ export type DecompressOptions = {
   cores?: CoresOptions;
 };
 
-export interface CreateTarOptions {
+export type CreateTarOptions = {
   path: string;
   verbose?: boolean;
   output: string;
-  includeList: string;
   compress?: boolean | CompressOptions;
   onEntry?: (entry: TarEntry) => void;
-}
+} & (
+  | {
+      includeList: string;
+    }
+  | {
+      include: string[];
+    }
+);
 
 export interface ExtractOptions {
   input: string;
@@ -168,7 +174,10 @@ async function ifX<T, R>(
 
 export async function createTar(options: CreateTarOptions) {
   const vendor = await getTarVendor(true, options.verbose);
-  const total = await countFileLines(options.includeList);
+  const total =
+    "include" in options
+      ? options.include.length
+      : await countFileLines(options.includeList);
   const compress = await ifX(options.compress, async (compress) => ({
     ...compress,
     cores: await resolveCores(compress.cores),
@@ -204,8 +213,6 @@ export async function createTar(options: CreateTarOptions) {
       toLocalPath(options.path),
       compress?.cores === 1 ? "-czvf" : "-cvf",
       toLocalPath(options.output),
-      "-T",
-      toLocalPath(options.includeList),
       // https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=172293
       ...(vendor === "bsdtar" ? [] : ["--ignore-failed-read"]),
       ...(vendor === "bsdtar" ? [] : ["--force-local"]),
@@ -222,6 +229,10 @@ export async function createTar(options: CreateTarOptions) {
               .join(" ")}"`,
           ]
         : []),
+
+      ...("includeList" in options
+        ? ["-T", toLocalPath(options.includeList)]
+        : ["--", ...options.include]),
     ],
     {
       ...(compress &&
@@ -264,9 +275,10 @@ export function normalizeTarPath(path: string) {
 }
 
 export async function extractTar(options: ExtractOptions) {
-  let total =
-    options.total ??
-    (await listTar({ input: options.input, verbose: options.verbose }));
+  let total = options.onEntry
+    ? options.total ??
+      (await listTar({ input: options.input, verbose: options.verbose }))
+    : undefined;
 
   if (!(await existsDir(options.output))) {
     if (options.verbose) logExec("mkdir", ["-p", options.output]);
@@ -286,9 +298,9 @@ export async function extractTar(options: ExtractOptions) {
     options.onEntry?.({
       path: normalizeTarPath(path),
       progress: {
-        total,
+        total: total!,
         current,
-        percent: progressPercent(total, current),
+        percent: progressPercent(total!, current),
       },
     });
   };

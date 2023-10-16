@@ -1,6 +1,7 @@
 import { progressPercent } from "./math";
 import { rootPath } from "./path";
 import { Progress } from "./progress";
+import { endsWith } from "./string";
 import { eachLimit } from "async";
 import bytes from "bytes";
 import fastFolderSize from "fast-folder-size";
@@ -66,6 +67,14 @@ export async function mkdirIfNotExists(path: string) {
 
 export async function ensureEmptyDir(path: string) {
   if (!(await isEmptyDir(path))) throw new Error(`Dir is not empty: ${path}`);
+}
+
+export async function ensureSingleFile(path: string) {
+  const files = await readDir(path);
+  if (files.length !== 1)
+    throw new Error(`Dir has not one file: ${files.length}`);
+  const [file] = files;
+  return join(path, file);
 }
 
 export async function ensureExistsDir(path: string) {
@@ -690,4 +699,38 @@ export async function ensureFreeDiskSpace(
   } else {
     await checkFreeDiskSpace(input, inSize);
   }
+}
+
+export function groupFiles(
+  inFiles: string[],
+  suffixes?: string[],
+  gzSuffix = ".tar.gz",
+): [string[], Record<string, string>] {
+  const compressed: Record<string, string> = {};
+  if (suffixes) {
+    const validGzSuffixes = suffixes.map((f) => `${f}${gzSuffix}`);
+    inFiles = inFiles.filter(
+      (f) => endsWith(f, suffixes) || endsWith(f, validGzSuffixes),
+    );
+  }
+  const grouped = inFiles.reduce(
+    (items, name) => {
+      const key = name.endsWith(gzSuffix)
+        ? name.slice(0, -gzSuffix.length)
+        : name;
+      if (!items[key]) items[key] = [];
+      items[key].push(name);
+      return items;
+    },
+    {} as Record<string, string[]>,
+  );
+
+  for (const key in grouped) {
+    const suffixFile = grouped[key].find((v) => v.endsWith(gzSuffix));
+    if (suffixFile) {
+      compressed[key] = suffixFile;
+    }
+  }
+
+  return [Object.keys(grouped), compressed];
 }

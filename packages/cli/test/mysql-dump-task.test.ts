@@ -12,8 +12,13 @@ const repositoryTypes = parseStringList(
 
 const dataFormats = parseStringList(
   process.env.DTT_DATA_FORMAT,
-  ["sql" as const, "csv" as const],
-  process.env.CI ? ["sql"] : true,
+  [
+    "sql" as const,
+    "csv" as const,
+    "sql-compress" as const,
+    "csv-compress" as const,
+  ],
+  process.env.CI ? ["sql", "sql-compress"] : true,
 );
 
 describe(
@@ -84,12 +89,13 @@ describe(
                 task: {
                   name: "mysql-dump",
                   config: {
-                    dataFormat,
+                    dataFormat: dataFormat.startsWith("sql") ? "sql" : "csv",
                     database: dbName,
                     hostname: sql.options.hostname,
                     username: sql.options.username,
                     password: sql.options.password,
                     port: sql.options.port,
+                    compress: dataFormat.endsWith("-compress"),
                     targetDatabase: {
                       name: `${dbName}_{snapshotId}`,
                     },
