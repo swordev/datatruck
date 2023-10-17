@@ -22,6 +22,7 @@ import { IfRequireKeys } from "../utils/ts";
 import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
+import dayjs from "dayjs";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
@@ -68,9 +69,12 @@ export class BackupAction<TRequired extends boolean = true> {
   }
 
   protected prepareSnapshot(): PreSnapshot {
+    const date = this.options.date ?? new Date().toISOString();
+    if (!dayjs(date, "YYYY-MM-DDTHH:mm:ss.SSS[Z]", true).isValid())
+      throw new Error(`Invalid snapshot date: ${date}`);
     return {
       id: randomUUID().replaceAll("-", ""),
-      date: this.options.date ?? new Date().toISOString(),
+      date,
     };
   }
   protected getPackages(snapshot: PreSnapshot): PackageConfigType[] {

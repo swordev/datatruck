@@ -1,11 +1,13 @@
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import $duration from "dayjs/plugin/duration";
 import isoWeek from "dayjs/plugin/isoWeek";
 
 dayjs.extend(isoWeek);
 dayjs.extend(advancedFormat);
 dayjs.extend($duration);
+dayjs.extend(customParseFormat);
 
 export type FilterByLastOptionsType = {
   last?: number;
