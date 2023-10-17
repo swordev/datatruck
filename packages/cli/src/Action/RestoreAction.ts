@@ -5,7 +5,7 @@ import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { TaskAbstract } from "../Task/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { renderError, renderResult } from "../utils/cli";
+import { renderError, renderObject, renderResult } from "../utils/cli";
 import {
   findPackageOrFail,
   findRepositoryOrFail,
@@ -175,6 +175,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     const renderData = (
       item: Listr3TaskResultEnd<Context>,
       color?: boolean,
+      result: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
       return item.key === "snapshots"
@@ -183,6 +184,12 @@ export class RestoreAction<TRequired extends boolean = true> {
         ? `${item.data.packageName} ${g(item.data.taskName)}`
         : item.key === "restore"
         ? `${item.data.packageName} ${g(item.data.repositoryName)}`
+        : item.key === "summary"
+        ? renderObject({
+            errors: item.data.errors,
+            restores: result.filter((r) => !r.error && r.key === "restore")
+              .length,
+          })
         : "";
     };
     return new DataFormat({
@@ -200,7 +207,7 @@ export class RestoreAction<TRequired extends boolean = true> {
           result.map((item) => [
             renderResult(item.error),
             renderTitle(item, true),
-            renderData(item, true),
+            renderData(item, true, result),
             duration(item.elapsed),
             renderError(item.error, options.verbose),
           ]),

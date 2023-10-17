@@ -5,7 +5,7 @@ import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { renderError, renderResult } from "../utils/cli";
+import { renderError, renderObject, renderResult } from "../utils/cli";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -19,7 +19,6 @@ import { runSteps } from "../utils/steps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
-import { PruneAction } from "./PruneAction";
 import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
@@ -180,6 +179,7 @@ export class BackupAction<TRequired extends boolean = true> {
     const renderData = (
       item: Listr3TaskResultEnd<Context>,
       color?: boolean,
+      result: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
       return item.key === "prune"
@@ -193,7 +193,12 @@ export class BackupAction<TRequired extends boolean = true> {
         : item.key === "copy"
         ? `${item.data.packageName} ${g(item.data.mirrorRepositoryName)}`
         : item.key === "summary"
-        ? `Errors: ${item.data.errors}`
+        ? renderObject({
+            errors: item.data.errors,
+            backups: result.filter((r) => !r.error && r.key === "backup")
+              .length,
+            copies: result.filter((r) => !r.error && r.key === "copy").length,
+          })
         : item.key === "report"
         ? item.data.type
         : "";
@@ -207,7 +212,7 @@ export class BackupAction<TRequired extends boolean = true> {
           .map((item) => {
             const icon = renderResult(item.error, false);
             const title = renderTitle(item);
-            const data = renderData(item, false);
+            const data = renderData(item, false, result);
             return `${icon} ${title}: ${data}`;
           }),
       table: {
