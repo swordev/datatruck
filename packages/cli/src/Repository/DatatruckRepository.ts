@@ -349,11 +349,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
             ),
         });
 
-        scanner.progress("Fetching tar stats", basename(tarPath));
+        scanner.progress("Fetching tar stats", basename(tarPath), false);
         tarStats[packBasename].checksum = await calcFileHash(tarPath, "sha1");
         tarStats[packBasename].size = (await stat(tarPath)).size;
         if (!fs.isLocal()) {
-          scanner.progress("Uploading tar", basename(tarPath));
+          scanner.progress("Uploading tar", basename(tarPath), false);
           await fs.upload(tarPath, `${snapshotName}/${packBasename}`);
           await rm(tarPath);
         }

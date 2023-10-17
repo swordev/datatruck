@@ -464,7 +464,7 @@ export function createProgress(options: {
     disposed: false,
     total: 0,
     current: 0,
-    update: async (description, path, increment = true) => {
+    update: (description, path, increment = true) => {
       if (progress.disposed) return;
       if (path && increment) progress.current++;
       options.onProgress({
