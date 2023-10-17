@@ -69,12 +69,6 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
   override async backup(data: TaskBackupData) {
     const compressAndClean = this.config.compress
       ? async (path: string) => {
-          data.onProgress({
-            relative: {
-              description: "Compressing",
-              payload: basename(path),
-            },
-          });
           await createTar({
             include: [relative(snapshotPath, path)],
             output: `${path}.tar.gz`,
