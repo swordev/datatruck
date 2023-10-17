@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.29.1
+
+### Patch Changes
+
+- [`34900c5`](https://github.com/swordev/datatruck/commit/34900c5ba9f323d491f2f6865c566386a4812c08) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix texts
+
 ## 0.29.0
 
 ### Minor Changes
