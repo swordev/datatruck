@@ -94,6 +94,12 @@ export function errorColumn(
   return chalk.red(message.trim());
 }
 
+export function renderObject(object: Record<string, any>) {
+  const values: string[] = [];
+  for (const key in object) values.push(`${key}: ${grey(object[key])}`);
+  return values.join(` `);
+}
+
 export type OptionsType<T1, T2 extends { [K in keyof T1]: unknown }> = {
   [K in keyof Required<T1>]: {
     option: string;

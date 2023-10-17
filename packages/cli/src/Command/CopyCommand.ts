@@ -1,14 +1,12 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { CopyAction } from "../Action/CopyAction";
-import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, resultColumn } from "../utils/cli";
-import { duration } from "../utils/date";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type CopyCommandOptionsType<TResolved = false> = {
-  id: If<TResolved, string[]>;
+  id?: If<TResolved, string[]>;
+  last?: number;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
   repository: string;
@@ -26,8 +24,12 @@ export class CopyCommand extends CommandAbstract<
       id: {
         option: "-i,--id <ids>",
         description: "Filter by identifiers",
-        required: true,
         parser: parseStringList,
+      },
+      last: {
+        option: "-l,--last <amount>",
+        description: "Last snapshots",
+        parser: Number,
       },
       package: {
         option: "-p,--package <names>",
@@ -56,6 +58,7 @@ export class CopyCommand extends CommandAbstract<
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const copy = new CopyAction(config, {
       ids: this.options.id,
+      last: this.options.last,
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
       repositoryName: this.options.repository,

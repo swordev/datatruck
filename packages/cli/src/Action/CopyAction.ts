@@ -1,14 +1,14 @@
 import type { ConfigType } from "../Config/Config";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, resultColumn } from "../utils/cli";
+import { errorColumn, renderObject, resultColumn } from "../utils/cli";
 import {
   ensureSameRepositoryType,
   filterRepository,
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
+import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { ProgressManager } from "../utils/progress";
@@ -16,10 +16,10 @@ import { Streams } from "../utils/stream";
 import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import chalk from "chalk";
-import { ListrTask } from "listr2";
 
 export type CopyActionOptionsType = {
-  ids: string[];
+  ids?: string[];
+  last?: number;
   repositoryName: string;
   packageNames?: string[];
   packageTaskNames?: string[];
@@ -43,6 +43,7 @@ export type Context = {
     packageName: string;
     repositoryName: string;
     mirrorRepositoryName: string;
+    skipped: boolean;
   };
 };
 
@@ -68,12 +69,28 @@ export class CopyAction<TRequired extends boolean = true> {
     const renderData = (
       item: Listr3TaskResultEnd<Context>,
       color?: boolean,
+      items: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
       return item.key === "snapshots"
         ? item.data.snapshots.length
         : item.key === "copy"
-        ? `${item.data.packageName} ${g(item.data.mirrorRepositoryName)}`
+        ? `${item.data.packageName} ${g(
+            [
+              item.data.snapshotId.slice(0, 8),
+              item.data.mirrorRepositoryName,
+            ].join(" "),
+          )}`
+        : item.key === "summary"
+        ? renderObject({
+            errors: item.data.errors,
+            copied: items.filter(
+              (i) => i.key === "copy" && !i.error && !i.data.skipped,
+            ).length,
+            skipped: items.filter(
+              (i) => i.key === "copy" && !i.error && i.data.skipped,
+            ).length,
+          })
         : "";
     };
     return new DataFormat({
@@ -91,7 +108,7 @@ export class CopyAction<TRequired extends boolean = true> {
           result.map((item) => [
             resultColumn(item.error),
             renderTitle(item, true),
-            renderData(item, true),
+            renderData(item, true, result),
             duration(item.elapsed),
             errorColumn(item.error, options.verbose),
           ]),
@@ -128,13 +145,17 @@ export class CopyAction<TRequired extends boolean = true> {
               this.options.repositoryName,
             );
             const repo = createRepo(sourceRepoConfig);
-            const snapshots = await repo.fetchSnapshots({
+            let snapshots = await repo.fetchSnapshots({
               options: {
                 ids: this.options.ids,
                 packageNames: this.options.packageNames,
                 packageTaskNames: this.options.packageTaskNames,
               },
             });
+            if (this.options.last)
+              snapshots = groupAndFilter(snapshots, ["packageName"], {
+                last: this.options.last,
+              }).map(({ item }) => item);
             data.snapshots = snapshots;
             task.title = `Snapshots fetched: ${snapshots.length}`;
             if (!snapshots.length) throw new Error("No snapshots found");
@@ -154,24 +175,27 @@ export class CopyAction<TRequired extends boolean = true> {
               throw new Error("No mirror snapshots found");
 
             return snapshots.flatMap((snapshot) =>
-              repositoryNames2.map((repo2) =>
-                l.$task({
+              repositoryNames2.map((repo2) => {
+                const id = snapshot.id.slice(0, 8);
+                const pkgName = snapshot.packageName;
+                return l.$task({
                   key: "copy",
-                  keyIndex: [snapshot.packageName, repo2],
+                  keyIndex: [snapshot.packageName, repo2, snapshot.id],
                   data: {
                     snapshotId: snapshot.id,
                     packageName: snapshot.packageName,
                     repositoryName: sourceRepoConfig.name,
                     mirrorRepositoryName: repo2,
+                    skipped: false,
                   },
                   title: {
-                    initial: `Copy snapshot: ${repo2}`,
-                    started: `Copying snapshot: ${repo2}`,
-                    completed: `Snapshot copied: ${repo2}`,
-                    failed: `Snapshot copy failed: ${repo2}`,
+                    initial: `Copy snapshot: ${pkgName} (${id}) » ${repo2}`,
+                    started: `Copying snapshot: ${pkgName} (${id}) » ${repo2}`,
+                    completed: `Snapshot copied: ${pkgName} (${id}) » ${repo2}`,
+                    failed: `Snapshot copy failed: ${pkgName} (${id}) » ${repo2}`,
                   },
                   exitOnError: false,
-                  run: async (task) => {
+                  run: async (task, data) => {
                     const mirrorConfig = findRepositoryOrFail(
                       this.config,
                       repo2,
@@ -184,10 +208,12 @@ export class CopyAction<TRequired extends boolean = true> {
                         packageNames: [snapshot.packageName],
                       },
                     });
-                    if (currentCopies.length)
+                    if (currentCopies.length) {
+                      data.skipped = true;
                       return task.skip(
-                        `Already exists at ${mirrorConfig.name}`,
+                        `Already exists at ${mirrorConfig.name}: ${pkgName} (${id})`,
                       );
+                    }
                     if (this.config.minFreeDiskSpace)
                       await mirrorRepo.ensureFreeDiskSpace(
                         mirrorConfig.config,
@@ -202,8 +228,8 @@ export class CopyAction<TRequired extends boolean = true> {
                       onProgress: (p) => pm.update(p, (d) => (task.output = d)),
                     });
                   },
-                }),
-              ),
+                });
+              }),
             );
           },
         }),
