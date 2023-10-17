@@ -238,8 +238,8 @@ export class BackupAction<TRequired extends boolean = true> {
       progressManager: pm,
     });
     return l
-      .add(
-        l.$tasks({
+      .add([
+        l.$task({
           key: "snapshot",
           data: { id: "" },
           exitOnError: false,
@@ -257,168 +257,171 @@ export class BackupAction<TRequired extends boolean = true> {
             const snapshotId = (data.id = snapshot.id.slice(0, 8));
             task.title = `Snapshots prepared: ${snapshotId} (${packages.length} packages)`;
 
-            return packages.flatMap((pkg) => {
-              let taskResult: { snapshotPath?: string } | undefined = {};
-              const gc = new GargabeCollector();
-              const repositories = this.getRepositoryNames(
-                pkg.repositoryNames ?? [],
-              );
-              const mirrorRepositories = repositories
-                .filter((r) => r.mirrors.length)
-                .flatMap(({ name, mirrors }) =>
-                  mirrors.map((mirror) => ({ name, mirror })),
+            return [
+              ...packages.flatMap((pkg) => {
+                let taskResult: { snapshotPath?: string } | undefined = {};
+                const gc = new GargabeCollector();
+                const repositories = this.getRepositoryNames(
+                  pkg.repositoryNames ?? [],
                 );
+                const mirrorRepositories = repositories
+                  .filter((r) => r.mirrors.length)
+                  .flatMap(({ name, mirrors }) =>
+                    mirrors.map((mirror) => ({ name, mirror })),
+                  );
 
-              return l.$tasks(
-                !!pkg.task &&
+                return l.$tasks(
+                  !!pkg.task &&
+                    l.$task({
+                      key: "task",
+                      keyIndex: pkg.name,
+                      data: { taskName: pkg.task.name, packageName: pkg.name },
+                      title: {
+                        initial: `Execute task: ${pkg.task?.name}`,
+                        started: `Executing task: ${pkg.task?.name}`,
+                        failed: `Task execute failed: ${pkg.task?.name}`,
+                        completed: `Task executed: ${pkg.task?.name}`,
+                      },
+                      exitOnError: false,
+                      runWrapper: gc.cleanupIfFail.bind(gc),
+                      run: async (task) => {
+                        taskResult = await createTask(pkg.task!).backup({
+                          options,
+                          package: pkg,
+                          snapshot,
+                          onProgress: (p) =>
+                            pm.update(p, (t) => (task.output = t)),
+                        });
+                      },
+                    }),
+                  ...repositories.map(({ name: repositoryName }) =>
+                    l.$task({
+                      key: "backup",
+                      keyIndex: [pkg.name, repositoryName],
+                      data: {
+                        packageName: pkg.name,
+                        repositoryName: repositoryName,
+                      },
+                      title: {
+                        initial: `Create backup: ${repositoryName}`,
+                        started: `Creating backup: ${repositoryName}`,
+                        completed: `Backup created: ${repositoryName}`,
+                        failed: `Backup create failed: ${repositoryName}`,
+                      },
+                      exitOnError: false,
+                      runWrapper: gc.cleanupOnFinish.bind(gc),
+                      run: async (task) => {
+                        const taskSummary = pkg.task
+                          ? l.result("task", pkg.name)
+                          : undefined;
+                        if (taskSummary?.error) throw new Error(`Task failed`);
+                        await this.backup({
+                          pkg,
+                          repositoryName,
+                          snapshot,
+                          snapshotPath: taskResult?.snapshotPath,
+                          onProgress: (p) =>
+                            this.pm.update(p, (t) => (task.output = t)),
+                        });
+                      },
+                    }),
+                  ),
                   l.$task({
-                    key: "task",
+                    key: "cleanup",
                     keyIndex: pkg.name,
-                    data: { taskName: pkg.task.name, packageName: pkg.name },
+                    data: {},
                     title: {
-                      initial: `Execute task: ${pkg.task?.name}`,
-                      started: `Executing task: ${pkg.task?.name}`,
-                      failed: `Task execute failed: ${pkg.task?.name}`,
-                      completed: `Task executed: ${pkg.task?.name}`,
+                      initial: "Clean task files",
+                      started: "Cleaning task files",
+                      completed: "Task files cleaned",
+                      failed: "Task files clean failed",
                     },
                     exitOnError: false,
-                    runWrapper: gc.cleanupIfFail.bind(gc),
-                    run: async (task) => {
-                      taskResult = await createTask(pkg.task!).backup({
-                        options,
-                        package: pkg,
-                        snapshot,
-                        onProgress: (p) =>
-                          pm.update(p, (t) => (task.output = t)),
-                      });
-                    },
+                    enabled: gc.pending,
+                    run: () => gc.cleanup(),
                   }),
-                ...repositories.map(({ name: repositoryName }) =>
-                  l.$task({
-                    key: "backup",
-                    keyIndex: [pkg.name, repositoryName],
-                    data: {
-                      packageName: pkg.name,
-                      repositoryName: repositoryName,
-                    },
-                    title: {
-                      initial: `Create backup: ${repositoryName}`,
-                      started: `Creating backup: ${repositoryName}`,
-                      completed: `Backup created: ${repositoryName}`,
-                      failed: `Backup create failed: ${repositoryName}`,
-                    },
-                    exitOnError: false,
-                    runWrapper: gc.cleanupOnFinish.bind(gc),
-                    run: async (task) => {
-                      const taskSummary = pkg.task
-                        ? l.result("task", pkg.name)
-                        : undefined;
-                      if (taskSummary?.error) throw new Error(`Task failed`);
-                      await this.backup({
-                        pkg,
-                        repositoryName,
-                        snapshot,
-                        snapshotPath: taskResult?.snapshotPath,
-                        onProgress: (p) =>
-                          this.pm.update(p, (t) => (task.output = t)),
-                      });
-                    },
-                  }),
-                ),
-                l.$task({
-                  key: "cleanup",
-                  keyIndex: pkg.name,
-                  data: {},
-                  title: {
-                    initial: "Clean task files",
-                    started: "Cleaning task files",
-                    completed: "Task files cleaned",
-                    failed: "Task files clean failed",
-                  },
-                  exitOnError: false,
-                  enabled: gc.pending,
-                  run: () => gc.cleanup(),
-                }),
-                ...mirrorRepositories.map(({ name, mirror }) =>
-                  l.$task({
-                    key: "copy",
-                    keyIndex: [pkg.name, mirror],
-                    data: {
-                      packageName: pkg.name,
-                      repositoryName: name,
-                      mirrorRepositoryName: mirror,
-                    },
-                    title: {
-                      initial: `Copy snapshot: ${mirror}`,
-                      started: `Copying snapshot: ${mirror}`,
-                      completed: `Snapshot copied: ${mirror}`,
-                      failed: `Snapshot copy failed: ${mirror}`,
-                    },
-                    exitOnError: false,
-                    runWrapper: gc.cleanup.bind(gc),
-                    run: async (task) => {
-                      const backupSummary = l.result("backup", [
-                        pkg.name,
-                        name,
-                      ]);
-                      if (backupSummary.error) throw new Error(`Backup failed`);
-                      await this.copy({
+                  ...mirrorRepositories.map(({ name, mirror }) =>
+                    l.$task({
+                      key: "copy",
+                      keyIndex: [pkg.name, mirror],
+                      data: {
+                        packageName: pkg.name,
                         repositoryName: name,
                         mirrorRepositoryName: mirror,
-                        pkg,
-                        snapshot,
-                        onProgress: (p) =>
-                          pm.update(p, (t) => (task.output = t)),
-                      });
-                    },
-                  }),
-                ),
-                ...(this.config.reports || []).map((report, index) => {
-                  const reportIndex = index + 1;
-                  return l.$task({
-                    title: {
-                      initial: `Send report ${reportIndex}`,
-                      started: `Sending report ${reportIndex}`,
-                      completed: `Report sent: ${reportIndex}`,
-                      failed: `Report send failed: ${reportIndex}`,
-                    },
-                    key: "report",
-                    keyIndex: index,
-                    data: { type: report.run.type },
-                    exitOnError: false,
-                    run: async (task) => {
-                      const result = l
-                        .getResult()
-                        .filter((r) => r.key !== "report");
-                      const success = result.every((r) => !r.error);
-                      const enabled =
-                        !report.when ||
-                        (report.when === "success" && success) ||
-                        (report.when === "error" && !success);
+                      },
+                      title: {
+                        initial: `Copy snapshot: ${mirror}`,
+                        started: `Copying snapshot: ${mirror}`,
+                        completed: `Snapshot copied: ${mirror}`,
+                        failed: `Snapshot copy failed: ${mirror}`,
+                      },
+                      exitOnError: false,
+                      runWrapper: gc.cleanup.bind(gc),
+                      run: async (task) => {
+                        const backupSummary = l.result("backup", [
+                          pkg.name,
+                          name,
+                        ]);
+                        if (backupSummary.error)
+                          throw new Error(`Backup failed`);
+                        await this.copy({
+                          repositoryName: name,
+                          mirrorRepositoryName: mirror,
+                          pkg,
+                          snapshot,
+                          onProgress: (p) =>
+                            pm.update(p, (t) => (task.output = t)),
+                        });
+                      },
+                    }),
+                  ),
+                );
+              }),
+              ...(this.config.reports || []).map((report, index) => {
+                const reportIndex = index + 1;
+                return l.$task({
+                  title: {
+                    initial: `Send report ${reportIndex}`,
+                    started: `Sending report ${reportIndex}`,
+                    completed: `Report sent: ${reportIndex}`,
+                    failed: `Report send failed: ${reportIndex}`,
+                  },
+                  key: "report",
+                  keyIndex: index,
+                  data: { type: report.run.type },
+                  exitOnError: false,
+                  run: async (task) => {
+                    const result = l
+                      .getResult()
+                      .filter((r) => r.key !== "report");
+                    const success = result.every((r) => !r.error);
+                    const enabled =
+                      !report.when ||
+                      (report.when === "success" && success) ||
+                      (report.when === "error" && !success);
 
-                      if (!enabled)
-                        return task.skip(`Report send skipped: ${reportIndex}`);
-                      const text = this.dataFormat(result).format(
-                        report.format ?? "list",
-                      );
-                      await runSteps(report.run, {
-                        verbose: this.options.verbose,
-                        process: { vars: { DTT_REPORT: text } },
-                        telegram: { vars: { TEXT: text } },
-                        node: {
-                          vars: {
-                            dtt: { report: text, result },
-                          },
+                    if (!enabled)
+                      return task.skip(`Report send skipped: ${reportIndex}`);
+                    const text = this.dataFormat(result).format(
+                      report.format ?? "list",
+                    );
+                    await runSteps(report.run, {
+                      verbose: this.options.verbose,
+                      process: { vars: { DTT_REPORT: text } },
+                      telegram: { vars: { TEXT: text } },
+                      node: {
+                        vars: {
+                          dtt: { report: text, result },
                         },
-                      });
-                    },
-                  });
-                }),
-              );
-            });
+                      },
+                    });
+                  },
+                });
+              }),
+            ];
           },
         }),
-      )
+      ])
       .exec();
   }
 }
