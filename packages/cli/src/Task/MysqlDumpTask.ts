@@ -174,7 +174,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
               items: [tableName],
               database: this.config.database,
               onSpawn: (p) => (controller.stop = () => p.kill()),
-              ...(concurrency !== 1 && {
+              ...(concurrency === 1 && {
                 onProgress(progress) {
                   data.onProgress({
                     relative: {
