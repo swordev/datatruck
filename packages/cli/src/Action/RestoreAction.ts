@@ -31,7 +31,7 @@ export type RestoreActionOptions = {
   repositoryNames?: string[];
   repositoryTypes?: string[];
   verbose?: boolean;
-  restorePath?: boolean;
+  initial?: boolean;
   tty?: "auto" | boolean;
   progress?: "auto" | "interval" | boolean;
   progressInterval?: number;
@@ -124,7 +124,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     );
     const repo = createRepo(repoConfig);
 
-    if (!this.options.restorePath) pkg = { ...pkg, restorePath: pkg.path };
+    if (this.options.initial) pkg = { ...pkg, restorePath: pkg.path };
 
     let snapshotPath = pkg.restorePath ?? pkg.path;
 

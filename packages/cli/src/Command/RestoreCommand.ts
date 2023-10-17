@@ -16,7 +16,7 @@ export type RestoreCommandOptionsType<TResolved = false> = {
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   tag?: If<TResolved, string[]>;
-  restorePath?: boolean;
+  initial?: boolean;
 };
 
 export class RestoreCommand extends CommandAbstract<
@@ -35,9 +35,9 @@ export class RestoreCommand extends CommandAbstract<
         option: "-p,--package <values>",
         parser: parseStringList,
       },
-      restorePath: {
-        description: "Disable restore path",
-        option: "--no-restore-path",
+      initial: {
+        description: "Initial restoring (disables restore path)",
+        option: "--initial",
       },
       packageTask: {
         description: "Filter by package task names",
@@ -77,7 +77,7 @@ export class RestoreCommand extends CommandAbstract<
       repositoryTypes: this.options.repositoryType,
       tags: this.options.tag,
       verbose: verbose > 0,
-      restorePath: this.options.restorePath,
+      initial: this.options.initial,
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,

@@ -101,20 +101,6 @@ describe(
       await runRestores(config, fileChanger, backupFiles);
     });
 
-    it("passes default value", async () => {
-      const config = await makeConfig({
-        repositories: [await makeRepositoryConfig("datatruck")],
-        packages: [{ name: "main" }],
-      });
-      expect(
-        new RestoreCommand({ config }, { id: "" }).options.restorePath,
-      ).toBeTruthy();
-      expect(
-        new RestoreCommand({ config }, { id: "", restorePath: false }).options
-          .restorePath,
-      ).toBeFalsy();
-    });
-
     it("disables restore path", async () => {
       const fileChanger = await createFileChanger();
       const config = await makeConfig({
@@ -139,7 +125,7 @@ describe(
 
       await expect(() =>
         runRestores(config, fileChanger, backupFiles, {
-          restorePath: false,
+          initial: true,
         }),
       ).rejects.toThrowError();
 
@@ -149,7 +135,7 @@ describe(
       expect(await existsFile(f1Path)).toBeFalsy();
 
       await runRestores(config, fileChanger, backupFiles, {
-        restorePath: false,
+        initial: true,
       });
       expect(await existsFile(f1Path)).toBeTruthy();
       expect((await readFile(f1Path)).toString()).toBe("test");

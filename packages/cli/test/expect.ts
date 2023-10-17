@@ -46,13 +46,14 @@ export async function runRestores(
   for (const { id, files } of backups) {
     console.log(`Running restore ${index + 1}/${backups.length}`);
     await dtt.restore({ id, ...options });
-    const restorePathOption = options?.restorePath ?? true;
-    const restorePath = restorePathOption
-      ? `${fileChanger.path}-restore-${id}`
-      : fileChanger.path;
+    const initial = options?.initial;
+    const restorePath = initial
+      ? fileChanger.path
+      : `${fileChanger.path}-restore-${id}`;
+
     const restoreFiles = await readFiles(restorePath);
     await expectSameFiles(files, restoreFiles, `Invalid restore (${index})`);
-    if (!process.env.DEBUG && restorePathOption)
+    if (!process.env.DEBUG && !initial)
       await rm(restorePath, { recursive: true });
     index++;
   }
