@@ -17,11 +17,34 @@ export type FilterByLastOptionsType = {
   lastYearly?: number;
 };
 
+export type KeepObject = {
+  keepLast?: number;
+  keepMinutely?: number;
+  keepHourly?: number;
+  keepDaily?: number;
+  keepWeekly?: number;
+  keepMonthly?: number;
+  keepYearly?: number;
+};
+
+export function createFilterByLastOptions(
+  keep: KeepObject,
+): FilterByLastOptionsType {
+  return {
+    last: keep.keepLast,
+    lastMinutely: keep.keepMinutely,
+    lastHourly: keep.keepHourly,
+    lastDaily: keep.keepDaily,
+    lastMonthly: keep.keepMonthly,
+    lastWeekly: keep.keepWeekly,
+    lastYearly: keep.keepYearly,
+  };
+}
+
 export function filterByLast<TItem extends { date: string }>(
   items: TItem[],
   options: FilterByLastOptionsType,
-  reasons?: Record<number, string[]>,
-) {
+): { item: TItem; reasons: string[] }[] {
   const filters: {
     [name in keyof typeof options]: {
       handler: (date: dayjs.Dayjs, index: number) => string;
@@ -59,13 +82,15 @@ export function filterByLast<TItem extends { date: string }>(
       someFilter = true;
     }
   }
-  if (!someFilter) return items;
+  if (!someFilter)
+    return items.map((item) => ({ item, reasons: ["no-filter"] }));
+
+  const reasons = new Map<TItem, Set<string>>();
   const validItems = items
     .slice(0)
     .sort((a, b) => b.date.localeCompare(a.date))
     .filter((item, index) => {
       const date = dayjs(item.date);
-      const itemIndex = items.indexOf(item);
       let success = false;
       for (const key in filters) {
         const object = filters[key as keyof typeof options];
@@ -73,11 +98,7 @@ export function filterByLast<TItem extends { date: string }>(
           const value = object.handler(date, index);
           if (value != object.last) {
             success = true;
-            if (reasons) {
-              if (!reasons[itemIndex]) reasons[itemIndex] = [];
-              if (!reasons[itemIndex].includes(key))
-                reasons[itemIndex].push(key);
-            }
+            reasons.set(item, (reasons.get(item) || new Set()).add(key));
             object.last = value;
             object.value--;
           }
@@ -85,7 +106,12 @@ export function filterByLast<TItem extends { date: string }>(
       }
       return success;
     });
-  return items.filter((item) => validItems.includes(item));
+  return items
+    .filter((item) => validItems.includes(item))
+    .map((item) => ({
+      item,
+      reasons: [...(reasons.get(item) || [])],
+    }));
 }
 
 export type Timer = {

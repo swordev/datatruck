@@ -4,24 +4,18 @@ import { SnapshotGroupByType } from "../Action/SnapshotsAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { confirm } from "../utils/cli";
+import { KeepObject } from "../utils/date";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type PruneCommandOptions<TResolved = false> = {
+export type PruneCommandOptions<TResolved = false> = KeepObject & {
   id?: If<TResolved, string[]>;
   longId?: boolean;
   package?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
   tag?: If<TResolved, string[]>;
-  keepLast?: number;
-  keepMinutely?: number;
-  keepHourly?: number;
-  keepDaily?: number;
-  keepWeekly?: number;
-  keepMonthly?: number;
-  keepYearly?: number;
   groupBy?: If<TResolved, SnapshotGroupByType[]>;
   dryRun?: boolean;
   showAll?: boolean;

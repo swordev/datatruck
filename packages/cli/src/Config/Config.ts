@@ -4,6 +4,7 @@ import { FormatType, dataFormats } from "../utils/DataFormat";
 import { DatatruckServerOptions } from "../utils/datatruck/server";
 import { Step } from "../utils/steps";
 import { PackageConfigType } from "./PackageConfig";
+import { PrunePolicyConfigType } from "./PrunePolicyConfig";
 import { RepositoryConfigType } from "./RepositoryConfig";
 import type { JSONSchema7 } from "json-schema";
 
@@ -14,6 +15,7 @@ export type ConfigType = {
   packages: PackageConfigType[];
   server?: DatatruckServerOptions;
   reports?: ReportConfig[];
+  prunePolicy?: PrunePolicyConfigType;
 };
 
 export type ReportConfig = {
@@ -81,5 +83,6 @@ export const configDefinition: JSONSchema7 = {
         },
       },
     },
+    prunePolicy: makeRef(DefinitionEnum.prunePolicy),
   },
 };

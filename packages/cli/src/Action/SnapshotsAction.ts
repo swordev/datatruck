@@ -85,6 +85,8 @@ export class SnapshotsAction<TRequired extends boolean = true> {
     }
     result = result.sort((a, b) => b.date.localeCompare(a.date));
 
-    return groupAndFilter(result, this.options.groupBy, this.options);
+    return groupAndFilter(result, this.options.groupBy, this.options).map(
+      ({ item }) => item,
+    );
   }
 }

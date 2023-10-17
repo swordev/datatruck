@@ -5,41 +5,31 @@ import { groupBy } from "../object";
 
 export function groupAndFilter<TSnapshot extends Snapshot>(
   snapshots: TSnapshot[],
-  groupByKey?: SnapshotGroupByType[],
-  filter?:
+  groupKeys?: SnapshotGroupByType[],
+  inFilter?:
     | FilterByLastOptionsType
-    | ((groupedSnapshots: TSnapshot[]) => FilterByLastOptionsType),
-  reasons?: Record<number, string[]>,
-) {
-  const grouped = groupByKey?.length
-    ? groupBy(snapshots, groupByKey as any)
+    | ((group: TSnapshot[]) => FilterByLastOptionsType | string),
+): {
+  item: TSnapshot;
+  reasons: string[];
+}[] {
+  const groups = groupKeys?.length
+    ? groupBy(snapshots, groupKeys as (keyof TSnapshot)[])
     : { "": snapshots };
 
-  const result: typeof snapshots = [];
+  const keep: { item: TSnapshot; reasons: string[] }[] = [];
 
-  for (const key in grouped) {
-    if (filter) {
-      const groupReasons: Record<number, string[]> | undefined = reasons
-        ? {}
-        : undefined;
-      result.push(
-        ...filterByLast(
-          grouped[key],
-          typeof filter === "function" ? filter(grouped[key]) : filter,
-          groupReasons,
-        ),
-      );
-      if (groupReasons && reasons) {
-        for (const groupItemIndex in groupReasons) {
-          const snapshot = grouped[key][groupItemIndex];
-          const snapshotIndex = snapshots.indexOf(snapshot);
-          reasons[snapshotIndex] = groupReasons[groupItemIndex];
-        }
-      }
-    } else {
-      result.push(...grouped[key]);
-    }
+  for (const key in groups) {
+    const filter =
+      typeof inFilter === "function" ? inFilter(groups[key]) : inFilter || {};
+    keep.push(
+      ...(typeof filter === "string"
+        ? groups[key].map((item) => ({ item, reasons: [filter] }))
+        : filterByLast(groups[key], filter)),
+    );
   }
 
-  return snapshots.filter((snapshot) => result.includes(snapshot));
+  return snapshots
+    .map((snapshot) => keep.find((v) => v.item === snapshot))
+    .filter((v) => !!v) as any[];
 }
