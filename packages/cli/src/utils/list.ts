@@ -114,7 +114,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
     this.execTimer = createTimer();
   }
   private serializeKeyIndex(keyIndex?: KeyIndex): string[] {
-    return keyIndex
+    return typeof keyIndex !== "undefined"
       ? Array.isArray(keyIndex)
         ? keyIndex.map((k) => k.toString())
         : [keyIndex.toString()]
