@@ -1,6 +1,7 @@
 import { AppError } from "../Error/AppError";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
+import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
@@ -43,7 +44,7 @@ export type MetaDataType = {
   tags: string[];
   version: string;
   size: number;
-  tarStats?: Record<string, { files: number; size: number }>;
+  tarStats?: Record<string, { files: number; size: number; checksum: string }>;
 };
 
 export type DatatruckRepositoryConfigType = {
@@ -331,6 +332,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         tarStats[packBasename] = {
           files: stream.lines(packIndex)!,
           size: 0,
+          checksum: "",
         };
         const tarPath = join(outPath, packBasename);
 
@@ -346,8 +348,12 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
               data.path,
             ),
         });
+
+        scanner.progress("Fetching tar stats", basename(tarPath));
+        tarStats[packBasename].checksum = await calcFileHash(tarPath, "sha1");
         tarStats[packBasename].size = (await stat(tarPath)).size;
         if (!fs.isLocal()) {
+          scanner.progress("Uploading tar", basename(tarPath));
           await fs.upload(tarPath, `${snapshotName}/${packBasename}`);
           await rm(tarPath);
         }
