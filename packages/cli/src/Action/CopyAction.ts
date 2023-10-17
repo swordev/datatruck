@@ -2,7 +2,7 @@ import type { ConfigType } from "../Config/Config";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, renderObject, resultColumn } from "../utils/cli";
+import { renderError, renderObject, renderResult } from "../utils/cli";
 import {
   ensureSameRepositoryType,
   filterRepository,
@@ -106,11 +106,11 @@ export class CopyAction<TRequired extends boolean = true> {
         ],
         rows: () =>
           result.map((item) => [
-            resultColumn(item.error),
+            renderResult(item.error),
             renderTitle(item, true),
             renderData(item, true, result),
             duration(item.elapsed),
-            errorColumn(item.error, options.verbose),
+            renderError(item.error, options.verbose),
           ]),
       },
     });

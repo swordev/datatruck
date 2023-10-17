@@ -5,7 +5,7 @@ import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, resultColumn } from "../utils/cli";
+import { renderError, renderResult } from "../utils/cli";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -205,7 +205,7 @@ export class BackupAction<TRequired extends boolean = true> {
         result
           .filter((item) => item.key !== "cleanup")
           .map((item) => {
-            const icon = resultColumn(item.error, false);
+            const icon = renderResult(item.error, false);
             const title = renderTitle(item);
             const data = renderData(item, false);
             return `${icon} ${title}: ${data}`;
@@ -222,11 +222,11 @@ export class BackupAction<TRequired extends boolean = true> {
           result
             .filter((item) => item.key !== "cleanup")
             .map((item) => [
-              resultColumn(item.error),
+              renderResult(item.error),
               renderTitle(item, true),
               renderData(item, true),
               duration(item.elapsed),
-              errorColumn(item.error, options.verbose),
+              renderError(item.error, options.verbose),
             ]),
       },
     });

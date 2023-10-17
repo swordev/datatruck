@@ -63,7 +63,7 @@ export function logExec(
     : console.info(text);
 }
 
-export function resultColumn(
+export function renderResult(
   error: Error | null | string | boolean | undefined,
   color = true,
 ) {
@@ -76,7 +76,7 @@ export function resultColumn(
     : "✓";
 }
 
-export function errorColumn(
+export function renderError(
   error: Error | null | string | undefined,
   verbose?: number,
 ) {

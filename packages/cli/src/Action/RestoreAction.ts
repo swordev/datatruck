@@ -5,7 +5,7 @@ import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { TaskAbstract } from "../Task/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, resultColumn } from "../utils/cli";
+import { renderError, renderResult } from "../utils/cli";
 import {
   findPackageOrFail,
   findRepositoryOrFail,
@@ -198,11 +198,11 @@ export class RestoreAction<TRequired extends boolean = true> {
         ],
         rows: () =>
           result.map((item) => [
-            resultColumn(item.error),
+            renderResult(item.error),
             renderTitle(item, true),
             renderData(item, true),
             duration(item.elapsed),
-            errorColumn(item.error, options.verbose),
+            renderError(item.error, options.verbose),
           ]),
       },
     });

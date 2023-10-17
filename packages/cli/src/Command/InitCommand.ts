@@ -2,7 +2,7 @@ import { ConfigAction } from "../Action/ConfigAction";
 import { InitAction } from "../Action/InitAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
-import { errorColumn, resultColumn } from "../utils/cli";
+import { renderError, renderResult } from "../utils/cli";
 import { getErrorProperties } from "../utils/object";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
@@ -55,11 +55,11 @@ export class InitCommand extends CommandAbstract<
         ],
         rows: () =>
           response.map((item) => [
-            resultColumn(item.error),
+            renderResult(item.error),
             item.repositoryName,
             item.repositoryType,
             item.repositorySource,
-            errorColumn(item.error, verbose),
+            renderError(item.error, verbose),
           ]),
       },
     });
