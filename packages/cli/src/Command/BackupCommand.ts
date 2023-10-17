@@ -17,6 +17,7 @@ export type BackupCommandOptions<TResolved = false> = {
   tag?: If<TResolved, string[]>;
   dryRun?: boolean;
   date?: string;
+  prune?: boolean;
 };
 
 export type BackupCommandResult = Unwrap<BackupAction["exec"]>;
@@ -60,6 +61,10 @@ export class BackupCommand extends CommandAbstract<
         description: "Date time (ISO)",
         option: "--date <value>",
       },
+      prune: {
+        description: "Prune backups",
+        option: "--prune",
+      },
     });
   }
   override async onExec() {
@@ -78,6 +83,7 @@ export class BackupCommand extends CommandAbstract<
       progress: this.globalOptions.progress,
       progressInterval: this.globalOptions.progressInterval,
       streams: this.streams,
+      prune: this.options.prune,
     });
 
     const result = await backup.exec();

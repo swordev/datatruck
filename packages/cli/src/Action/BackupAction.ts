@@ -1,5 +1,6 @@
 import type { ConfigType } from "../Config/Config";
 import { PackageConfigType } from "../Config/PackageConfig";
+import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
@@ -18,13 +19,14 @@ import { runSteps } from "../utils/steps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
+import { PruneAction } from "./PruneAction";
 import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
-  repositoryTypes?: string[];
+  repositoryTypes?: RepositoryConfigType["type"][];
   packageNames?: string[];
   packageTaskNames?: string[];
   tags?: string[];
@@ -35,10 +37,12 @@ export type BackupActionOptions = {
   progress?: "auto" | "interval" | boolean;
   progressInterval?: number;
   streams?: Streams;
+  prune?: boolean;
 };
 
 type Context = {
   snapshot: { id: string };
+  prune: { total: number; pruned: number };
   task: { taskName: string; packageName: string };
   backup: { packageName: string; repositoryName: string };
   cleanup: {};
@@ -178,7 +182,9 @@ export class BackupAction<TRequired extends boolean = true> {
       color?: boolean,
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
-      return item.key === "snapshot"
+      return item.key === "prune"
+        ? `${item.data.pruned}/${item.data.total}`
+        : item.key === "snapshot"
         ? item.data.id
         : item.key === "task"
         ? `${item.data.packageName} ${g(item.data.taskName)}`
