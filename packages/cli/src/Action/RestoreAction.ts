@@ -259,10 +259,10 @@ export class RestoreAction<TRequired extends boolean = true> {
                 keyIndex: snapshot.packageName,
                 data: snapshot,
                 title: {
-                  initial: `Restore ${snapshot.packageName} snapshot`,
-                  started: `Restoring ${snapshot.packageName} snapshot`,
-                  completed: `Snapshot restored: ${snapshot.packageName}`,
-                  failed: `Snapshot restore failed: ${snapshot.packageName}`,
+                  initial: `Restore snapshot: ${snapshot.packageName} (${snapshot.repositoryName})`,
+                  started: `Restoring snapshot: ${snapshot.packageName} (${snapshot.repositoryName})`,
+                  completed: `Snapshot restored: ${snapshot.packageName} (${snapshot.repositoryName})`,
+                  failed: `Snapshot restore failed: ${snapshot.packageName} (${snapshot.repositoryName})`,
                 },
                 exitOnError: false,
                 run: async (listTask) => {
@@ -290,10 +290,16 @@ export class RestoreAction<TRequired extends boolean = true> {
                     keyIndex: pkg.name,
                     data: { taskName: pkg.task!.name, packageName: pkg.name },
                     title: {
-                      initial: `Execute ${pkg.task?.name} task`,
-                      started: `Executing ${pkg.task?.name} task`,
-                      completed: `Task executed: ${pkg.task?.name}`,
-                      failed: `Task execute failed: ${pkg.task?.name}`,
+                      initial: `Execute task: ${pkg.name} (${pkg.task!.name})`,
+                      started: `Executing task: ${pkg.name} (${
+                        pkg.task!.name
+                      })`,
+                      completed: `Task executed: ${pkg.name} (${
+                        pkg.task!.name
+                      })`,
+                      failed: `Task execute failed: ${pkg.name} (${
+                        pkg.task!.name
+                      })`,
                     },
                     exitOnError: false,
                     runWrapper: gc.cleanup.bind(gc),

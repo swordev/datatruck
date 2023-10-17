@@ -104,18 +104,24 @@ export function renderProgressStats(
   const text: string[] = [];
   if (typeof stats.percent === "number") {
     if (progressBar) text.push(renderProgressBar(stats.percent));
-    text.push(`${stats.percent.toFixed(2)}%`);
+    text.push(`${stats.percent.toFixed(2).padStart(5, " ")}%`);
   }
   if (typeof stats.current === "number" || typeof stats.total === "number") {
     const format = (value: number) =>
-      stats.format === "size" ? bytes(value) : value;
+      stats.format === "size" ? bytes(value) : value.toString();
+    const pad = 8;
+    let values: string[] = [];
     if (typeof stats.current === "number" && typeof stats.total === "number") {
-      text.push(`${format(stats.current)}/${format(stats.total)}`);
+      values = [
+        format(stats.current).padStart(pad, " "),
+        format(stats.total).padEnd(pad, " "),
+      ];
     } else if (typeof stats.current === "number") {
-      text.push(`${format(stats.current)}`);
+      values = [format(stats.current).padStart(pad * 2 + 1)];
     } else if (typeof stats.total === "number") {
-      text.push(`?/${format(stats.total)}`);
+      values = ["?".padStart(pad, " "), format(stats.total).padEnd(pad, " ")];
     }
+    if (values.length) text.push(values.join("/"));
   }
   if (stats.description && stats.payload) {
     text.push(`${stats.description}: ${stats.payload}`);
