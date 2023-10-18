@@ -1,5 +1,6 @@
 import { DiskStats } from "../fs";
 import { downloadFile, fetchJson, post, uploadFile } from "../http";
+import { BasicProgress } from "../progress";
 import { AbstractFs, FsOptions, LocalFs } from "../virtual-fs";
 import { headerKey } from "./server";
 
@@ -72,13 +73,18 @@ export class RemoteFs extends AbstractFs {
       },
     });
   }
-  async download(source: string, target: string, timeout = 100_000) {
+  async download(
+    source: string,
+    target: string,
+    options: {
+      timeout?: number;
+      onProgress?: (progress: BasicProgress) => void;
+    } = {},
+  ) {
     await downloadFile(`${this.url}/download`, target, {
-      timeout,
+      ...options,
       headers: this.headers,
-      query: {
-        params: JSON.stringify([source]),
-      },
+      query: { params: JSON.stringify([source]) },
     });
   }
 }

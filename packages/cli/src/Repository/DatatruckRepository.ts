@@ -12,6 +12,7 @@ import {
   createProgress,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
+import { ProgressStats } from "../utils/progress";
 import { checkMatch, match, makePathPatterns } from "../utils/string";
 import {
   extractTar,
@@ -407,19 +408,31 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     let current = 0;
     for (const entry of entries) {
-      data.onProgress({
-        absolute: {
-          current,
-          description: "Copying",
-          payload: entry,
-          total,
-          percent: progressPercent(total, current),
-        },
-      });
+      const absolute: ProgressStats = {
+        current,
+        description: "Copying",
+        payload: entry,
+        total,
+        percent: progressPercent(total, current),
+      };
+      data.onProgress({ absolute });
       current++;
       const sourceEntry = `${snapshotName}/${entry}`;
       if (targetFs.isLocal()) {
-        await sourceFs.download(sourceEntry, targetFs.resolvePath(sourceEntry));
+        await sourceFs.download(
+          sourceEntry,
+          targetFs.resolvePath(sourceEntry),
+          {
+            onProgress: (progress) =>
+              data.onProgress({
+                absolute,
+                relative: {
+                  description: "Downloading",
+                  ...progress,
+                },
+              }),
+          },
+        );
       } else {
         const tempDir = await mkTmpDir(
           datatruckRepositoryName,
@@ -429,7 +442,16 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         );
         const tempFile = join(tempDir, entry);
         try {
-          await sourceFs.download(sourceEntry, tempFile);
+          await sourceFs.download(sourceEntry, tempFile, {
+            onProgress: (progress) =>
+              data.onProgress({
+                absolute,
+                relative: {
+                  description: "Downloading",
+                  ...progress,
+                },
+              }),
+          });
           await targetFs.upload(tempFile, sourceEntry);
         } finally {
           await tryRm(tempFile);

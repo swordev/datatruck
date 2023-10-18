@@ -6,6 +6,7 @@ import {
   fetchDiskStats,
   mkdirIfNotExists,
 } from "./fs";
+import { BasicProgress } from "./progress";
 import { cp, readFile, readdir, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";
 
@@ -37,7 +38,14 @@ export abstract class AbstractFs {
   abstract ensureEmptyDir(path: string): Promise<void>;
   abstract writeFile(path: string, contents: string): Promise<void>;
   abstract upload(source: string, target: string): Promise<void>;
-  abstract download(source: string, target: string): Promise<void>;
+  abstract download(
+    source: string,
+    target: string,
+    options?: {
+      timeout?: number;
+      onProgress?: (progress: BasicProgress) => void;
+    },
+  ): Promise<void>;
   abstract fetchDiskStats(source: string): Promise<DiskStats>;
 }
 

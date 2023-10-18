@@ -130,7 +130,7 @@ export async function downloadFile(
     onProgress?: (progress: BasicProgress) => void;
   } = {},
 ) {
-  const timeout = options.timeout ?? 3600 * 100;
+  const timeout = options.timeout ?? 3600 * 1000; // 60m
   const file = createWriteStream(output);
   await new Promise<void>((resolve, reject) => {
     const req = request(
