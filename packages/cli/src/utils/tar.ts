@@ -2,19 +2,14 @@ import { logExec } from "./cli";
 import { countFileLines, existsDir } from "./fs";
 import { progressPercent } from "./math";
 import { exec } from "./process";
+import { BasicProgress } from "./progress";
 import { mkdir } from "fs/promises";
 import type { JSONSchema7 } from "json-schema";
 import { cpus, platform } from "os";
 
-export type Progress = {
-  percent: number;
-  current: number;
-  total: number;
-};
-
 export type TarEntry = {
   path: string;
-  progress: Progress;
+  progress: BasicProgress;
 };
 
 export type CoresOptions = number | { percent: number };

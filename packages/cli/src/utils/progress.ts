@@ -4,6 +4,12 @@ import bytes from "bytes";
 import { grey } from "chalk";
 import { emitKeypressEvents } from "readline";
 
+export type BasicProgress = {
+  percent: number;
+  current: number;
+  total: number;
+};
+
 export type ProgressStats = {
   percent?: number;
   total?: number;

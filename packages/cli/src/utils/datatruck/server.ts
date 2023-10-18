@@ -1,6 +1,7 @@
 import { readRequestData } from "../http";
 import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";
+import { stat } from "fs/promises";
 import { IncomingMessage, createServer } from "http";
 
 type User = {
@@ -64,7 +65,8 @@ export function createDatatruckServer(options: DatatruckServerOptions) {
       const { action, params } = parseUrl(req.url!);
       if (action === "upload") {
         const [target] = params;
-        const file = createWriteStream(fs.resolvePath(target));
+        const path = fs.resolvePath(target);
+        const file = createWriteStream(path);
         req.pipe(file);
         await new Promise<void>((resolve, reject) => {
           req.on("error", reject);
@@ -73,7 +75,10 @@ export function createDatatruckServer(options: DatatruckServerOptions) {
         });
       } else if (action === "download") {
         const [target] = params;
-        const file = createReadStream(fs.resolvePath(target));
+        const path = fs.resolvePath(target);
+        const file = createReadStream(path);
+        const fileStat = await stat(path);
+        res.setHeader("Content-Length", fileStat.size);
         file.pipe(res);
         await new Promise<void>((resolve, reject) => {
           req.on("error", reject);

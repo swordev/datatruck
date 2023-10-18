@@ -1,3 +1,5 @@
+import { progressPercent } from "./math";
+import { BasicProgress, ProgressStats } from "./progress";
 import { createReadStream, createWriteStream } from "fs";
 import { stat, unlink } from "fs/promises";
 import {
@@ -125,6 +127,7 @@ export async function downloadFile(
     headers?: Record<string, string>;
     query?: Record<string, string>;
     timeout?: number;
+    onProgress?: (progress: BasicProgress) => void;
   } = {},
 ) {
   const timeout = options.timeout ?? 3600 * 100;
@@ -136,7 +139,27 @@ export async function downloadFile(
         headers: options.headers,
       },
       (res) => {
+        const contentLength = res.headers["content-length"] ?? "";
+
+        if (!/^\d+$/.test(contentLength))
+          return reject(
+            new Error(`Invalid 'content-length': ${contentLength}`),
+          );
+
+        const total = Number(contentLength);
+        let current = 0;
+
         if (res.statusCode === 200) {
+          if (options.onProgress) {
+            res.on("data", (chunk: Buffer) => {
+              current += chunk.byteLength;
+              options.onProgress!({
+                percent: progressPercent(total, current),
+                current,
+                total,
+              });
+            });
+          }
           res
             .on("error", async (error) => {
               file.destroy();
