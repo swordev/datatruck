@@ -62,6 +62,7 @@ export const configDefinition: JSONSchema7 = {
       additionalProperties: false,
       properties: {
         path: { type: "string" },
+        log: { type: "boolean" },
         users: {
           type: "array",
           items: {
@@ -79,6 +80,27 @@ export const configDefinition: JSONSchema7 = {
           properties: {
             port: { type: "integer" },
             address: { type: "string" },
+          },
+        },
+        trustProxy: {
+          anyOf: [
+            { type: "boolean" },
+            {
+              type: "object",
+              additionalProperties: false,
+              required: ["remoteAddressHeader"],
+              properties: {
+                remoteAddressHeader: { type: "string" },
+              },
+            },
+          ],
+        },
+        allowlist: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            enabled: { type: "boolean" },
+            remoteAddreses: makeRef(DefinitionEnum.stringListUtil),
           },
         },
       },

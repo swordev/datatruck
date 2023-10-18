@@ -8,6 +8,7 @@ type User = {
   name: string;
   password: string;
 };
+
 export type DatatruckServerOptions = {
   path?: string;
   log?: boolean;
@@ -16,6 +17,14 @@ export type DatatruckServerOptions = {
     address?: string;
   };
   users?: User[];
+  trustProxy?: true | { remoteAddressHeader: string };
+  allowlist?: {
+    /**
+     * @default true
+     */
+    enabled?: boolean;
+    remoteAddreses?: string[];
+  };
 };
 
 function parseUrl(inUrl: string): { action: string; params: any[] } {
@@ -36,25 +45,49 @@ export const headerKey = {
   password: "x-dtt-password",
 };
 
-function validateRequest(req: IncomingMessage, users: User[]) {
-  const name = req.headers[headerKey.user];
-  const password = req.headers[headerKey.password];
-  return users.some(
-    (user) =>
-      user.name.length &&
-      user.password.length &&
-      user.name === name &&
-      user.password === password,
+function validateRequest(
+  req: IncomingMessage,
+  options: DatatruckServerOptions,
+) {
+  const list = options.allowlist;
+  if (list && (list.enabled ?? true) && list.remoteAddreses) {
+    const remoteAddress = getRemoteAddress(req, options);
+    if (!remoteAddress || list.remoteAddreses.includes(remoteAddress))
+      return false;
+  }
+
+  const name = req.headers[headerKey.user]?.toString().trim();
+  const password = req.headers[headerKey.password]?.toString().trim();
+
+  if (!name?.length || !password?.length) return;
+
+  return (
+    options.users?.some(
+      (user) => user.name === name && user.password === password,
+    ) || false
   );
 }
+const getRemoteAddress = (
+  req: IncomingMessage,
+  options: DatatruckServerOptions,
+) => {
+  return (
+    (options.trustProxy
+      ? options.trustProxy === true
+        ? req.headers["x-real-ip"]?.toString()
+        : req.headers[options.trustProxy.remoteAddressHeader]?.toString()
+      : undefined) ?? req.socket.remoteAddress
+  );
+};
 
 export function createDatatruckServer(options: DatatruckServerOptions) {
   const log = options.log ?? true;
+
   return createServer(async (req, res) => {
     try {
       if (req.url === "/" || req.url === "/favicon.ico") {
         return res.end();
-      } else if (!validateRequest(req, options.users || [])) {
+      } else if (!validateRequest(req, options)) {
         res.statusCode = 401;
         return res.end();
       }
@@ -96,11 +129,13 @@ export function createDatatruckServer(options: DatatruckServerOptions) {
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      res.end();
       if (log) console.info(`<${action}`);
+      res.end();
     } catch (error) {
       if (log) console.error(`<${req.url}`, error);
       res.statusCode = 500;
+      res.statusMessage = (error as Error).message;
+      res.end();
     }
   });
 }
