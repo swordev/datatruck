@@ -2,6 +2,7 @@ import { progressPercent } from "./math";
 import { rootPath } from "./path";
 import { Progress } from "./progress";
 import { endsWith } from "./string";
+import { mkTmpDir } from "./temp";
 import { eachLimit } from "async";
 import bytes from "bytes";
 import fastFolderSize from "fast-folder-size";
@@ -733,4 +734,22 @@ export function groupFiles(
   }
 
   return [Object.keys(grouped), compressed];
+}
+
+export async function asFile(
+  input: string | { path: string },
+): Promise<[string, (() => Promise<void>) | undefined]> {
+  if (typeof input === "string") {
+    const dir = await mkTmpDir("text-as-file");
+    const path = join(dir, "contents.txt");
+    await writeFile(path, input);
+    return [
+      path,
+      async () => {
+        await rm(dir, { recursive: true });
+      },
+    ];
+  } else {
+    return [input.path, undefined];
+  }
 }
