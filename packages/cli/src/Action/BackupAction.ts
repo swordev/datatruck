@@ -233,7 +233,7 @@ export class BackupAction<TRequired extends boolean = true> {
             .map((item) => [
               renderResult(item.error),
               renderTitle(item, true),
-              renderData(item, true),
+              renderData(item, true, result),
               duration(item.elapsed),
               renderError(item.error, options.verbose),
             ]),
