@@ -265,7 +265,7 @@ export async function writeGitIgnoreList(options: {
 }
 
 export async function waitForClose(stream: WriteStream | ReadStream) {
-  return new Promise<void>(async (resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     stream.on("close", resolve);
     stream.on("error", reject);
     return stream;

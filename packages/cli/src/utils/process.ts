@@ -41,7 +41,7 @@ export interface ExecSettingsInterface {
         stream: Readable;
       };
   log?: ExecLogSettingsType | boolean;
-  onSpawn?: (p: ChildProcess) => any;
+  onSpawn?: (p: ChildProcess) => void | undefined;
   stdout?: {
     save?: boolean;
     parseLines?: boolean | "skip-empty";
@@ -325,56 +325,50 @@ export async function exec(
     log = settings.log;
   }
 
-  return new Promise<ExecResultType>(async (resolve, reject) => {
-    if (log.exec) {
-      logProcessExec(command, argv, {
-        env: options?.env,
-        envNames: log.envNames,
-        pipe: pipe?.stream,
-        toStderr: log.allToStderr,
+  if (log.exec)
+    logProcessExec(command, argv, {
+      env: options?.env,
+      envNames: log.envNames,
+      pipe: pipe?.stream,
+      toStderr: log.allToStderr,
+    });
+
+  if (typeof options?.cwd === "string" && !(await existsDir(options.cwd)))
+    throw new Error(`Current working directory does not exist: ${options.cwd}`);
+
+  if (pipe?.stream instanceof ReadStream && "onReadProgress" in pipe) {
+    const fileInfo = await stat(pipe.stream.path);
+    const totalBytes = fileInfo.size;
+    let currentBytes = 0;
+    pipe.stream.on("data", (data) => {
+      currentBytes += data.length;
+      pipe.onReadProgress?.({
+        totalBytes: totalBytes,
+        currentBytes: currentBytes,
+        progress: progressPercent(totalBytes, currentBytes),
       });
-    }
+    });
+  }
+  const p = spawn(command, argv, options ?? {});
+  settings.onSpawn?.(p);
+  let spawnError: Error;
+  const spawnData: ExecResultType = {
+    stdout: "",
+    stderr: "",
+    exitCode: 0,
+  };
 
-    if (typeof options?.cwd === "string" && !(await existsDir(options.cwd)))
-      return reject(
-        new Error(`Current working directory does not exist: ${options.cwd}`),
-      );
+  let finishListeners = 1;
+  if (pipe?.stream instanceof WriteStream) finishListeners++;
+  if (settings.stdout?.parseLines) finishListeners++;
+  if (settings.stderr?.parseLines) finishListeners++;
 
-    if (pipe?.stream instanceof ReadStream && "onReadProgress" in pipe) {
-      const fileInfo = await stat(pipe.stream.path);
-      const totalBytes = fileInfo.size;
-      let currentBytes = 0;
-      pipe.stream.on("data", (data) => {
-        currentBytes += data.length;
-        pipe.onReadProgress?.({
-          totalBytes: totalBytes,
-          currentBytes: currentBytes,
-          progress: progressPercent(totalBytes, currentBytes),
-        });
-      });
-    }
-    const p = spawn(command, argv, options ?? {});
+  let streamError: Error | undefined;
 
-    await settings.onSpawn?.(p);
-
-    let spawnError: Error;
-    const spawnData: ExecResultType = {
-      stdout: "",
-      stderr: "",
-      exitCode: 0,
-    };
-
-    let finishListeners = 1;
-    if (pipe?.stream instanceof WriteStream) finishListeners++;
-    if (settings.stdout?.parseLines) finishListeners++;
-    if (settings.stderr?.parseLines) finishListeners++;
-
-    let streamError: Error | undefined;
-
+  return new Promise<ExecResultType>((resolve, reject) => {
     const tryFinish = () => {
       if (!--finishListeners) finish();
     };
-
     const finish = () => {
       if (spawnData.exitCode) {
         let exitCodeError:
