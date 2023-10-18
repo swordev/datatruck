@@ -1,6 +1,6 @@
+import { formatBytes } from "./bytes";
 import { renderProgressBar } from "./cli";
 import { Timer, createTimer } from "./date";
-import bytes from "bytes";
 import { grey } from "chalk";
 import { emitKeypressEvents } from "readline";
 
@@ -114,7 +114,7 @@ export function renderProgressStats(
   }
   if (typeof stats.current === "number" || typeof stats.total === "number") {
     const format = (value: number) =>
-      stats.format === "size" ? bytes(value) : value.toString();
+      stats.format === "size" ? formatBytes(value) : value.toString();
     const pad = 8;
     let values: string[] = [];
     if (typeof stats.current === "number" && typeof stats.total === "number") {

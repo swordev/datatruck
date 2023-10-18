@@ -65,9 +65,6 @@ importers:
       async:
         specifier: ^3.2.4
         version: 3.2.4
-      bytes:
-        specifier: ^3.1.2
-        version: 3.1.2
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
@@ -106,9 +103,6 @@ importers:
       '@types/async':
         specifier: ^3.2.20
         version: 3.2.20
-      '@types/bytes':
-        specifier: ^3.1.2
-        version: 3.1.2
       '@types/json-schema':
         specifier: ^7.0.13
         version: 7.0.13
@@ -2016,10 +2010,6 @@ packages:
     resolution: {integrity: sha512-+euflG6ygo4bn0JHtn4pYqcXwRtLvElQ7/nnjDu7iYG56H0+OhCd7d6Ug0IE3WcFpZozBKW2+80FUbv5QGk5AQ==}
     dev: true
 
-  /@types/bytes@3.1.2:
-    resolution: {integrity: sha512-92b6q7CSYBMVZDtMZh5PuKm3LjZwcU7s6H8e9sU20Z1tOrTuXN+Hz3VuP9E8axiQRaCoiEOMN1duqPCEIhamrQ==}
-    dev: true
-
   /@types/cacheable-request@6.0.3:
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
     dependencies:
@@ -2751,11 +2741,6 @@ packages:
     dependencies:
       semver: 7.5.4
     dev: true
-
-  /bytes@3.1.2:
-    resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
-    engines: {node: '>= 0.8'}
-    dev: false
 
   /bzip2-maybe@1.0.0:
     resolution: {integrity: sha512-VBRXxCZlWTZWnjcygdkA9lTVRUv5eeuulmGe74PSTFYDQVwvkUafcH8j2iyc8luvVmakToCETQcAN/r/a/qbsg==}

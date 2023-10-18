@@ -2,10 +2,10 @@ import { ConfigAction } from "../Action/ConfigAction";
 import { SnapshotsAction } from "../Action/SnapshotsAction";
 import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
+import { formatBytes } from "../utils/bytes";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
-import bytes from "bytes";
 
 export type SnapshotsCommandOptions<TResolved = false> = {
   id?: If<TResolved, string[]>;
@@ -161,7 +161,7 @@ export class SnapshotsCommand extends CommandAbstract<
             item.date.replace("T", " ").replace("Z", ""),
             item.packageName,
             item.packageTaskName || "",
-            bytes(item.size),
+            formatBytes(item.size),
             item.repositoryName,
             item.repositoryType,
           ]),

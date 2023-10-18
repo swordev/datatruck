@@ -1,7 +1,7 @@
 import { CleanCacheAction } from "../Action/CleanCacheAction";
 import { DataFormat } from "../utils/DataFormat";
+import { formatBytes } from "../utils/bytes";
 import { CommandAbstract } from "./CommandAbstract";
-import bytes from "bytes";
 
 export type CleanCacheCommandOptions<TResolved = false> = {};
 
@@ -29,7 +29,7 @@ export class CleanCacheCommand extends CommandAbstract<
             value: "Freed disk space",
           },
         ],
-        rows: () => [[result.path, bytes(result.freedSize)]],
+        rows: () => [[result.path, formatBytes(result.freedSize)]],
       },
     });
 

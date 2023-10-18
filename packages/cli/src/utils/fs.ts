@@ -1,10 +1,10 @@
+import { formatBytes, parseSize } from "./bytes";
 import { progressPercent } from "./math";
 import { rootPath } from "./path";
 import { Progress } from "./progress";
 import { endsWith } from "./string";
 import { mkTmpDir } from "./temp";
 import { eachLimit } from "async";
-import bytes from "bytes";
 import fastFolderSize from "fast-folder-size";
 import FastGlob, { Entry, Options } from "fast-glob";
 import { createReadStream, Dirent, ReadStream, Stats } from "fs";
@@ -677,14 +677,14 @@ export async function checkFreeDiskSpace(
   stat: DiskStats,
   inSize: string | number,
 ) {
-  const humanSize = typeof inSize === "number" ? bytes(inSize) : inSize;
-  const size = bytes.parse(inSize);
+  const humanSize = typeof inSize === "number" ? formatBytes(inSize) : inSize;
+  const size = typeof inSize === "number" ? inSize : parseSize(inSize);
 
   if (stat.free < size)
     throw new Error(
-      `Free disk space is less than ${humanSize}: ${bytes(stat.free)}/${bytes(
-        stat.total,
-      )}`,
+      `Free disk space is less than ${humanSize}: ${formatBytes(
+        stat.free,
+      )}/${formatBytes(stat.total)}`,
     );
 }
 
