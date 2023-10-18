@@ -491,26 +491,3 @@ export async function exec(
     });
   });
 }
-
-type EventNameType =
-  | "exit"
-  | "SIGINT"
-  | "SIGUSR1"
-  | "SIGUSR2"
-  | "SIGTERM"
-  | "uncaughtException";
-
-const eventNames: EventNameType[] = [
-  `exit`,
-  `SIGINT`,
-  `SIGUSR1`,
-  `SIGUSR2`,
-  `uncaughtException`,
-  `SIGTERM`,
-];
-
-export function onExit(cb: (eventName: EventNameType, ...args: any[]) => void) {
-  for (const eventName of eventNames) {
-    process.on(eventName, (...args: any[]) => cb(eventName, ...args));
-  }
-}

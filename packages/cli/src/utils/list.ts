@@ -1,4 +1,5 @@
 import { Timer, createTimer } from "./date";
+import { onExit } from "./exit";
 import { ProgressManager } from "./progress";
 import { Streams, createStreams } from "./stream";
 import {
@@ -10,6 +11,7 @@ import {
   PRESET_TIMESTAMP,
   ProcessOutput,
   ListrTaskWrapper,
+  ListrTaskState,
 } from "listr2";
 
 export class List3Logger<
@@ -85,6 +87,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
 > {
   readonly resultMap: Record<string, Listr3TaskResult<T>> = {};
   readonly resultList: Listr3TaskResult<T>[] = [];
+  readonly logger: List3Logger;
   protected execTimer: Timer;
   constructor(
     readonly $options: {
@@ -92,6 +95,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
       progressManager?: ProgressManager;
     },
   ) {
+    const logger = new List3Logger();
     super([], {
       renderer: "default",
       collectErrors: "minimal",
@@ -100,18 +104,19 @@ export class Listr3<T extends Listr3Context> extends Listr<
       }),
       fallbackRenderer: "simple",
       fallbackRendererOptions: {
-        logger: new List3Logger(),
+        logger: logger,
         timestamp: PRESET_TIMESTAMP,
         timer: PRESET_TIMER,
       },
       rendererOptions: {
-        logger: new List3Logger(),
+        logger: logger,
         collapseSubtasks: false,
         collapseErrors: false,
         timer: PRESET_TIMER,
       },
     });
     this.execTimer = createTimer();
+    this.logger = logger;
   }
   private serializeKeyIndex(keyIndex?: KeyIndex): string[] {
     return typeof keyIndex !== "undefined"
@@ -202,7 +207,17 @@ export class Listr3<T extends Listr3Context> extends Listr<
   getResult() {
     return [...this.resultList, this.getSummaryResult()];
   }
+  protected release() {
+    for (const task of this.tasks)
+      if (task.isPending()) task.state$ = ListrTaskState.FAILED;
+    this["renderer"].end(new Error("Interrupted."));
+  }
   async exec(): Promise<(Listr3TaskResult<T> | SummaryResult)[]> {
+    const dispose = onExit(() => {
+      this.$options.progressManager?.dispose();
+      this.execTimer.reset();
+      this.release();
+    }, 1);
     try {
       this.$options.progressManager?.start();
       this.execTimer.reset();
@@ -211,7 +226,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
     } catch (error) {
       throw error;
     } finally {
-      this.$options.progressManager?.dispose();
+      dispose();
     }
   }
 }

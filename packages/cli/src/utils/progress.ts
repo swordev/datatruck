@@ -1,6 +1,7 @@
 import { formatBytes } from "./bytes";
 import { renderProgressBar } from "./cli";
 import { Timer, createTimer } from "./date";
+import { triggerExitEvent } from "./exit";
 import { grey } from "chalk";
 import { emitKeypressEvents } from "readline";
 
@@ -27,7 +28,7 @@ export type Progress = {
 export class ProgressManager {
   protected timer = createTimer();
   protected interval: Timer | undefined = createTimer();
-  protected keydownListener: ((data: Buffer) => void) | undefined;
+  protected keydownListener: ((data: Buffer | undefined) => void) | undefined;
   readonly tty: boolean;
   readonly enabled: boolean | "interval";
   constructor(
@@ -66,10 +67,10 @@ export class ProgressManager {
     process.stdin?.on(
       "keypress",
       (this.keydownListener = (inKey) => {
-        const key = inKey.toString();
+        const key = inKey?.toString() || "";
         if (key === "\u0003") {
           process.stdin.setRawMode?.(false);
-          process.emit("SIGINT");
+          triggerExitEvent("SIGINT");
         } else if (/^(\r\n)|\r|\n$/.test(key)) {
           this.interval = undefined;
         }

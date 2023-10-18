@@ -9,8 +9,8 @@ import {
 import globalData from "./globalData";
 import { FormatType } from "./utils/DataFormat";
 import { OptionsType, showCursorCommand } from "./utils/cli";
+import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
-import { onExit } from "./utils/process";
 import { snakeCase } from "./utils/string";
 import { sessionTmpDir } from "./utils/temp";
 import { red } from "chalk";
