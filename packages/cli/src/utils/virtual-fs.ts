@@ -7,7 +7,7 @@ import {
   mkdirIfNotExists,
 } from "./fs";
 import { BasicProgress } from "./progress";
-import { cp, readFile, readdir, rm, writeFile } from "fs/promises";
+import { cp, readFile, readdir, rename, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";
 
 export function resolvePath(path: string) {
@@ -30,6 +30,7 @@ export abstract class AbstractFs {
     return !this.isLocal();
   }
   abstract existsDir(path: string): Promise<boolean>;
+  abstract rename(source: string, target: string): Promise<void>;
   abstract mkdir(path: string): Promise<void>;
   abstract readFile(path: string): Promise<string>;
   abstract rmAll(path: string): Promise<void>;
@@ -55,6 +56,9 @@ export class LocalFs extends AbstractFs {
   }
   async existsDir(path: string) {
     return existsDir(this.resolvePath(path));
+  }
+  async rename(source: string, target: string) {
+    await rename(this.resolvePath(source), this.resolvePath(target));
   }
   async mkdir(path: string) {
     await mkdirIfNotExists(this.resolvePath(path));

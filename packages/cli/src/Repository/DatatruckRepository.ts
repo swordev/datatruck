@@ -114,7 +114,9 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     pkg: { name: string },
   ) {
     const date = snapshot.date.replace(/:/g, "-");
-    const pkgName = encodeURIComponent(pkg.name).replace(/%40/g, "@");
+    const pkgName = encodeURIComponent(pkg.name)
+      .replace(/%40/g, "@")
+      .replace("_", "%5F");
     const snapshotShortId = snapshot.id.slice(0, 8);
     return `${date}_${pkgName}_${snapshotShortId}`;
   }
@@ -399,8 +401,17 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     if (data.options.verbose)
       logExec(`Copying backup files to ${data.mirrorRepositoryConfig.backend}`);
 
-    await targetFs.mkdir(snapshotName);
-    await targetFs.ensureEmptyDir(snapshotName);
+    const tmpSnapshotName = `${snapshotName}_tmp`;
+
+    if (await targetFs.existsDir(snapshotName))
+      await targetFs.ensureEmptyDir(snapshotName);
+
+    try {
+      await targetFs.rmAll(tmpSnapshotName);
+    } catch (_) {}
+
+    await targetFs.mkdir(tmpSnapshotName);
+    await targetFs.ensureEmptyDir(tmpSnapshotName);
 
     const entries = await sourceFs.readdir(snapshotName);
 
@@ -418,10 +429,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       data.onProgress({ absolute });
       current++;
       const sourceEntry = `${snapshotName}/${entry}`;
+      const targetEntry = `${tmpSnapshotName}/${entry}`;
       if (targetFs.isLocal()) {
         await sourceFs.download(
           sourceEntry,
-          targetFs.resolvePath(sourceEntry),
+          targetFs.resolvePath(targetEntry),
           {
             onProgress: (progress) =>
               data.onProgress({
@@ -452,12 +464,14 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 },
               }),
           });
-          await targetFs.upload(tempFile, sourceEntry);
+          await targetFs.upload(tempFile, targetEntry);
         } finally {
           await tryRm(tempFile);
         }
       }
     }
+
+    await targetFs.rename(tmpSnapshotName, snapshotName);
   }
 
   override async restore(

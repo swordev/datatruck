@@ -41,6 +41,9 @@ export class RemoteFs extends AbstractFs {
   async existsDir(path: string) {
     return await this.fetchJson("existsDir", [path]);
   }
+  async rename(source: string, target: string) {
+    return await this.fetchJson("rename", [source, target]);
+  }
   async mkdir(path: string) {
     return await this.fetchJson("mkdir", [path]);
   }
