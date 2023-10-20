@@ -440,6 +440,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 absolute,
                 relative: {
                   description: "Downloading",
+                  format: "size",
                   ...progress,
                 },
               }),
@@ -460,6 +461,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 absolute,
                 relative: {
                   description: "Downloading",
+                  format: "size",
                   ...progress,
                 },
               }),
