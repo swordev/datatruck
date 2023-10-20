@@ -162,7 +162,9 @@ export async function downloadFile(
           }
           res
             .on("error", async (error) => {
-              file.destroy();
+              try {
+                file.destroy();
+              } catch (_) {}
               try {
                 await unlink(output);
               } catch (_) {}
