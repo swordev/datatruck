@@ -100,7 +100,7 @@ export const configDefinition: JSONSchema7 = {
           additionalProperties: false,
           properties: {
             enabled: { type: "boolean" },
-            remoteAddreses: makeRef(DefinitionEnum.stringListUtil),
+            remoteAddresses: makeRef(DefinitionEnum.stringListUtil),
           },
         },
       },

@@ -23,7 +23,7 @@ export type DatatruckServerOptions = {
      * @default true
      */
     enabled?: boolean;
-    remoteAddreses?: string[];
+    remoteAddresses?: string[];
   };
 };
 
@@ -50,9 +50,9 @@ function validateRequest(
   options: DatatruckServerOptions,
 ) {
   const list = options.allowlist;
-  if (list && (list.enabled ?? true) && list.remoteAddreses) {
+  if (list && (list.enabled ?? true) && list.remoteAddresses) {
     const remoteAddress = getRemoteAddress(req, options);
-    if (!remoteAddress || list.remoteAddreses.includes(remoteAddress))
+    if (!remoteAddress || !list.remoteAddresses.includes(remoteAddress))
       return false;
   }
 
