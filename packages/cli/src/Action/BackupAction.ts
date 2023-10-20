@@ -14,7 +14,7 @@ import {
 import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
-import { Progress, ProgressManager } from "../utils/progress";
+import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { runSteps } from "../utils/steps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
@@ -34,8 +34,7 @@ export type BackupActionOptions = {
   verbose?: boolean;
   date?: string;
   tty?: "auto" | boolean;
-  progress?: "auto" | "interval" | boolean;
-  progressInterval?: number;
+  progress?: ProgressMode;
   streams?: Streams;
   prune?: boolean;
 };
@@ -55,18 +54,10 @@ type Context = {
 };
 
 export class BackupAction<TRequired extends boolean = true> {
-  protected pm: ProgressManager;
   constructor(
     readonly config: ConfigType,
     readonly options: IfRequireKeys<TRequired, BackupActionOptions> = {} as any,
-  ) {
-    this.pm = new ProgressManager({
-      verbose: options.verbose,
-      tty: options.tty,
-      enabled: options.progress,
-      interval: options.progressInterval,
-    });
-  }
+  ) {}
 
   protected prepareSnapshot(): PreSnapshot {
     const date = this.options.date ?? new Date().toISOString();
@@ -245,8 +236,7 @@ export class BackupAction<TRequired extends boolean = true> {
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
-      enabled: options.progress,
-      interval: options.progressInterval,
+      mode: options.progress,
     });
     const l = new Listr3<Context>({
       streams: this.options.streams,
@@ -336,7 +326,7 @@ export class BackupAction<TRequired extends boolean = true> {
                           snapshot,
                           snapshotPath: taskResult?.snapshotPath,
                           onProgress: (p) =>
-                            this.pm.update(p, (t) => (task.output = t)),
+                            pm.update(p, (t) => (task.output = t)),
                         });
                       },
                     }),

@@ -14,7 +14,7 @@ import {
 import { duration } from "../utils/date";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
-import { Progress, ProgressManager } from "../utils/progress";
+import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -33,8 +33,7 @@ export type RestoreActionOptions = {
   verbose?: boolean;
   initial?: boolean;
   tty?: "auto" | boolean;
-  progress?: "auto" | "interval" | boolean;
-  progressInterval?: number;
+  progress?: ProgressMode;
   streams?: Streams;
 };
 
@@ -219,8 +218,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
-      enabled: options.progress,
-      interval: options.progressInterval,
+      mode: options.progress,
     });
 
     const l = new Listr3<Context>({

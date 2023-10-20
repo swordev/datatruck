@@ -81,7 +81,6 @@ export class BackupCommand extends CommandAbstract<
       date: this.options.date,
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
-      progressInterval: this.globalOptions.progressInterval,
       streams: this.streams,
       prune: this.options.prune,
     });

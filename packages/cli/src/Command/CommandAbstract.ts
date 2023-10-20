@@ -1,6 +1,7 @@
 import { ConfigType } from "../Config/Config";
 import { FormatType } from "../utils/DataFormat";
 import { OptionsType, parseOptions } from "../utils/cli";
+import { ProgressMode } from "../utils/progress";
 import { Streams, createStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";
 
@@ -11,10 +12,9 @@ export type GlobalOptions<TResolved = false> = {
   tty?: If<TResolved, "auto" | boolean, "auto" | "true" | "false">;
   progress?: If<
     TResolved,
-    "auto" | boolean,
-    "auto" | "true" | "false" | "interval"
+    ProgressMode,
+    Exclude<ProgressMode, boolean> | "true" | "false"
   >;
-  progressInterval?: number;
 };
 
 export type CommandConstructor<

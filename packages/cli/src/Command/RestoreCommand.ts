@@ -80,7 +80,6 @@ export class RestoreCommand extends CommandAbstract<
       initial: this.options.initial,
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
-      progressInterval: this.globalOptions.progressInterval,
       streams: this.streams,
     });
 

@@ -11,7 +11,7 @@ import {
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
-import { ProgressManager } from "../utils/progress";
+import { ProgressManager, ProgressMode } from "../utils/progress";
 import { Streams } from "../utils/stream";
 import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -26,8 +26,7 @@ export type CopyActionOptionsType = {
   repositoryNames2?: string[];
   verbose?: boolean;
   tty?: "auto" | boolean;
-  progress?: "auto" | "interval" | boolean;
-  progressInterval?: number;
+  progress?: ProgressMode;
 };
 
 export type CopyActionResult = {
@@ -120,8 +119,7 @@ export class CopyAction<TRequired extends boolean = true> {
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
-      enabled: options.progress,
-      interval: options.progressInterval,
+      mode: options.progress,
     });
 
     const l = new Listr3<Context>({ progressManager: pm });

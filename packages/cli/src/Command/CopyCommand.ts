@@ -66,7 +66,6 @@ export class CopyCommand extends CommandAbstract<
       verbose: verbose > 0,
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
-      progressInterval: this.globalOptions.progressInterval,
     });
 
     const result = await copy.exec();

@@ -25,21 +25,27 @@ export type Progress = {
   relative?: ProgressStats;
 };
 
+export type ProgressTty = "auto" | boolean;
+export type ProgressMode = "auto" | "interval" | `interval:${number}` | boolean;
+
 export class ProgressManager {
   protected timer = createTimer();
   protected interval: Timer | undefined = createTimer();
+  protected intervalMs: number;
   protected keydownListener: ((data: Buffer | undefined) => void) | undefined;
-  readonly tty: boolean;
-  readonly enabled: boolean | "interval";
+  readonly tty: Exclude<ProgressTty, "auto">;
+  readonly mode: Exclude<ProgressMode, "auto" | `interval:${number}`>;
   constructor(
     readonly options: {
       verbose?: boolean;
       /**
-       * @default true
+       * @default false
        */
-      tty?: boolean | "auto";
-      enabled?: boolean | "auto" | "interval";
-      interval?: number;
+      tty?: ProgressTty;
+      /**
+       * @default "interval"
+       */
+      mode?: ProgressMode;
     },
   ) {
     this.tty =
@@ -48,12 +54,23 @@ export class ProgressManager {
           ? false
           : process.stdout.isTTY
         : !!options.tty;
-    this.enabled =
-      options.enabled === "auto"
+
+    const mode: Exclude<ProgressMode, "auto"> =
+      options.mode === "auto"
         ? this.tty
-          ? true
+          ? `interval:${300}`
           : "interval"
-        : !!options.enabled;
+        : options.mode ?? "interval";
+
+    this.intervalMs = 1000;
+
+    if (typeof mode === "string" && mode.startsWith("interval:")) {
+      const [, ms] = mode.split(":");
+      this.mode = "interval";
+      if (/^\d+$/.test(ms)) this.intervalMs = Number(ms);
+    } else {
+      this.mode = mode as boolean | "interval";
+    }
   }
   elapsed() {
     return this.timer.elapsed();
@@ -85,10 +102,10 @@ export class ProgressManager {
     }
   }
   update(progress: Progress, cb: (text: string) => void) {
-    if (!this.enabled) return;
-    if (this.enabled === "interval") {
+    if (!this.mode) return;
+    if (this.mode === "interval") {
       if (this.interval) {
-        if (!this.interval.reset(this.options.interval ?? 5_000)) return;
+        if (!this.interval.reset(this.intervalMs)) return;
       } else {
         this.interval = createTimer();
       }

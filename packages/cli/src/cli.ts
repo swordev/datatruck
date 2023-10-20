@@ -22,13 +22,12 @@ function getGlobalOptions() {
   const result = program.opts() as Omit<GlobalOptions<false>, "config"> & {
     config: string;
   };
+  const parseBool = <T>(v: T): Exclude<T, "true" | "false"> | boolean =>
+    v === "true" ? true : v === "false" ? false : (v as any);
   return {
     ...result,
-    tty: result.tty === "auto" ? "auto" : result.tty === "true",
-    progress:
-      result.progress === "auto" || result.progress === "interval"
-        ? result.progress
-        : result.progress === "true",
+    tty: parseBool(result.tty),
+    progress: parseBool(result.progress),
   } as Omit<GlobalOptions<true>, "config"> & {
     config: string;
   };
@@ -113,10 +112,9 @@ program.option(
 program.option("--tty <value>", "TTY mode (auto, true, false)", "auto");
 program.option(
   "--progress <value>",
-  "Progress type (auto, true, false, interval)",
+  "Progress type (auto, true, false, interval, interval:[ms])",
   "auto",
 );
-program.option("--progress-interval <ms>", "Progress interval", Number, 1000);
 program.option(
   "-o,--output-format <format>",
   "Output format (json, pjson, yaml, table, custom=$, tpl=name)",
