@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.30.1
+
+### Patch Changes
+
+- [`68e991b`](https://github.com/swordev/datatruck/commit/68e991b862ee3793e6b31d1fd5d6cebdf59524a4) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix allowlist in datatruck server
+
+- [`16f982c`](https://github.com/swordev/datatruck/commit/16f982c7da0d44cbbb691d5552da77fb27366f82) Thanks [@juanrgm](https://github.com/juanrgm)! - Reduce progress interval to 300 ms in auto progress mode
+
 ## 0.30.0
 
 ### Minor Changes
