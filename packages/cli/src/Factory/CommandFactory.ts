@@ -71,9 +71,10 @@ export function CommandFactory<TCommand extends keyof OptionsMapType>(
   globalOptions: GlobalOptions<true>,
   options: OptionsMapType[TCommand],
   streams?: Partial<Streams>,
+  configPath?: string,
 ) {
   const constructor = CommandConstructorFactory(type);
-  return new constructor(globalOptions, options as any, streams);
+  return new constructor(globalOptions, options as any, streams, configPath);
 }
 
 export async function exec<TCommand extends keyof OptionsMapType>(

@@ -77,6 +77,8 @@ function makeCommandAction<T>(command: CommandEnum) {
           config: config.data,
         },
         options as any,
+        {},
+        globalOptions.config,
       ).onExec();
     } catch (e) {
       const error = e as Error;

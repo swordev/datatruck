@@ -37,6 +37,7 @@ export abstract class CommandAbstract<
     readonly globalOptions: GlobalOptions<true>,
     options: TUnresolvedOptions,
     streams: Partial<Streams> = {},
+    readonly configPath?: string,
   ) {
     this.options = parseOptions(options, this.onOptions());
     this.streams = createStreams(streams);
