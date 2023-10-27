@@ -71,6 +71,9 @@ importers:
       commander:
         specifier: ^11.0.0
         version: 11.0.0
+      croner:
+        specifier: ^7.0.4
+        version: 7.0.4
       dayjs:
         specifier: ^1.11.10
         version: 1.11.10
@@ -3170,6 +3173,11 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
+
+  /croner@7.0.4:
+    resolution: {integrity: sha512-P8Zd88km8oQ0xH8Es0u75GtOnFyCNopuAhlFv5kAnbcTuXd0xNvRTgnxnJEs63FicCOsHTL7rpu4BHzY3cMq4w==}
+    engines: {node: '>=6.0'}
+    dev: false
 
   /cross-spawn@5.1.0:
     resolution: {integrity: sha512-pTgQJ5KC0d2hcY8eyL1IzlBPYjTkyH72XRZPnLyKus2mBfNjQs3klqbJU2VILqZryAZUt9JOb3h/mWMy23/f5A==}

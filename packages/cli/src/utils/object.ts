@@ -16,6 +16,15 @@ export function merge<T extends Record<string, unknown>>(
   return target;
 }
 
+export function omitProp<T extends Record<string, any>, N extends keyof T>(
+  object: T,
+  name: N,
+): Omit<T, N> {
+  const result = { ...object };
+  delete result[name];
+  return result;
+}
+
 export function getErrorProperties(error: Error) {
   const alt: Record<string, string> = {};
 

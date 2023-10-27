@@ -1,7 +1,11 @@
+import { backupCommandOptionDef } from "../Command/BackupCommand";
+import { copyCommandOptionsDef } from "../Command/CopyCommand";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
 import { FormatType, dataFormats } from "../utils/DataFormat";
-import { DatatruckServerOptions } from "../utils/datatruck/repository-server";
+import { DatatruckCronServerOptions } from "../utils/datatruck/cron-server";
+import { DatatruckRepositoryServerOptions } from "../utils/datatruck/repository-server";
+import { createCaseSchema, omitPropertySchema } from "../utils/schema";
 import { Step } from "../utils/steps";
 import { PackageConfigType } from "./PackageConfig";
 import { PrunePolicyConfigType } from "./PrunePolicyConfig";
@@ -16,6 +20,12 @@ export type ConfigType = {
   server?: DatatruckServerOptions;
   reports?: ReportConfig[];
   prunePolicy?: PrunePolicyConfigType;
+};
+
+export type DatatruckServerOptions = {
+  log?: boolean;
+  repository?: DatatruckRepositoryServerOptions;
+  cron?: DatatruckCronServerOptions;
 };
 
 export type ReportConfig = {
@@ -119,6 +129,42 @@ export const configDefinition: JSONSchema7 = {
                     },
                   },
                 },
+              },
+            },
+          },
+        },
+        cron: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            enabled: { type: "boolean" },
+            actions: {
+              type: "array",
+              items: {
+                allOf: [
+                  {
+                    type: "object",
+                    required: ["schedule"],
+                    properties: {
+                      schedule: { type: "string" },
+                    },
+                  },
+                  {
+                    anyOf: createCaseSchema(
+                      {
+                        type: "type",
+                        value: "options",
+                      },
+                      {
+                        backup: omitPropertySchema(
+                          backupCommandOptionDef,
+                          "dryRun",
+                        ),
+                        copy: copyCommandOptionsDef,
+                      },
+                    ),
+                  },
+                ],
               },
             },
           },

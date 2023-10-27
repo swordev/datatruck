@@ -127,6 +127,28 @@ export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
   return result;
 }
 
+export function stringifyOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
+  options: OptionsType<T1, T2>,
+  object: any,
+) {
+  const result: string[] = [];
+  for (const key in options) {
+    const fullOpt = options[key].option;
+    const [opt] = fullOpt.split(",");
+    const isNegative = fullOpt.startsWith("--no");
+    const isBool = !fullOpt.includes("<") && !fullOpt.includes("[");
+    const defaultsValue = isNegative ? true : options[key].defaults;
+    const value = object?.[key] ?? defaultsValue;
+
+    if (isBool) {
+      if (object[key]) result.push(opt);
+    } else if (value !== undefined) {
+      result.push(opt, `${value}`);
+    }
+  }
+  return result;
+}
+
 export function confirm(message: string) {
   const rl = createInterface({
     input: process.stdin,

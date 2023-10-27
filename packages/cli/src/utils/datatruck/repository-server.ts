@@ -31,11 +31,6 @@ export type DatatruckRepositoryServerOptions = {
   }[];
 };
 
-export type DatatruckServerOptions = {
-  log?: boolean;
-  repository?: DatatruckRepositoryServerOptions;
-};
-
 export const headerKey = {
   user: "x-dtt-user",
   password: "x-dtt-password",
@@ -107,7 +102,9 @@ const getRemoteAddress = (
 
 export function createDatatruckRepositoryServer(
   options: Omit<DatatruckRepositoryServerOptions, "listen">,
-  log?: boolean,
+  config: {
+    log?: boolean;
+  } = {},
 ) {
   return createServer(async (req, res) => {
     try {
@@ -125,7 +122,7 @@ export function createDatatruckRepositoryServer(
         return res.end();
       }
 
-      if (log) console.info(`> ${req.url}`);
+      if (config.log) console.info(`> [repository] ${repository} - ${req.url}`);
       const fs = new LocalFs({
         backend: backend.path,
       });
@@ -164,10 +161,10 @@ export function createDatatruckRepositoryServer(
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      if (log) console.info(`<${action}`);
+      if (config.log) console.info(`< [repository] ${repository} - ${action}`);
       res.end();
     } catch (error) {
-      if (log) console.error(`<${req.url}`, error);
+      if (config.log) console.error(`< [repository] ${req.url}`, error);
       res.statusCode = 500;
       res.statusMessage = (error as Error).message;
       res.end();
