@@ -1,13 +1,9 @@
 import { BackupAction } from "../Action/BackupAction";
 import { ConfigAction } from "../Action/ConfigAction";
-import {
-  RepositoryConfigType,
-  repositoryNames,
-} from "../Config/RepositoryConfig";
+import { RepositoryConfigType } from "../Config/RepositoryConfig";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
-import { JSONSchema7 } from "json-schema";
 
 export type BackupCommandOptions<TResolved = false> = {
   package?: If<TResolved, string[]>;
@@ -19,21 +15,6 @@ export type BackupCommandOptions<TResolved = false> = {
   date?: string;
   prune?: boolean;
 };
-
-export const backupCommandOptionDef = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    package: { type: "string" },
-    packageTask: { type: "string" },
-    repository: { type: "string" },
-    repositoryType: { enum: repositoryNames },
-    tag: { type: "string" },
-    dryRun: { type: "boolean" },
-    date: { type: "string" },
-    prune: { type: "boolean" },
-  },
-} satisfies JSONSchema7;
 
 export type BackupCommandResult = Unwrap<BackupAction["exec"]>;
 

@@ -1,6 +1,6 @@
-import { backupCommandOptionDef } from "../Command/BackupCommand";
-import { copyCommandOptionsDef } from "../Command/CopyCommand";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
+import { backupCommandOptionDef } from "../JsonSchema/backup-def";
+import { copyCommandOptionsDef } from "../JsonSchema/copy-def";
 import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
 import { FormatType, dataFormats } from "../utils/DataFormat";
 import { DatatruckCronServerOptions } from "../utils/datatruck/cron-server";
