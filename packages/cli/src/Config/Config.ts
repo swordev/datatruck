@@ -1,7 +1,7 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
 import { FormatType, dataFormats } from "../utils/DataFormat";
-import { DatatruckServerOptions } from "../utils/datatruck/server";
+import { DatatruckServerOptions } from "../utils/datatruck/repository-server";
 import { Step } from "../utils/steps";
 import { PackageConfigType } from "./PackageConfig";
 import { PrunePolicyConfigType } from "./PrunePolicyConfig";
@@ -61,46 +61,66 @@ export const configDefinition: JSONSchema7 = {
       type: "object",
       additionalProperties: false,
       properties: {
-        path: { type: "string" },
         log: { type: "boolean" },
-        users: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              name: { type: "string" },
-              password: { type: "string" },
-            },
-          },
-        },
-        listen: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            port: { type: "integer" },
-            address: { type: "string" },
-          },
-        },
-        trustProxy: {
-          anyOf: [
-            { type: "boolean" },
-            {
-              type: "object",
-              additionalProperties: false,
-              required: ["remoteAddressHeader"],
-              properties: {
-                remoteAddressHeader: { type: "string" },
-              },
-            },
-          ],
-        },
-        allowlist: {
+        repository: {
           type: "object",
           additionalProperties: false,
           properties: {
             enabled: { type: "boolean" },
-            remoteAddresses: makeRef(DefinitionEnum.stringListUtil),
+            listen: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                port: { type: "integer" },
+                address: { type: "string" },
+              },
+            },
+            trustProxy: {
+              anyOf: [
+                { type: "boolean" },
+                {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["remoteAddressHeader"],
+                  properties: {
+                    remoteAddressHeader: { type: "string" },
+                  },
+                },
+              ],
+            },
+            allowlist: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                enabled: { type: "boolean" },
+                remoteAddresses: makeRef(DefinitionEnum.stringListUtil),
+              },
+            },
+            backends: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["name", "path"],
+                properties: {
+                  name: { type: "string" },
+                  path: { type: "string" },
+                  users: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      additionalProperties: false,
+                      required: ["name", "password"],
+                      properties: {
+                        enabled: { type: "boolean" },
+                        name: { type: "string" },
+                        password: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },

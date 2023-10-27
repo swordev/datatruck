@@ -5,18 +5,17 @@ import { stat } from "fs/promises";
 import { IncomingMessage, createServer } from "http";
 
 type User = {
+  enabled?: boolean;
   name: string;
   password: string;
 };
 
-export type DatatruckServerOptions = {
-  path?: string;
-  log?: boolean;
+export type DatatruckRepositoryServerOptions = {
+  enabled?: boolean;
   listen?: {
     port?: number;
     address?: string;
   };
-  users?: User[];
   trustProxy?: true | { remoteAddressHeader: string };
   allowlist?: {
     /**
@@ -25,29 +24,49 @@ export type DatatruckServerOptions = {
     enabled?: boolean;
     remoteAddresses?: string[];
   };
+  backends?: {
+    name: string;
+    path: string;
+    users?: User[];
+  }[];
 };
 
-function parseUrl(inUrl: string): { action: string; params: any[] } {
-  const url = new URL(`http://127.0.0.1${inUrl}`);
-  const inParams = url.searchParams.get("params");
-  const action = url.pathname.slice(1);
-  if (typeof inParams === "string") {
-    const params = JSON.parse(inParams);
-    if (!Array.isArray(params)) throw new Error(`Invalid params`);
-    return { action, params };
-  } else {
-    return { action, params: [] };
-  }
-}
+export type DatatruckServerOptions = {
+  log?: boolean;
+  repository?: DatatruckRepositoryServerOptions;
+};
 
 export const headerKey = {
   user: "x-dtt-user",
   password: "x-dtt-password",
 };
 
-function validateRequest(
+function parseUrl(
+  inUrl: string,
+  repositoryPrefix = "repo",
+): {
+  repository: string | undefined;
+  action: string | undefined;
+  params: any[];
+} {
+  const url = new URL(`http://127.0.0.1${inUrl}`);
+  const inParams = url.searchParams.get("params");
+  const [prefix, repository, action] = url.pathname.slice(1).split("/");
+  if (prefix !== repositoryPrefix) {
+    return { repository: undefined, action: undefined, params: [] };
+  } else if (typeof inParams === "string") {
+    const params = JSON.parse(inParams);
+    if (!Array.isArray(params)) throw new Error(`Invalid params`);
+    return { repository, action, params };
+  } else {
+    return { repository, action, params: [] };
+  }
+}
+
+function findRepositoryBackend(
   req: IncomingMessage,
-  options: DatatruckServerOptions,
+  repository: string,
+  options: DatatruckRepositoryServerOptions,
 ) {
   const list = options.allowlist;
   if (list && (list.enabled ?? true) && list.remoteAddresses) {
@@ -61,15 +80,21 @@ function validateRequest(
 
   if (!name?.length || !password?.length) return;
 
-  return (
-    options.users?.some(
-      (user) => user.name === name && user.password === password,
-    ) || false
+  const backend = options.backends?.find((e) => e.name === repository);
+  if (!backend) return;
+
+  const user = backend.users?.find(
+    (user) => user.name === name && user.password === password,
   );
+  if (!user) return;
+  if (!(user.enabled ?? true)) return;
+
+  return backend;
 }
+
 const getRemoteAddress = (
   req: IncomingMessage,
-  options: DatatruckServerOptions,
+  options: DatatruckRepositoryServerOptions,
 ) => {
   return (
     (options.trustProxy
@@ -80,23 +105,33 @@ const getRemoteAddress = (
   );
 };
 
-export function createDatatruckServer(options: DatatruckServerOptions) {
-  const log = options.log ?? true;
-
+export function createDatatruckRepositoryServer(
+  options: Omit<DatatruckRepositoryServerOptions, "listen">,
+  log?: boolean,
+) {
   return createServer(async (req, res) => {
     try {
-      if (req.url === "/" || req.url === "/favicon.ico") {
+      if (req.url === "/" || req.url === "/favicon.ico") return res.end();
+      const { repository, action, params } = parseUrl(req.url!);
+      if (!repository || !action) {
+        res.statusCode = 404;
         return res.end();
-      } else if (!validateRequest(req, options)) {
+      }
+
+      const backend = findRepositoryBackend(req, repository, options);
+
+      if (!backend) {
         res.statusCode = 401;
         return res.end();
       }
+
       if (log) console.info(`> ${req.url}`);
       const fs = new LocalFs({
-        backend: options.path ?? ".",
+        backend: backend.path,
       });
-      const { action, params } = parseUrl(req.url!);
-      if (action === "upload") {
+      if (action === "comcheck") {
+        res.write(JSON.stringify({ success: true }));
+      } else if (action === "upload") {
         const [target] = params;
         const path = fs.resolvePath(target);
         const file = createWriteStream(path);

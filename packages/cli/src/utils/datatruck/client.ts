@@ -2,7 +2,7 @@ import { DiskStats } from "../fs";
 import { downloadFile, fetchJson, post, uploadFile } from "../http";
 import { BasicProgress } from "../progress";
 import { AbstractFs, FsOptions, LocalFs } from "../virtual-fs";
-import { headerKey } from "./server";
+import { headerKey } from "./repository-server";
 
 export class RemoteFs extends AbstractFs {
   protected url: string;

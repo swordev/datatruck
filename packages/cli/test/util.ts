@@ -1,6 +1,6 @@
 import { ConfigType } from "../src/Config/Config";
 import { RepositoryConfigType } from "../src/Config/RepositoryConfig";
-import { createDatatruckServer } from "../src/utils/datatruck/server";
+import { createDatatruckRepositoryServer } from "../src/utils/datatruck/repository-server";
 import { writeJSONFile } from "../src/utils/fs";
 import { mkTmpDir } from "../src/utils/temp";
 import "./toEqualMessage";
@@ -33,13 +33,17 @@ export async function makeRepositoryConfig(
   if (type === "datatruck") {
     return makeDatatruckRepositoryConfig(name);
   } else if (type === "datatruck-remote") {
-    const server = createDatatruckServer({
-      path: await mkTmpDir(type),
-      log: false,
-      users: [
+    const server = createDatatruckRepositoryServer({
+      backends: [
         {
-          name: "user1",
-          password: "password1",
+          name: "main",
+          path: await mkTmpDir(type),
+          users: [
+            {
+              name: "user1",
+              password: "password1",
+            },
+          ],
         },
       ],
     });
@@ -50,7 +54,7 @@ export async function makeRepositoryConfig(
     const { port } = server.address() as AddressInfo;
     return makeDatatruckRepositoryConfig(
       name,
-      `http://user1:password1@127.0.0.1:${port}`,
+      `http://user1:password1@127.0.0.1:${port}/repo/main`,
     );
   } else if (type === "git") {
     return makeGitRepositoryConfig(name);

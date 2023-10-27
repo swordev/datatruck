@@ -1,5 +1,5 @@
 import { ConfigAction } from "../Action/ConfigAction";
-import { createDatatruckServer } from "../utils/datatruck/server";
+import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type StartServerCommandOptions<TResolved = false> = {};
@@ -13,14 +13,23 @@ export class StartServerCommand extends CommandAbstract<
   }
   override async onExec() {
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
-    const server = createDatatruckServer(config.server || {});
-    const port = config.server?.listen?.port ?? 8888;
-    const address = config.server?.listen?.address ?? "127.0.0.1";
-    console.info(`Listening on http://${address}:${port}`);
-    await new Promise((resolve, reject) => {
+    const log = config.server?.log ?? true;
+    const repositoryOptions = config.server?.repository || {};
+
+    if (repositoryOptions.enabled ?? true) {
+      const server = createDatatruckRepositoryServer(repositoryOptions, log);
+      const port = repositoryOptions.listen?.port ?? 8888;
+      const address = repositoryOptions.listen?.address ?? "127.0.0.1";
+      console.info(
+        `Listening datatruck repository on http://${address}:${port}`,
+      );
+      server.on("error", (error) => {
+        console.error(`SERVER ERROR`, error);
+        process.exit(1);
+      });
       server.listen(port, address);
-      server.on("error", reject);
-    });
+    }
+
     return 0;
   }
 }
