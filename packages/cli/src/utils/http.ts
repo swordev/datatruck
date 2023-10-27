@@ -47,48 +47,52 @@ export function readRequestData(req: IncomingMessage) {
   });
 }
 
+export type FetchOptions = {
+  headers?: Record<string, string>;
+  query?: Record<string, string>;
+  statusError?: boolean;
+};
+
+export async function fetch(url: string, options: FetchOptions = {}) {
+  const throwStatusCodeError = options.statusError ?? true;
+  return new Promise<{ data: string | undefined; status: number | undefined }>(
+    (resolve, reject) => {
+      let data: string | undefined;
+      request(
+        href(url, options.query),
+        {
+          method: "GET",
+          headers: options.headers,
+        },
+        (res) => {
+          if (throwStatusCodeError && res.statusCode !== 200)
+            return reject(
+              new Error(`GET failed: ${res.statusCode} ${res.statusMessage}`),
+            );
+          res
+            .on("data", (chunk) => {
+              if (data === undefined) data = "";
+              data += chunk;
+            })
+            .on("error", reject)
+            .on("close", () => {
+              resolve({ data, status: res.statusCode });
+            });
+        },
+      )
+        .on("error", reject)
+        .end();
+    },
+  );
+}
+
 export async function fetchJson<T = any>(
   url: string,
-  options: {
-    headers?: Record<string, string>;
-    query?: Record<string, string>;
-  } = {},
-) {
-  return new Promise<T>((resolve, reject) => {
-    let data: string | undefined;
-    request(
-      href(url, options.query),
-      {
-        method: "GET",
-        headers: options.headers,
-      },
-      (res) => {
-        if (res.statusCode !== 200)
-          return reject(
-            new Error(`GET failed: ${res.statusCode} ${res.statusMessage}`),
-          );
-        res
-          .on("data", (chunk) => {
-            if (data === undefined) data = "";
-            data += chunk;
-          })
-          .on("error", reject)
-          .on("close", () => {
-            if (data === undefined) {
-              resolve(undefined as T);
-            } else {
-              try {
-                resolve(JSON.parse(data));
-              } catch (error) {
-                reject(error);
-              }
-            }
-          });
-      },
-    )
-      .on("error", reject)
-      .end();
-  });
+  options: FetchOptions = {},
+): Promise<T | undefined> {
+  const res = await fetch(url, options);
+  if (res.data === undefined) return;
+  return JSON.parse(res.data) as T;
 }
 
 export async function post(
