@@ -19,6 +19,12 @@ const types: Record<string, DefinitionEnum> = {
   [gitRepositoryName]: DefinitionEnum.gitRepository,
 };
 
+export const repositoryNames = [
+  resticRepositoryName as typeof resticRepositoryName,
+  datatruckRepositoryName as typeof datatruckRepositoryName,
+  gitRepositoryName as typeof gitRepositoryName,
+];
+
 export const repositoryConfigDefinition: JSONSchema7 = {
   type: "object",
   additionalProperties: false,
