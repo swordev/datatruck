@@ -1,11 +1,9 @@
 import {
   checkMatch,
-  formatDateTime,
   formatUri,
   makePathPatterns,
   parseStringList,
   render,
-  serialize,
   snakeCase,
 } from "../../src/utils/string";
 import { describe, expect, it } from "vitest";
@@ -22,14 +20,6 @@ describe("checkMatch", () => {
   });
   it("does not include empty", () => {
     expect(t(["!<empty>"])).toBe(["a", "b", "c/d"].join());
-  });
-});
-
-describe("formatDateTime", () => {
-  it("returns valid date", () => {
-    expect(
-      /^\d{4}-\d{2}-\d{2}/.test(formatDateTime("2020-01-01 00:00:00")),
-    ).toBe(true);
   });
 });
 
@@ -117,18 +107,6 @@ describe("render", () => {
   });
   it("escapes special char", () => {
     expect(render("{}var1{/}", {})).toBe("{var1}");
-  });
-});
-
-describe("serialize", () => {
-  it("returns simple message", () => {
-    expect(serialize("hello")).toBe("hello");
-  });
-
-  it("returns simple message + data", () => {
-    expect(serialize("hello", { value: "world" })).toBe(
-      `hello (${JSON.stringify({ value: "world" }, null, 2)})`,
-    );
   });
 });
 

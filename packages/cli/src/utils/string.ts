@@ -1,11 +1,6 @@
 import { AppError } from "../Error/AppError";
 import { isMatch } from "micromatch";
 
-export function serialize(message: string, data?: Object) {
-  if (data) return `${message} (${JSON.stringify(data, null, 2)})`;
-  return message;
-}
-
 export function snakeCase(value: string, char = "_") {
   return value.replace(/[A-Z]/g, (letter) => `${char}${letter.toLowerCase()}`);
 }
@@ -74,23 +69,6 @@ export function formatUri(input: UriType, hidePassword?: boolean) {
   return uri;
 }
 
-export function formatSeconds(seconds: number) {
-  let unit: string;
-  let value: number;
-  if (seconds > 60 * 60) {
-    value = seconds / 60 / 60;
-    unit = `hour`;
-  } else if (seconds > 60) {
-    value = seconds / 60;
-    unit = `minute`;
-  } else {
-    value = seconds;
-    unit = `second`;
-  }
-  if (value !== 1) unit += `s`;
-  return `${value.toFixed(2)} ${unit}`;
-}
-
 export function makePathPatterns(values: string[] | undefined) {
   return values?.flatMap((v) => {
     if (v === "*" || v === "**" || v === "<empty>" || v === "!<empty>") {
@@ -119,16 +97,6 @@ export function createMatchFilter(include?: string[], exclude?: string[]) {
 export function checkMatch(subject: string | undefined, patterns: string[]) {
   if (!subject?.length) subject = "<empty>";
   return isMatch(subject, patterns);
-}
-
-export function formatDateTime(datetime: string) {
-  const date = new Date(datetime);
-  const [result] = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .replace("Z", "")
-    .replace("T", " ")
-    .split(".");
-  return result;
 }
 
 export function undefIfEmpty(input: string) {

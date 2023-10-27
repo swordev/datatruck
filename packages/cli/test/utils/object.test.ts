@@ -1,9 +1,4 @@
-import {
-  getErrorProperties,
-  groupBy,
-  merge,
-  push,
-} from "../../src/utils/object";
+import { getErrorProperties, groupBy, merge } from "../../src/utils/object";
 import { describe, expect, it } from "vitest";
 
 describe("getErrorProperties", () => {
@@ -80,15 +75,5 @@ describe("merge", () => {
         },
       },
     });
-  });
-});
-
-describe("push", () => {
-  it("adds two values", () => {
-    let map: Record<string, number[]> = {};
-    push(map, "a", 1);
-    expect(map).toMatchObject({ a: [1] });
-    push(map, "a", 2);
-    expect(map).toMatchObject({ a: [1, 2] });
   });
 });

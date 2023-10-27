@@ -16,11 +16,6 @@ export function merge<T extends Record<string, unknown>>(
   return target;
 }
 
-export function push<T>(map: Record<string, T[]>, key: string, object: T) {
-  if (!map[key]) map[key] = [];
-  map[key].push(object);
-}
-
 export function getErrorProperties(error: Error) {
   const alt: Record<string, string> = {};
 
