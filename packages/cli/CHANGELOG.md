@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.31.0
+
+### Minor Changes
+
+- [`c98324e`](https://github.com/swordev/datatruck/commit/c98324ebbb5b43113f1bb6d9a07bd905b5883729) Thanks [@juanrgm](https://github.com/juanrgm)! - Add cron server
+
+- [`9b40aad`](https://github.com/swordev/datatruck/commit/9b40aadc3ba57db15f14ae08c342b7170d61aa5d) Thanks [@juanrgm](https://github.com/juanrgm)! - Add multiple backends to the datatruck repository
+
 ## 0.30.1
 
 ### Patch Changes
