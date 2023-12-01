@@ -1,6 +1,7 @@
 .pnpm-store
 coverage
 lib
+dist
 /backup*
 node_modules
 *.tsbuildinfo
