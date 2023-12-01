@@ -94,9 +94,10 @@ export function renderError(
   return chalk.red(message.trim());
 }
 
-export function renderObject(object: Record<string, any>) {
+export function renderObject(object: Record<string, any>, color?: boolean) {
   const values: string[] = [];
-  for (const key in object) values.push(`${key}: ${grey(object[key])}`);
+  for (const key in object)
+    values.push(`${key}: ${color ? grey(object[key]) : object[key]}`);
   return values.join(` `);
 }
 

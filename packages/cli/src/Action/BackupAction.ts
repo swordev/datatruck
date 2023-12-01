@@ -188,12 +188,15 @@ export class BackupAction<TRequired extends boolean = true> {
         : item.key === "copy"
         ? `${item.data.packageName} ${g(item.data.mirrorRepositoryName)}`
         : item.key === "summary"
-        ? renderObject({
-            errors: item.data.errors,
-            backups: result.filter((r) => !r.error && r.key === "backup")
-              .length,
-            copies: result.filter((r) => !r.error && r.key === "copy").length,
-          })
+        ? renderObject(
+            {
+              errors: item.data.errors,
+              backups: result.filter((r) => !r.error && r.key === "backup")
+                .length,
+              copies: result.filter((r) => !r.error && r.key === "copy").length,
+            },
+            color,
+          )
         : item.key === "report"
         ? item.data.type
         : "";
@@ -411,7 +414,7 @@ export class BackupAction<TRequired extends boolean = true> {
                       report.format ?? "list",
                     );
                     await runSteps(report.run, {
-                      vars: { dtt: { text, result } },
+                      vars: { dtt: { title: "DTT Backup", text, result } },
                       verbose: this.options.verbose,
                     });
                   },

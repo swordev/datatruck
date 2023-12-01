@@ -184,11 +184,14 @@ export class RestoreAction<TRequired extends boolean = true> {
         : item.key === "restore"
         ? `${item.data.packageName} ${g(item.data.repositoryName)}`
         : item.key === "summary"
-        ? renderObject({
-            errors: item.data.errors,
-            restores: result.filter((r) => !r.error && r.key === "restore")
-              .length,
-          })
+        ? renderObject(
+            {
+              errors: item.data.errors,
+              restores: result.filter((r) => !r.error && r.key === "restore")
+                .length,
+            },
+            color,
+          )
         : "";
     };
     return new DataFormat({

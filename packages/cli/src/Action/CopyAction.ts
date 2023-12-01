@@ -81,15 +81,18 @@ export class CopyAction<TRequired extends boolean = true> {
             ].join(" "),
           )}`
         : item.key === "summary"
-        ? renderObject({
-            errors: item.data.errors,
-            copied: items.filter(
-              (i) => i.key === "copy" && !i.error && !i.data.skipped,
-            ).length,
-            skipped: items.filter(
-              (i) => i.key === "copy" && !i.error && i.data.skipped,
-            ).length,
-          })
+        ? renderObject(
+            {
+              errors: item.data.errors,
+              copied: items.filter(
+                (i) => i.key === "copy" && !i.error && !i.data.skipped,
+              ).length,
+              skipped: items.filter(
+                (i) => i.key === "copy" && !i.error && i.data.skipped,
+              ).length,
+            },
+            color,
+          )
         : "";
     };
     return new DataFormat({
