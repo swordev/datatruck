@@ -1,6 +1,6 @@
+import { pkg } from "../pkg";
 import { formatBytes, parseSize } from "./bytes";
 import { progressPercent } from "./math";
-import { rootPath } from "./path";
 import { Progress } from "./progress";
 import { endsWith } from "./string";
 import { mkTmpDir } from "./temp";
@@ -104,7 +104,8 @@ export const parseFileExtensions = ["json", "js", "ts", "yaml", "yml"];
 
 export async function parseFile(path: string, jsKey?: string) {
   if (!isAbsolute(path)) path = join(process.cwd(), path);
-  if (path.endsWith(".ts")) require("ts-node").register();
+  const $require = require;
+  if (path.endsWith(".ts")) $require("ts-node").register();
   if (path.endsWith(".yaml") || path.endsWith("yml")) {
     const contents = await readFile(path);
     return require("yaml").parse(contents.toString());
@@ -118,11 +119,7 @@ export async function parseFile(path: string, jsKey?: string) {
 }
 
 export function parsePackageFile() {
-  return require(`${rootPath}/package.json`) as {
-    name: string;
-    version: string;
-    description: string;
-  };
+  return pkg;
 }
 
 export async function findFile(
