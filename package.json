@@ -35,7 +35,7 @@
     "@changesets/changelog-github": "^0.4.8",
     "@changesets/cli": "^2.26.2",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
-    "@tsconfig/node18": "^18.2.2",
+    "@tsconfig/node20": "^20.1.2",
     "@types/node": "^20.6.2",
     "@wspa/cli": "^0.6.0",
     "@wspa/config": "^0.3.1",
@@ -49,7 +49,7 @@
     "vitest": "^0.34.4"
   },
   "engine": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "pnpm": {
     "patchedDependencies": {
