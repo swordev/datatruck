@@ -21,6 +21,7 @@ export class StartServerCommand extends CommandAbstract<
     if (repositoryOptions.enabled ?? true) {
       const server = createDatatruckRepositoryServer(repositoryOptions, {
         log,
+        configPath: this.configPath,
       });
       const port = repositoryOptions.listen?.port ?? 8888;
       const address = repositoryOptions.listen?.address ?? "127.0.0.1";

@@ -1,3 +1,4 @@
+import { ConfigAction } from "../../Action/ConfigAction";
 import { readRequestData } from "../http";
 import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";
@@ -101,9 +102,10 @@ const getRemoteAddress = (
 };
 
 export function createDatatruckRepositoryServer(
-  options: Omit<DatatruckRepositoryServerOptions, "listen">,
+  inOptions: Omit<DatatruckRepositoryServerOptions, "listen">,
   config: {
     log?: boolean;
+    configPath?: string;
   } = {},
 ) {
   return createServer(async (req, res) => {
@@ -115,6 +117,11 @@ export function createDatatruckRepositoryServer(
         return res.end();
       }
 
+      const fileOptions = config.configPath
+        ? (await ConfigAction.parseFile(config.configPath)).server?.repository
+        : undefined;
+
+      const options = fileOptions ?? inOptions;
       const backend = findRepositoryBackend(req, repository, options);
 
       if (!backend) {
