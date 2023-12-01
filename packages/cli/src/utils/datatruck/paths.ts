@@ -19,7 +19,7 @@ export async function parsePaths(
       paths.push(value);
     } else {
       await runSteps(value, {
-        node: { tempDir: options.tempDir },
+        tempDir: options.tempDir,
         verbose: options.verbose,
         onLine: (path) => paths.push(path),
       });
@@ -43,11 +43,9 @@ export async function parseBackupPaths(
     cwd: options.path,
     verbose: options.verbose,
     vars: {
-      dtt: {
-        package: options.package,
-        snapshot: options.snapshot,
-        path: options.path,
-      },
+      package: options.package,
+      snapshot: options.snapshot,
+      path: options.path,
     },
   });
 }

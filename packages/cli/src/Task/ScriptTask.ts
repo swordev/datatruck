@@ -139,43 +139,24 @@ export const scriptTaskDefinition: JSONSchema7 = {
 
 export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
   protected verbose?: boolean;
-
-  protected getVars(data: TaskBackupData | TaskRestoreData) {
-    return {
-      process: {
-        DTT_SNAPSHOT_ID: data.snapshot.id,
-        DTT_SNAPSHOT_DATE: data.snapshot.date,
-        DTT_PACKAGE_NAME: data.package.name,
-        DTT_PACKAGE_PATH: data.package.path,
-        DTT_SNAPSHOT_PATH: data.snapshotPath,
-      },
-      node: {
-        dtt: {
-          snapshot: data.snapshot,
-          package: data.package,
-          snapshotPath: data.snapshotPath,
-        },
-      } as NodeVars,
-    };
-  }
   override async backup(data: TaskBackupData) {
     const config = this.config;
     const snapshotPath =
       data.package.path ??
       (await mkTmpDir(scriptTaskName, "task", "backup", "snapshot"));
-    const vars = this.getVars({
-      ...data,
-      snapshotPath,
-    });
+
     await runSteps(config.backupSteps, {
       env: config.env,
+      vars: {
+        dtt: {
+          snapshot: data.snapshot,
+          snapshotPath: snapshotPath,
+          package: data.package,
+        },
+      },
       cwd: snapshotPath,
       verbose: data.options.verbose,
-      process: { vars: vars.process },
-      node: {
-        tempDir: () => mkTmpDir(scriptTaskName, "task", "backup", "nodeStep"),
-        vars: vars.node,
-      },
+      tempDir: () => mkTmpDir(scriptTaskName, "task", "backup", "nodeStep"),
     });
 
     return { snapshotPath };
@@ -191,15 +172,17 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
 
   override async restore(data: TaskRestoreData) {
     const config = this.config;
-    const vars = this.getVars(data);
     await runSteps(config.restoreSteps, {
       env: config.env,
-      verbose: data.options.verbose,
-      process: { vars: vars.process },
-      node: {
-        tempDir: () => mkTmpDir(scriptTaskName, "task", "restore", "nodeStep"),
-        vars: vars.node,
+      vars: {
+        dtt: {
+          snapshot: data.snapshot,
+          snapshotPath: data.snapshotPath,
+          package: data.package,
+        },
       },
+      verbose: data.options.verbose,
+      tempDir: () => mkTmpDir(scriptTaskName, "task", "restore", "nodeStep"),
     });
   }
 }

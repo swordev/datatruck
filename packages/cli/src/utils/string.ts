@@ -9,16 +9,36 @@ export function render(
   subject: string,
   vars: Record<string, string | undefined>,
 ) {
-  return subject.replace(/{([\w/]*)}/g, function (match, name) {
+  return subject.replace(/{([\w\./]*)}/g, function (match, name) {
     if (!name.length) {
       return "{";
     } else if (name === "/") {
       return "}";
     }
-    const value = vars[name];
-    if (typeof value === "undefined")
-      throw new AppError(`Variable is not defined: '${subject}' (${name})`);
-    return value;
+
+    let ref: any = vars;
+
+    for (const key of name.split(".")) {
+      if (!!ref && typeof ref === "object") {
+        ref = ref[key];
+      } else {
+        ref = undefined;
+        break;
+      }
+    }
+    if (
+      typeof ref !== "string" &&
+      typeof ref !== "number" &&
+      typeof ref !== "boolean"
+    )
+      throw new Error(`Variable is not valid: ${name}`, {
+        cause: {
+          vars,
+          value: ref,
+        },
+      });
+
+    return ref.toString();
   });
 }
 

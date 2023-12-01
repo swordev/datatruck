@@ -411,14 +411,8 @@ export class BackupAction<TRequired extends boolean = true> {
                       report.format ?? "list",
                     );
                     await runSteps(report.run, {
+                      vars: { dtt: { text, result } },
                       verbose: this.options.verbose,
-                      process: { vars: { DTT_REPORT: text } },
-                      telegram: { vars: { TEXT: text } },
-                      node: {
-                        vars: {
-                          dtt: { report: text, result },
-                        },
-                      },
                     });
                   },
                 });

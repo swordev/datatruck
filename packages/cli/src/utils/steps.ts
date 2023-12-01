@@ -41,17 +41,9 @@ export type Step =
 
 export type StepOptions = {
   env?: Record<string, string | undefined>;
-  process?: {
-    vars?: Record<string, string | undefined>;
-  };
-  node?: {
-    vars?: Record<string, any>;
-    tempDir?: () => Promise<string>;
-  };
-  telegram?: {
-    vars?: Record<string, string>;
-  };
+  vars?: Record<string, any>;
   cwd?: string;
+  tempDir?: () => Promise<string>;
   onLine?: (p: string) => any;
   verbose?: boolean;
 };
@@ -62,9 +54,7 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
     if (step.type === "process") {
       await exec(
         step.config.command,
-        (step.config.args || []).map((v) =>
-          render(v, options.process?.vars || {}),
-        ),
+        (step.config.args || []).map((v) => render(v, options?.vars || {})),
         {
           cwd: options.cwd,
           env: {
@@ -85,15 +75,15 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
       );
     } else if (step.type === "node") {
       let tempDir: string;
-      if (options.node?.tempDir) {
-        tempDir = await options.node.tempDir();
+      if (options?.tempDir) {
+        tempDir = await options.tempDir();
       } else {
         tempDir = await mkTmpDir("node-step");
       }
       const scriptPath = join(tempDir, "script.js");
       const vars = {
         ...step.config.vars,
-        ...options.node?.vars,
+        ...options?.vars,
       };
       const varKeys = Object.keys(vars);
       const varJson = JSON.stringify(vars);
@@ -131,10 +121,7 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         `https://api.telegram.org/bot${step.config.bot}/sendMessage`,
         JSON.stringify({
           chat_id: step.config.chatId.toString(),
-          text: render(
-            step.config.text ?? `{TEXT}`,
-            options.telegram?.vars || {},
-          ),
+          text: render(step.config.text ?? `{dtt.text}`, options?.vars || {}),
           disable_notification: true,
         }),
         {
