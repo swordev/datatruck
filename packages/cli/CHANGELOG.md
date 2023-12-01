@@ -1,5 +1,19 @@
 # @datatruck/cli
 
+## 0.32.0
+
+### Minor Changes
+
+- [`7d755ba`](https://github.com/swordev/datatruck/commit/7d755bac0edf7aea719446f6bfcee5bea0fe9a90) Thanks [@juanrgm](https://github.com/juanrgm)! - Reload repository server config
+
+- [`9dba106`](https://github.com/swordev/datatruck/commit/9dba106865da2d4327282d65deecee5a03e49b49) Thanks [@juanrgm](https://github.com/juanrgm)! - Update to Node.js 20
+
+- [`113ee82`](https://github.com/swordev/datatruck/commit/113ee8258951028d54b798eaaa813982222c20e8) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `ntfy` step
+
+### Patch Changes
+
+- [`c24eea2`](https://github.com/swordev/datatruck/commit/c24eea21b41d78451d5eabd65923daa26dcad78a) Thanks [@juanrgm](https://github.com/juanrgm)! - Simplify step configs
+
 ## 0.31.0
 
 ### Minor Changes
