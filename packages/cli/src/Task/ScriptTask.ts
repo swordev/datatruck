@@ -36,12 +36,14 @@ export enum ScriptTaskDefinitionEnum {
   processStepConfig = "processStepConfig",
   nodeStepConfig = "nodeStepConfig",
   telegramMessageStepConfig = "telegramMessageStepConfig",
+  ntfyStepConfig = "ntfyStepConfig",
 }
 
 const stepTypes = {
   process: ScriptTaskDefinitionEnum.processStepConfig,
   node: ScriptTaskDefinitionEnum.nodeStepConfig,
   "telegram-message": ScriptTaskDefinitionEnum.telegramMessageStepConfig,
+  ntfy: ScriptTaskDefinitionEnum.ntfyStepConfig,
 };
 
 export const scriptTaskName = "script";
@@ -112,6 +114,15 @@ export const scriptTaskDefinition: JSONSchema7 = {
       properties: {
         command: { type: "string" },
         chatId: { type: "integer" },
+        text: { type: "string" },
+      },
+    },
+    ntfyStepConfig: {
+      type: "object",
+      required: ["token"],
+      properties: {
+        token: { type: "string" },
+        topic: { type: "string" },
         text: { type: "string" },
       },
     },

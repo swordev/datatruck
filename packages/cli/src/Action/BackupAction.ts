@@ -414,7 +414,9 @@ export class BackupAction<TRequired extends boolean = true> {
                       report.format ?? "list",
                     );
                     await runSteps(report.run, {
-                      vars: { dtt: { title: "DTT Backup", text, result } },
+                      vars: {
+                        dtt: { title: "DTT Backup", text, result, success },
+                      },
                       verbose: this.options.verbose,
                     });
                   },

@@ -25,6 +25,12 @@ export type TelegramMessageStepConfig = {
   text?: string;
 };
 
+export type NtfyStepConfig = {
+  token: string;
+  topic?: string;
+  text?: string;
+};
+
 export type Step =
   | {
       type: "process";
@@ -37,6 +43,10 @@ export type Step =
   | {
       type: "telegram-message";
       config: TelegramMessageStepConfig;
+    }
+  | {
+      type: "ntfy";
+      config: NtfyStepConfig;
     };
 
 export type StepOptions = {
@@ -50,11 +60,12 @@ export type StepOptions = {
 
 export async function runSteps(input: Step[] | Step, options: StepOptions) {
   const steps = Array.isArray(input) ? input : [input];
+  const vars = options?.vars || {};
   for (const step of steps) {
     if (step.type === "process") {
       await exec(
         step.config.command,
-        (step.config.args || []).map((v) => render(v, options?.vars || {})),
+        (step.config.args || []).map((v) => render(v, vars)),
         {
           cwd: options.cwd,
           env: {
@@ -81,12 +92,12 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         tempDir = await mkTmpDir("node-step");
       }
       const scriptPath = join(tempDir, "script.js");
-      const vars = {
+      const nodeVars = {
         ...step.config.vars,
-        ...options?.vars,
+        ...vars,
       };
-      const varKeys = Object.keys(vars);
-      const varJson = JSON.stringify(vars);
+      const varKeys = Object.keys(nodeVars);
+      const varJson = JSON.stringify(nodeVars);
       const code = Array.isArray(step.config.code)
         ? [...step.config.code].join(";\n")
         : step.config.code;
@@ -121,12 +132,28 @@ export async function runSteps(input: Step[] | Step, options: StepOptions) {
         `https://api.telegram.org/bot${step.config.bot}/sendMessage`,
         JSON.stringify({
           chat_id: step.config.chatId.toString(),
-          text: render(step.config.text ?? `{dtt.text}`, options?.vars || {}),
+          text: render(step.config.text ?? `{dtt.text}`, vars),
           disable_notification: true,
         }),
         {
           headers: {
             "Content-Type": "application/json",
+          },
+        },
+      );
+    } else if (step.type === "ntfy") {
+      const topic = [step.config.token, step.config.topic]
+        .filter(Boolean)
+        .join("-");
+      if (topic.length < 32)
+        throw new Error(`Topic is less than 32 characters: ${topic}`);
+      await post(
+        `https://ntfy.sh/${topic}`,
+        render(step.config.text ?? `{dtt.text}`, vars),
+        {
+          headers: {
+            Title: render("{dtt.title}", vars),
+            Priority: vars.success ? "default" : "high",
           },
         },
       );
