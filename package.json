@@ -51,6 +51,11 @@
   "engine": {
     "node": ">=18.0.0"
   },
+  "pnpm": {
+    "patchedDependencies": {
+      "smartwrap@2.0.2": "patches/smartwrap@2.0.2.patch"
+    }
+  },
   "x-wspa": {
     "extends": "@wspa/config/auto",
     "pkgManifest": {

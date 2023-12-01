@@ -1,0 +1,12 @@
+diff --git a/src/main.js b/src/main.js
+index acdc39bc31da8087a86384b651a32ea2de5a19aa..9e9553e06e942fb6221615933f5baf01072444f2 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -171,6 +171,7 @@ const wrap = (input, options) => {
+ 
+ const splitAnsiInput = (text) => {
+   // get start and end positions for matches
++	let result
+   let matches = []
+   let textArr = [...text]
+   let textLength = textArr.length

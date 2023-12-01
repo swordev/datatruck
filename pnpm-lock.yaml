@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  smartwrap@2.0.2:
+    hash: hldd3hfikavj5c6dhkuxdfxmbu
+    path: patches/smartwrap@2.0.2.patch
+
 importers:
 
   .:
@@ -6546,7 +6551,7 @@ packages:
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     dev: true
 
-  /smartwrap@2.0.2:
+  /smartwrap@2.0.2(patch_hash=hldd3hfikavj5c6dhkuxdfxmbu):
     resolution: {integrity: sha512-vCsKNQxb7PnCNd2wY1WClWifAc2lwqsG8OaswpJkVJsvMGcnEntdTCDajZCkk93Ay1U3t/9puJmb525Rg5MZBA==}
     engines: {node: '>=6'}
     hasBin: true
@@ -6557,6 +6562,7 @@ packages:
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
       yargs: 15.4.1
+    patched: true
 
   /socks-proxy-agent@6.2.0:
     resolution: {integrity: sha512-wWqJhjb32Q6GsrUqzuFkukxb/zzide5quXYcMVpIjxalDBBYy2nqKCFQ/9+Ie4dvOYSQdOk3hUlZSdzZOd3zMQ==}
@@ -7082,7 +7088,7 @@ packages:
       chalk: 4.1.2
       csv: 5.5.3
       kleur: 4.1.5
-      smartwrap: 2.0.2
+      smartwrap: 2.0.2(patch_hash=hldd3hfikavj5c6dhkuxdfxmbu)
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
       yargs: 17.5.1
@@ -7096,7 +7102,7 @@ packages:
       chalk: 4.1.2
       csv: 5.5.3
       kleur: 4.1.5
-      smartwrap: 2.0.2
+      smartwrap: 2.0.2(patch_hash=hldd3hfikavj5c6dhkuxdfxmbu)
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
       yargs: 17.7.2
