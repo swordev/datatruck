@@ -19,7 +19,8 @@
     "listr2": "^7.0.1",
     "micromatch": "^4.0.5",
     "mysql2": "^3.6.1",
-    "tty-table": "^4.2.2"
+    "tty-table": "^4.2.2",
+    "yaml": "^2.3.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.20",
@@ -28,8 +29,7 @@
     "json-schema": "^0.4.0"
   },
   "optionalDependencies": {
-    "ts-node": "^10.9.1",
-    "yaml": "^2.3.2"
+    "ts-node": "^10.9.1"
   },
   "publishConfig": {
     "directory": "lib"
