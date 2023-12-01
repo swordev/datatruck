@@ -78,6 +78,13 @@ export class ConfigAction<TRequired extends boolean = true> {
     return config;
   }
 
+  static async parseFile(path: string): Promise<ConfigType> {
+    const config: ConfigType = await parseFile(path, "config");
+    ConfigAction.validate(config);
+    ConfigAction.check(config);
+    return ConfigAction.normalize(config);
+  }
+
   static async fromGlobalOptionsWithPath(globalOptions: GlobalOptions<true>) {
     if (typeof globalOptions.config !== "string")
       return {
@@ -103,12 +110,7 @@ export class ConfigAction<TRequired extends boolean = true> {
       parseFileExtensions,
       "Config path not found",
     );
-    const config: ConfigType = await parseFile(path, "config");
-    ConfigAction.validate(config);
-    ConfigAction.check(config);
-    return {
-      path,
-      data: ConfigAction.normalize(config),
-    };
+    const data = await ConfigAction.parseFile(path);
+    return { path, data };
   }
 }
