@@ -79,7 +79,7 @@ export async function ensureSingleFile(path: string) {
 }
 
 export async function ensureExistsDir(path: string) {
-  if (!(await existsDir(path))) throw new Error(`Dir is not crated: ${path}`);
+  if (!(await existsDir(path))) throw new Error(`Dir is not created: ${path}`);
 }
 
 export async function safeStat(path: string) {
