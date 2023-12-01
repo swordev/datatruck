@@ -26,26 +26,18 @@ jobs:
           docker exec $CONTAINER_ID sh -c 'echo "secure_file_priv=/var/lib/mysql-files" >> /etc/mysql/mariadb.conf.d/settings.cnf'
           docker kill --signal=SIGHUP $CONTAINER_ID
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
       - uses: pnpm/action-setup@v2
         with:
           version: ${{ env.PNPM_VERSION }}
-      - id: pnpm-cache
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/setup-node@v3
         with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-store-
-      - name: Setup system config
-        run: git config --global user.email "datatruck@localhost" && git config --global user.name "Datatruck"
-      - name: Install dependencies
-        run: pnpm install
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Setup system config
+        run: git config --global user.email "datatruck@localhost" && git config --global user.name "Datatruck"
       - name: Install system dependencies
         run: sudo apt-get install restic git tar pigz -y
       - name: Update restic
