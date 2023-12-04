@@ -47,6 +47,8 @@ export class StartServerCommand extends CommandAbstract<
       server.start();
       console.info(`Cron server started`);
     }
+    process.on("SIGINT", () => process.exit(1));
+    process.on("SIGTERM", () => process.exit(1));
     await new Promise<void>(() => setInterval(() => {}, 60_000));
     return 0;
   }
