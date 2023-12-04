@@ -19,6 +19,7 @@ import { runSteps } from "../utils/steps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
+import { PruneAction } from "./PruneAction";
 import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
@@ -41,7 +42,6 @@ export type BackupActionOptions = {
 
 type Context = {
   snapshot: { id: string };
-  prune: { total: number; pruned: number };
   task: { taskName: string; packageName: string };
   backup: { packageName: string; repositoryName: string };
   cleanup: {};
@@ -50,6 +50,7 @@ type Context = {
     repositoryName: string;
     mirrorRepositoryName: string;
   };
+  prune: { packageName: string; total: number; pruned: number };
   report: { type: string };
 };
 
@@ -178,7 +179,9 @@ export class BackupAction<TRequired extends boolean = true> {
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
       return item.key === "prune"
-        ? `${item.data.pruned}/${item.data.total}`
+        ? `${item.data.packageName} ${g(
+            `${item.data.pruned}/${item.data.total}`,
+          )}`
         : item.key === "snapshot"
         ? item.data.id
         : item.key === "task"
@@ -194,6 +197,12 @@ export class BackupAction<TRequired extends boolean = true> {
               backups: result.filter((r) => !r.error && r.key === "backup")
                 .length,
               copies: result.filter((r) => !r.error && r.key === "copy").length,
+              prunes: result
+                .filter((r) => !r.error && r.key === "prune")
+                .reduce((result, item) => {
+                  if (item.key === "prune") result += item.data.pruned;
+                  return result;
+                }, 0),
             },
             color,
           )
@@ -383,6 +392,34 @@ export class BackupAction<TRequired extends boolean = true> {
                       },
                     }),
                   ),
+                  !!this.options.prune &&
+                    l.$task({
+                      title: {
+                        initial: `Prune: ${pkg.name}`,
+                        started: `Pruning: ${pkg.name}`,
+                        completed: `Pruned: ${pkg.name}`,
+                        failed: `Prune failed: ${pkg.name}`,
+                      },
+                      exitOnError: false,
+                      key: "prune",
+                      keyIndex: [pkg.name],
+                      data: {
+                        pruned: 0,
+                        total: 0,
+                        packageName: pkg.name,
+                      },
+                      run: async (_, data) => {
+                        const prune = new PruneAction<false>(this.config, {
+                          repositoryNames: this.options.repositoryNames,
+                          repositoryTypes: this.options.repositoryTypes,
+                          packageNames: [pkg.name],
+                          groupBy: ["packageName", "repositoryName"],
+                        });
+                        const result = await prune.exec();
+                        data.total = result.total;
+                        data.pruned = result.prune;
+                      },
+                    }),
                 );
               }),
               ...(this.config.reports || []).map((report, index) => {
