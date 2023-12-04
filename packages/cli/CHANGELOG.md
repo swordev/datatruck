@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.32.1
+
+### Patch Changes
+
+- [`a479805`](https://github.com/swordev/datatruck/commit/a479805dd5c206d53eb5610f3f9db8cebe3e697a) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `prune` option in the `backup` command
+
 ## 0.32.0
 
 ### Minor Changes
