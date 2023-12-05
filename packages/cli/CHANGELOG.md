@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.32.3
+
+### Patch Changes
+
+- [`66e346a`](https://github.com/swordev/datatruck/commit/66e346a81851c4ab1cf10872314a99cf86a904c8) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix docker image
+
 ## 0.32.2
 
 ### Patch Changes
