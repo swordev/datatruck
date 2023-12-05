@@ -23,13 +23,13 @@ import { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
 
-export type TargetDatabaseType = {
+export type TargetDatabase = {
   name: string;
   charset?: string;
   collate?: string;
 };
 
-export type SqlDumpTaskConfigType = {
+export type SqlDumpTaskConfig = {
   password: string | { path: string };
   hostname: string;
   port?: number;
@@ -39,7 +39,7 @@ export type SqlDumpTaskConfigType = {
    * @default true
    */
   storedPrograms?: boolean;
-  targetDatabase?: TargetDatabaseType;
+  targetDatabase?: TargetDatabase;
   includeTables?: string[];
   excludeTables?: string[];
   oneFileByTable?: boolean;
@@ -124,7 +124,7 @@ function parseSqlFile(fileName: string): SqlFile | undefined {
 }
 
 export abstract class SqlDumpTaskAbstract<
-  TConfig extends SqlDumpTaskConfigType,
+  TConfig extends SqlDumpTaskConfig,
 > extends TaskAbstract<TConfig> {
   protected verbose?: boolean;
   async fetchPassword() {
@@ -143,7 +143,7 @@ export abstract class SqlDumpTaskAbstract<
     }, [] as string[]);
   }
 
-  abstract onCreateDatabase(database: TargetDatabaseType): Promise<void>;
+  abstract onCreateDatabase(database: TargetDatabase): Promise<void>;
   abstract onDatabaseIsEmpty(databaseName: string): Promise<boolean>;
   abstract onFetchTableNames(database: string): Promise<string[]>;
   abstract onExecQuery(query: string): ReturnType<typeof exec>;
@@ -261,7 +261,7 @@ export abstract class SqlDumpTaskAbstract<
     const snapshotPath = data.snapshotPath;
     this.verbose = data.options.verbose;
 
-    const database: TargetDatabaseType = {
+    const database: TargetDatabase = {
       name: resolveDatabaseName(this.config.database, {
         packageName: data.package.name,
         snapshotId: data.options.snapshotId,

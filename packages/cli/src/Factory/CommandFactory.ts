@@ -47,7 +47,7 @@ export enum CommandEnum {
   startServer = "start-server",
 }
 
-export type OptionsMapType = {
+export type OptionsMap = {
   [CommandEnum.config]: ConfigCommandOptions;
   [CommandEnum.init]: InitCommandOptions;
   [CommandEnum.snapshots]: SnapshotsCommandOptions;
@@ -59,17 +59,17 @@ export type OptionsMapType = {
   [CommandEnum.startServer]: StartServerCommandOptions;
 };
 
-export type LogMapType = {
+export type LogMap = {
   [CommandEnum.config]: ConfigCommandResult;
   [CommandEnum.init]: InitCommandResult;
   [CommandEnum.snapshots]: SnapshotsCommandResult;
   [CommandEnum.backup]: BackupCommandResult;
 };
 
-export function CommandFactory<TCommand extends keyof OptionsMapType>(
+export function CommandFactory<TCommand extends keyof OptionsMap>(
   type: TCommand,
   globalOptions: GlobalOptions<true>,
-  options: OptionsMapType[TCommand],
+  options: OptionsMap[TCommand],
   streams?: Partial<Streams>,
   configPath?: string,
 ) {
@@ -77,19 +77,19 @@ export function CommandFactory<TCommand extends keyof OptionsMapType>(
   return new constructor(globalOptions, options as any, streams, configPath);
 }
 
-export async function exec<TCommand extends keyof OptionsMapType>(
+export async function exec<TCommand extends keyof OptionsMap>(
   type: TCommand,
   globalOptions: GlobalOptions<true>,
-  options: OptionsMapType[TCommand],
+  options: OptionsMap[TCommand],
   streams?: Partial<Streams>,
 ) {
   return await CommandFactory(type, globalOptions, options, streams).onExec();
 }
 
 export function createActionInterface(globalOptions: GlobalOptions<true>): {
-  [K in keyof OptionsMapType as `${K}`]: (
-    options: OptionsMapType[K],
-  ) => Promise<K extends keyof LogMapType ? LogMapType[K] : never>;
+  [K in keyof OptionsMap as `${K}`]: (
+    options: OptionsMap[K],
+  ) => Promise<K extends keyof LogMap ? LogMap[K] : never>;
 } {
   const object: Record<string, any> = {};
   for (const type of Object.values(CommandEnum)) {

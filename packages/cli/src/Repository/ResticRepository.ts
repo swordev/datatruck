@@ -1,5 +1,5 @@
 import { AppError } from "../Error/AppError";
-import { RepositoryType, Restic } from "../utils/Restic";
+import { ResticRepositoryUri, Restic } from "../utils/Restic";
 import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
@@ -20,7 +20,7 @@ import {
   RepoRestoreData,
   RepoFetchSnapshotsData,
   Snapshot,
-  SnapshotTagObjectType,
+  SnapshotTagObject,
   SnapshotTagEnum,
   RepoPruneData,
   RepoCopyData,
@@ -31,12 +31,12 @@ import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, resolve } from "path";
 
-export type ResticRepositoryConfigType = {
+export type ResticRepositoryConfig = {
   password: string | { path: string };
-  repository: RepositoryType;
+  repository: ResticRepositoryUri;
 };
 
-export type ResticPackageRepositoryConfigType = {};
+export type ResticPackageRepositoryConfig = {};
 
 export const resticRepositoryName = "restic";
 
@@ -104,7 +104,7 @@ export const resticPackageRepositoryDefinition: JSONSchema7 = {
   properties: {},
 };
 
-export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigType> {
+export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig> {
   static refPrefix = "dt-";
 
   protected env!: {
@@ -141,7 +141,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   static parseSnapshotTags(tags: string[]) {
-    const result: SnapshotTagObjectType & {
+    const result: SnapshotTagObject & {
       tags: string[];
     } = {
       tags: [],
@@ -160,7 +160,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   override getSource() {
     return formatUri({ ...this.config.repository, password: undefined });
   }
-  override async fetchDiskStats(config: ResticRepositoryConfigType) {
+  override async fetchDiskStats(config: ResticRepositoryConfig) {
     if (config.repository.backend === "local" && config.repository.path)
       return fetchDiskStats(config.repository.path);
   }
@@ -228,9 +228,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
   }
 
-  override async backup(
-    data: RepoBackupData<ResticPackageRepositoryConfigType>,
-  ) {
+  override async backup(data: RepoBackupData<ResticPackageRepositoryConfig>) {
     const restic = new Restic({
       env: await this.buildEnv(),
       log: data.options.verbose,
@@ -441,7 +439,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
   }
 
   override async copy(
-    data: RepoCopyData<ResticRepositoryConfigType>,
+    data: RepoCopyData<ResticRepositoryConfig>,
   ): Promise<void> {
     const config = data.mirrorRepositoryConfig;
 
@@ -469,9 +467,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfigT
     });
   }
 
-  override async restore(
-    data: RepoRestoreData<ResticPackageRepositoryConfigType>,
-  ) {
+  override async restore(data: RepoRestoreData<ResticPackageRepositoryConfig>) {
     const restorePath = data.snapshotPath;
 
     const restic = new Restic({

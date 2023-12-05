@@ -1,6 +1,6 @@
-import type { ConfigType } from "../Config/Config";
-import { PackageConfigType } from "../Config/PackageConfig";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import type { Config } from "../Config/Config";
+import { PackageConfig } from "../Config/PackageConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
@@ -27,7 +27,7 @@ import dayjs from "dayjs";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
-  repositoryTypes?: RepositoryConfigType["type"][];
+  repositoryTypes?: RepositoryConfig["type"][];
   packageNames?: string[];
   packageTaskNames?: string[];
   tags?: string[];
@@ -56,7 +56,7 @@ type Context = {
 
 export class BackupAction<TRequired extends boolean = true> {
   constructor(
-    readonly config: ConfigType,
+    readonly config: Config,
     readonly options: IfRequireKeys<TRequired, BackupActionOptions> = {} as any,
   ) {}
 
@@ -69,7 +69,7 @@ export class BackupAction<TRequired extends boolean = true> {
       date,
     };
   }
-  protected getPackages(snapshot: PreSnapshot): PackageConfigType[] {
+  protected getPackages(snapshot: PreSnapshot): PackageConfig[] {
     const packages = filterPackages(this.config, {
       packageNames: this.options.packageNames,
       packageTaskNames: this.options.packageTaskNames,
@@ -82,7 +82,7 @@ export class BackupAction<TRequired extends boolean = true> {
       snapshotId: snapshot.id,
       snapshotDate: snapshot.date,
       action: "backup",
-    }) as PackageConfigType[];
+    }) as PackageConfig[];
   }
 
   protected getRepositoryNames(repositoryNames: string[]) {
@@ -103,7 +103,7 @@ export class BackupAction<TRequired extends boolean = true> {
     repositoryName: string;
     snapshot: PreSnapshot;
     snapshotPath: string | undefined;
-    pkg: PackageConfigType;
+    pkg: PackageConfig;
     onProgress: (data: Progress) => void;
   }) {
     const repoConfig = findRepositoryOrFail(this.config, data.repositoryName);
@@ -134,7 +134,7 @@ export class BackupAction<TRequired extends boolean = true> {
     repositoryName: string;
     mirrorRepositoryName: string;
     snapshot: PreSnapshot;
-    pkg: PackageConfigType;
+    pkg: PackageConfig;
     onProgress: (data: Progress) => void;
   }) {
     const repoConfig = findRepositoryOrFail(this.config, data.repositoryName);

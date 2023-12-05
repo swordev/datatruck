@@ -1,6 +1,6 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { InitAction } from "../Action/InitAction";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
 import { getErrorProperties } from "../utils/object";
@@ -10,7 +10,7 @@ import { CommandAbstract } from "./CommandAbstract";
 
 export type InitCommandOptions<TResolved = false> = {
   repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
+  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
 };
 
 export type InitCommandResult = Unwrap<InitAction["exec"]>;

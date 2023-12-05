@@ -1,6 +1,6 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { RestoreAction } from "../Action/RestoreAction";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
 import { duration } from "../utils/date";
@@ -14,7 +14,7 @@ export type RestoreCommandOptionsType<TResolved = false> = {
   packageTask?: If<TResolved, string[]>;
   packageConfig?: boolean;
   repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
+  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
   tag?: If<TResolved, string[]>;
   initial?: boolean;
 };

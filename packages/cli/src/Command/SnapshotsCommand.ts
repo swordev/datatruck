@@ -1,6 +1,6 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { SnapshotsAction } from "../Action/SnapshotsAction";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { formatBytes } from "../utils/bytes";
 import { parseStringList } from "../utils/string";
@@ -13,7 +13,7 @@ export type SnapshotsCommandOptions<TResolved = false> = {
   packageTask?: If<TResolved, string[]>;
   packageConfig?: boolean;
   repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
+  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
   longId?: boolean;
   last?: If<TResolved, number>;
   lastMinutely?: If<TResolved, number>;

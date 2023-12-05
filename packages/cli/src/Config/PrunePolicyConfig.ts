@@ -28,7 +28,7 @@ export const prunePolicyConfigDefinition: JSONSchema7 = {
   },
 };
 
-export type PrunePolicyConfigType = Pick<
+export type PrunePolicyConfig = Pick<
   PruneActionsOptions,
   | "keepDaily"
   | "keepHourly"

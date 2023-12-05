@@ -3,7 +3,7 @@ import { Streams, createStreams } from "./stream";
 import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";
 
-export type FormatType =
+export type DataFormatType =
   | "json"
   | "list"
   | "pjson"
@@ -12,7 +12,7 @@ export type FormatType =
   | "custom"
   | "tpl";
 
-export const dataFormats: FormatType[] = [
+export const dataFormats: DataFormatType[] = [
   "json",
   "list",
   "pjson",
@@ -80,7 +80,7 @@ export class DataFormat {
     return this.options.list().join("\n");
   }
   log(
-    format: FormatType,
+    format: DataFormatType,
     options?: {
       tpl?: Record<string, () => string>;
     },
@@ -88,7 +88,7 @@ export class DataFormat {
     this.streams.stdout.write(`${this.format(format, options)}\n`);
   }
   format(
-    format: FormatType,
+    format: DataFormatType,
     options?: {
       tpl?: Record<string, () => string>;
     },

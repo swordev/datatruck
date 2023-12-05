@@ -1,5 +1,5 @@
-import type { ConfigType } from "../Config/Config";
-import { RepositoryConfigEnabledActionType } from "../Config/RepositoryConfig";
+import type { Config } from "../Config/Config";
+import { RepositoryConfigEnabledAction } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { filterRepository } from "../utils/datatruck/config";
@@ -37,11 +37,11 @@ export type ExtendedSnapshot = {
 
 export class SnapshotsAction<TRequired extends boolean = true> {
   constructor(
-    readonly config: ConfigType,
+    readonly config: Config,
     readonly options: IfRequireKeys<TRequired, SnapshotsActionOptions>,
   ) {}
 
-  async exec(sourceAction?: RepositoryConfigEnabledActionType) {
+  async exec(sourceAction?: RepositoryConfigEnabledAction) {
     if (!sourceAction) sourceAction = "snapshots";
     let result: ExtendedSnapshot[] = [];
     for (const repoConfig of this.config.repositories) {

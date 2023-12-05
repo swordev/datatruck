@@ -1,4 +1,4 @@
-type EventNameType =
+type ExitEventName =
   | "exit"
   | "SIGINT"
   | "SIGUSR1"
@@ -6,7 +6,7 @@ type EventNameType =
   | "SIGTERM"
   | "uncaughtException";
 
-const eventNames: EventNameType[] = [
+const eventNames: ExitEventName[] = [
   `exit`,
   `SIGINT`,
   `SIGUSR1`,
@@ -23,7 +23,7 @@ type ExitListener = {
 const listeners = new Set<ExitListener>();
 const disableExitDisposes = new Set<() => any>();
 
-export function triggerExitEvent(eventName: EventNameType, ...args: any[]) {
+export function triggerExitEvent(eventName: ExitEventName, ...args: any[]) {
   if (!disableExitDisposes.size) {
     process.emit(eventName as any, ...args);
     return;
@@ -56,7 +56,7 @@ export function disableExitEvents() {
 }
 
 export function onExit(
-  cb: (eventName: EventNameType, ...args: any[]) => void,
+  cb: (eventName: ExitEventName, ...args: any[]) => void,
   priority?: number,
 ) {
   if (!disableExitDisposes.size) enableExitEvents();

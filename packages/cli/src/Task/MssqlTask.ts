@@ -10,7 +10,7 @@ import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
 
-export type MssqlTaskConfigType = {
+export type MssqlTaskConfig = {
   command?: string;
   hostname?: string;
   username?: string;
@@ -35,7 +35,7 @@ export const mssqlTaskDefinition: JSONSchema7 = {
   },
 };
 
-export class MssqlTask extends TaskAbstract<MssqlTaskConfigType> {
+export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
   static SUFFIX = ".BAK";
   protected verbose?: boolean;
   private get command() {

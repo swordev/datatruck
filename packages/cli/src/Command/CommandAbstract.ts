@@ -1,13 +1,13 @@
-import { ConfigType } from "../Config/Config";
-import { FormatType } from "../utils/DataFormat";
+import { Config } from "../Config/Config";
+import { DataFormatType } from "../utils/DataFormat";
 import { OptionsType, parseOptions } from "../utils/cli";
 import { ProgressMode } from "../utils/progress";
 import { Streams, createStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";
 
 export type GlobalOptions<TResolved = false> = {
-  config: string | ConfigType;
-  outputFormat?: FormatType;
+  config: string | Config;
+  outputFormat?: DataFormatType;
   verbose?: number;
   tty?: If<TResolved, "auto" | boolean, "auto" | "true" | "false">;
   progress?: If<

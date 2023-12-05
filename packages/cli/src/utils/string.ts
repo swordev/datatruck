@@ -63,7 +63,7 @@ export function parseStringList<T>(
   return result as T[];
 }
 
-export type UriType = {
+export type Uri = {
   protocol?: "http" | "https";
   host?: string;
   username?: string;
@@ -72,7 +72,7 @@ export type UriType = {
   path?: string;
 };
 
-export function formatUri(input: UriType, hidePassword?: boolean) {
+export function formatUri(input: Uri, hidePassword?: boolean) {
   let uri = "";
   if (input.protocol) {
     uri = `${input.protocol}://`;

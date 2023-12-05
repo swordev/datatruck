@@ -3,7 +3,7 @@ import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import {
-  ResolveDatabaseNameParamsType,
+  ResolveDatabaseNameParams,
   resolveDatabaseName,
 } from "../utils/datatruck/config";
 import {
@@ -20,8 +20,8 @@ import { endsWith } from "../utils/string";
 import { CompressOptions, createTar, extractTar } from "../utils/tar";
 import { mkTmpDir, useTempDir, useTempFile } from "../utils/temp";
 import {
-  SqlDumpTaskConfigType,
-  TargetDatabaseType,
+  SqlDumpTaskConfig,
+  TargetDatabase,
   sqlDumpTaskDefinition,
 } from "./SqlDumpTaskAbstract";
 import {
@@ -30,12 +30,12 @@ import {
   TaskRestoreData,
   TaskAbstract,
 } from "./TaskAbstract";
-import { chmod, mkdir, readdir, rm, writeFile } from "fs/promises";
-import { basename, dirname, join, relative } from "path";
+import { chmod, mkdir, readdir, rm } from "fs/promises";
+import { dirname, join, relative } from "path";
 
 export const mysqlDumpTaskName = "mysql-dump";
 
-export type MysqlDumpTaskConfigType = {
+export type MysqlDumpTaskConfig = {
   /**
    * @default "sql"
    */
@@ -46,7 +46,7 @@ export type MysqlDumpTaskConfigType = {
    */
   concurrency?: number;
   compress?: boolean | CompressOptions;
-} & SqlDumpTaskConfigType;
+} & SqlDumpTaskConfig;
 
 export const mysqlDumpTaskDefinition = sqlDumpTaskDefinition({
   dataFormat: { enum: ["csv", "sql"] },
@@ -65,7 +65,7 @@ const suffix = {
   tableSchema: ".table-schema.sql",
 };
 
-export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
+export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
   override async backup(data: TaskBackupData) {
     const compressAndClean = this.config.compress
       ? async (path: string) => {
@@ -258,7 +258,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
 
     const snapshotPath = data.snapshotPath;
 
-    const params: ResolveDatabaseNameParamsType = {
+    const params: ResolveDatabaseNameParams = {
       packageName: data.package.name,
       snapshotId: data.options.snapshotId,
       snapshotDate: data.snapshot.date,
@@ -266,7 +266,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfigType> {
       database: undefined,
     };
 
-    const database: TargetDatabaseType = {
+    const database: TargetDatabase = {
       name: resolveDatabaseName(this.config.database, params),
     };
 

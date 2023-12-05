@@ -1,5 +1,5 @@
-import { ConfigType } from "../src/Config/Config";
-import { RepositoryConfigType } from "../src/Config/RepositoryConfig";
+import { Config } from "../src/Config/Config";
+import { RepositoryConfig } from "../src/Config/RepositoryConfig";
 import { createDatatruckRepositoryServer } from "../src/utils/datatruck/repository-server";
 import { writeJSONFile } from "../src/utils/fs";
 import { mkTmpDir } from "../src/utils/temp";
@@ -74,7 +74,7 @@ export async function makeDatatruckRepositoryConfig(
     config: {
       backend: backend ?? (await mkTmpDir(`test-${name}`)),
     },
-  } as RepositoryConfigType;
+  } as RepositoryConfig;
 }
 
 export async function makeGitRepositoryConfig(name: string = "git") {
@@ -84,7 +84,7 @@ export async function makeGitRepositoryConfig(name: string = "git") {
     config: {
       repo: await mkTmpDir(`test-${name}`),
     },
-  } as RepositoryConfigType;
+  } as RepositoryConfig;
 }
 
 export async function makeResticRepositoryConfig(name: string = "restic") {
@@ -103,10 +103,10 @@ export async function makeResticRepositoryConfig(name: string = "restic") {
         path: passwordFile,
       },
     },
-  } as RepositoryConfigType;
+  } as RepositoryConfig;
 }
 
-export async function makeConfig(config: ConfigType) {
+export async function makeConfig(config: Config) {
   const dir = await mkTmpDir("test-config");
   const path = join(dir, "datatruck.json");
   await writeJSONFile(path, config);

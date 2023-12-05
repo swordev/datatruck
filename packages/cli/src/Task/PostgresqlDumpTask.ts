@@ -2,8 +2,8 @@ import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { exec } from "../utils/process";
 import {
   SqlDumpTaskAbstract,
-  SqlDumpTaskConfigType,
-  TargetDatabaseType,
+  SqlDumpTaskConfig,
+  TargetDatabase,
 } from "./SqlDumpTaskAbstract";
 import { createWriteStream } from "fs";
 import { JSONSchema7 } from "json-schema";
@@ -11,13 +11,13 @@ import { normalize } from "path";
 
 export const postgresqlDumpTaskName = "postgresql-dump";
 
-export type PostgresqlDumpTaskConfigType = {} & SqlDumpTaskConfigType;
+export type PostgresqlDumpTaskConfig = SqlDumpTaskConfig;
 
 export const postgresqlDumpTaskDefinition: JSONSchema7 = {
   allOf: [makeRef(DefinitionEnum.sqlDumpTask)],
 };
 
-export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskConfigType> {
+export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskConfig> {
   async buildConnectionArgs(database?: string) {
     const password = await this.fetchPassword();
     const config = this.config;
@@ -42,7 +42,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
     return Number(total) ? false : true;
   }
 
-  override async onCreateDatabase(database: TargetDatabaseType) {
+  override async onCreateDatabase(database: TargetDatabase) {
     let query = `CREATE DATABASE ${database.name}`;
     if (database.charset || database.collate) {
       query += ` WITH`;

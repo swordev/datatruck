@@ -1,6 +1,6 @@
 import { GlobalOptions } from "../Command/CommandAbstract";
-import type { ConfigType } from "../Config/Config";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import type { Config } from "../Config/Config";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
 import { schema } from "../JsonSchema/JsonSchema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
@@ -19,7 +19,7 @@ export class ConfigAction<TRequired extends boolean = true> {
     readonly options: IfRequireKeys<TRequired, ConfigActionOptions>,
   ) {}
 
-  static validate(config: ConfigType) {
+  static validate(config: Config) {
     const validate = new Ajv().compile(schema);
     if (!validate(config))
       throw new AppError(
@@ -27,10 +27,10 @@ export class ConfigAction<TRequired extends boolean = true> {
       );
   }
 
-  static check(config: ConfigType) {
+  static check(config: Config) {
     const repositoryNames: string[] = [];
     const mirrorRepoNames: string[] = [];
-    const repos: Record<string, RepositoryConfigType> = {};
+    const repos: Record<string, RepositoryConfig> = {};
     for (const repo of config.repositories) {
       repos[repo.name] = repo;
       if (repositoryNames.includes(repo.name))
@@ -64,7 +64,7 @@ export class ConfigAction<TRequired extends boolean = true> {
     }
   }
 
-  static normalize(config: ConfigType) {
+  static normalize(config: Config) {
     config = Object.assign({}, config);
     config.packages = config.packages.map((pkg) => {
       pkg = Object.assign({}, pkg);
@@ -78,8 +78,8 @@ export class ConfigAction<TRequired extends boolean = true> {
     return config;
   }
 
-  static async parseFile(path: string): Promise<ConfigType> {
-    const config: ConfigType = await parseFile(path, "config");
+  static async parseFile(path: string): Promise<Config> {
+    const config: Config = await parseFile(path, "config");
     ConfigAction.validate(config);
     ConfigAction.check(config);
     return ConfigAction.normalize(config);

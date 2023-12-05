@@ -1,4 +1,4 @@
-import { TaskConfigType } from "../Config/TaskConfig";
+import { TaskConfig } from "../Config/TaskConfig";
 import { AppError } from "../Error/AppError";
 import { GitTask, gitTaskName } from "../Task/GitTask";
 import { MariadbTask, mariadbTaskName } from "../Task/MariadbTask";
@@ -11,7 +11,7 @@ import {
 import { ScriptTask, scriptTaskName } from "../Task/ScriptTask";
 import type { TaskAbstract } from "../Task/TaskAbstract";
 
-export function createTask(task: TaskConfigType): TaskAbstract {
+export function createTask(task: TaskConfig): TaskAbstract {
   if (task.name === gitTaskName) {
     return new GitTask(task.config ?? {});
   } else if (task.name === mariadbTaskName) {

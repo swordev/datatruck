@@ -4,10 +4,10 @@ import { AppError } from "./Error/AppError";
 import {
   CommandEnum,
   CommandFactory,
-  OptionsMapType,
+  OptionsMap,
 } from "./Factory/CommandFactory";
 import globalData from "./globalData";
-import { FormatType } from "./utils/DataFormat";
+import { DataFormatType } from "./utils/DataFormat";
 import { OptionsType, showCursorCommand } from "./utils/cli";
 import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
@@ -120,7 +120,7 @@ program.option(
 program.option(
   "-o,--output-format <format>",
   "Output format (json, pjson, yaml, table, custom=$, tpl=name)",
-  "table" as FormatType,
+  "table" as DataFormatType,
 );
 
 makeCommand(CommandEnum.startServer).alias("start");
@@ -133,9 +133,9 @@ makeCommand(CommandEnum.restore).alias("r");
 makeCommand(CommandEnum.copy).alias("cp");
 makeCommand(CommandEnum.cleanCache).alias("cc");
 
-export function buildArgs<TCommand extends keyof OptionsMapType>(
+export function buildArgs<TCommand extends keyof OptionsMap>(
   input: TCommand,
-  options: OptionsMapType[TCommand],
+  options: OptionsMap[TCommand],
 ) {
   const optionsArray = Object.keys(options).flatMap((name) => [
     `--${snakeCase(name, "-")}`,
@@ -166,9 +166,9 @@ export function parseArgs(args: string[]) {
   });
 }
 
-export async function exec<TCommand extends keyof OptionsMapType>(
+export async function exec<TCommand extends keyof OptionsMap>(
   input: TCommand,
-  options: OptionsMapType[TCommand],
+  options: OptionsMap[TCommand],
 ) {
   const argv = buildArgs(input, options);
   return parseArgs(argv);

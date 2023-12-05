@@ -18,7 +18,7 @@ import {
   RepoFetchSnapshotsData,
   Snapshot,
   SnapshotTagEnum,
-  SnapshotTagObjectType,
+  SnapshotTagObject,
   RepoPruneData,
   RepoCopyData,
 } from "./RepositoryAbstract";
@@ -28,12 +28,12 @@ import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, dirname } from "path";
 
-export type GitRepositoryConfigType = {
+export type GitRepositoryConfig = {
   repo: string;
   branch?: string;
 };
 
-export type GitPackageRepositoryConfigType = {};
+export type GitPackageRepositoryConfig = {};
 
 export const gitRepositoryName = "git";
 
@@ -53,26 +53,23 @@ export const gitPackageRepositoryDefinition: JSONSchema7 = {
   properties: {},
 };
 
-export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
+export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
   static refPrefix = "dt";
 
   override getSource() {
     return this.config.repo;
   }
-  override async fetchDiskStats(config: GitRepositoryConfigType) {
+  override async fetchDiskStats(config: GitRepositoryConfig) {
     if (isLocalDir(config.repo)) return await fetchDiskStats(config.repo);
   }
 
   static buildSnapshotTagName(
-    tag: Pick<
-      SnapshotTagObjectType,
-      SnapshotTagEnum.PACKAGE | SnapshotTagEnum.ID
-    >,
+    tag: Pick<SnapshotTagObject, SnapshotTagEnum.PACKAGE | SnapshotTagEnum.ID>,
   ) {
     return `${GitRepository.refPrefix}/${tag.package}/${tag.id}`;
   }
 
-  static buildSnapshotTag(tag: SnapshotTagObjectType) {
+  static buildSnapshotTag(tag: SnapshotTagObject) {
     return {
       name: GitRepository.buildSnapshotTagName(tag),
       message: JSON.stringify(tag),
@@ -85,7 +82,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
 
   static parseSnapshotTag(name: string, message: string) {
     if (GitRepository.isSnapshotTag(name))
-      return JSON.parse(message) as Omit<SnapshotTagObjectType, "tags"> & {
+      return JSON.parse(message) as Omit<SnapshotTagObject, "tags"> & {
         tags: string[];
       };
     return null;
@@ -199,7 +196,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
       }, [] as Snapshot[])
       .sort((a, b) => a.date.localeCompare(b.date));
   }
-  override async backup(data: RepoBackupData<GitPackageRepositoryConfigType>) {
+  override async backup(data: RepoBackupData<GitPackageRepositoryConfig>) {
     const pkg = data.package;
     const path = pkg.path;
     const tmpPath = await mkTmpDir(gitRepositoryName, "repo", "backup");
@@ -291,12 +288,10 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfigType> {
 
     await rm(tmpPath, { recursive: true });
   }
-  override copy(data: RepoCopyData<GitRepositoryConfigType>): Promise<void> {
+  override copy(data: RepoCopyData<GitRepositoryConfig>): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  override async restore(
-    data: RepoRestoreData<GitPackageRepositoryConfigType>,
-  ) {
+  override async restore(data: RepoRestoreData<GitPackageRepositoryConfig>) {
     const restorePath = data.snapshotPath;
 
     const tagName = GitRepository.buildSnapshotTagName({

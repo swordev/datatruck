@@ -1,17 +1,17 @@
 import { fastFolderSizeAsync } from "./fs";
-import { exec, ExecResultType, ExecSettingsInterface } from "./process";
-import { formatUri, UriType } from "./string";
+import { exec, ExecResult, ExecSettingsInterface } from "./process";
+import { formatUri, Uri } from "./string";
 import { writeFile, readFile } from "fs/promises";
 import { resolve } from "path";
 
-export type RepositoryType = {
+export type ResticRepositoryUri = {
   name?: string;
   env?: Record<string, string>;
   password?: string | { path: string };
   backend: "local" | "rest" | "sftp" | "s3" | "azure" | "gs" | "rclone";
-} & Omit<UriType, "password">;
+} & Omit<Uri, "password">;
 
-export type BackupStreamType =
+export type ResticBackupStream =
   | {
       message_type: "status";
       seconds_elapsed?: number;
@@ -51,7 +51,10 @@ export class Restic {
     },
   ) {}
 
-  static async formatRepository(input: RepositoryType, hidePassword?: boolean) {
+  static async formatRepository(
+    input: ResticRepositoryUri,
+    hidePassword?: boolean,
+  ) {
     if (input.backend === "local") {
       if (typeof input.path !== "string")
         throw new Error(
@@ -212,9 +215,9 @@ export class Restic {
     excludeFile?: string[];
     parent?: string;
     allowEmptySnapshot?: boolean;
-    onStream?: (data: BackupStreamType) => void;
+    onStream?: (data: ResticBackupStream) => void;
     createEmptyDir?: () => Promise<string>;
-  }): Promise<ExecResultType> {
+  }): Promise<ExecResult> {
     const exec = async () =>
       await this.exec(
         [
@@ -237,7 +240,7 @@ export class Restic {
                 for (const rawLine of data.split("\n")) {
                   const line = rawLine.trim();
                   if (line.startsWith("{") && line.endsWith("}")) {
-                    let parsedLine: BackupStreamType | undefined;
+                    let parsedLine: ResticBackupStream | undefined;
                     try {
                       parsedLine = JSON.parse(line);
                     } catch (error) {}
@@ -281,7 +284,7 @@ export class Restic {
 
   async copy(options: {
     id: string;
-    onStream?: (data: BackupStreamType) => Promise<void>;
+    onStream?: (data: ResticBackupStream) => Promise<void>;
   }) {
     return await this.exec(["copy", "--json", options.id], {
       stderr: {
@@ -306,7 +309,7 @@ export class Restic {
      * @default 30_000
      */
     progressInterval?: number | false;
-    onStream?: (data: BackupStreamType) => Promise<void>;
+    onStream?: (data: ResticBackupStream) => Promise<void>;
   }) {
     let progressTimeout: NodeJS.Timeout | undefined;
     const progressInterval = options.progressInterval ?? 30_000;

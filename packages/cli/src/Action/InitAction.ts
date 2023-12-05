@@ -1,4 +1,4 @@
-import type { ConfigType } from "../Config/Config";
+import type { Config } from "../Config/Config";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { filterRepository } from "../utils/datatruck/config";
 import { IfRequireKeys } from "../utils/ts";
@@ -11,7 +11,7 @@ export type InitActionOptions = {
 
 export class InitAction<TRequired extends boolean = true> {
   constructor(
-    readonly config: ConfigType,
+    readonly config: Config,
     readonly options: IfRequireKeys<TRequired, InitActionOptions>,
   ) {}
 

@@ -1,4 +1,4 @@
-import type { RepositoryConfigType } from "../Config/RepositoryConfig";
+import type { RepositoryConfig } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
 import {
   DatatruckRepository,
@@ -12,7 +12,7 @@ import {
 } from "../Repository/ResticRepository";
 
 export function createRepo(
-  repository: RepositoryConfigType,
+  repository: RepositoryConfig,
 ): RepositoryAbstract<any> {
   const type = repository.type;
   if (type === gitRepositoryName) {

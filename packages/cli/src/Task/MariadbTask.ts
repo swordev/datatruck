@@ -25,7 +25,7 @@ import { JSONSchema7 } from "json-schema";
 import { cpus } from "os";
 import { join } from "path";
 
-export type MariadbTaskConfigType = {
+export type MariadbTaskConfig = {
   command?: string;
   hostname: string;
   username: string;
@@ -107,7 +107,7 @@ export const mariadbTaskDefinition: JSONSchema7 = {
 };
 
 function normalizeConfig(
-  input: Pick<MariadbTaskConfigType, "compress" | "parallel">,
+  input: Pick<MariadbTaskConfig, "compress" | "parallel">,
 ) {
   let parallel = input.parallel ?? "auto";
   let cores = cpus().length;
@@ -151,7 +151,7 @@ function parseLine(line: string): {
   }
 }
 
-export class MariadbTask extends TaskAbstract<MariadbTaskConfigType> {
+export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
   protected verbose?: boolean;
   private get command() {
     return this.config.command ?? "mariabackup";

@@ -1,4 +1,4 @@
-import { ConfigType } from "../../../src/Config/Config";
+import { Config } from "../../../src/Config/Config";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -11,7 +11,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("filterPackages", () => {
-  const config: ConfigType = {
+  const config: Config = {
     packages: [
       {
         name: "a",
@@ -106,7 +106,7 @@ describe("filterPackages", () => {
   });
 
   it("returns enabled", () => {
-    let config2: ConfigType = {
+    let config2: Config = {
       ...config,
       packages: [
         {
@@ -125,7 +125,7 @@ describe("filterPackages", () => {
 });
 
 describe("findRepositoryOrFail", () => {
-  const config: ConfigType = {
+  const config: Config = {
     packages: [],
     repositories: [
       {

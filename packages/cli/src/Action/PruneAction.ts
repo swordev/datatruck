@@ -1,5 +1,5 @@
-import type { ConfigType } from "../Config/Config";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import type { Config } from "../Config/Config";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { KeepObject, createFilterByLastOptions } from "../utils/date";
@@ -15,7 +15,7 @@ export type PruneActionsOptions = KeepObject & {
   ids?: string[];
   packageNames?: string[];
   repositoryNames?: string[];
-  repositoryTypes?: RepositoryConfigType["type"][];
+  repositoryTypes?: RepositoryConfig["type"][];
   tags?: string[];
   verbose?: boolean;
   groupBy?: SnapshotsActionOptions["groupBy"];
@@ -34,7 +34,7 @@ export type PruneResult = {
 
 export class PruneAction<TRequired extends boolean = true> {
   constructor(
-    readonly config: ConfigType,
+    readonly config: Config,
     readonly options: IfRequireKeys<TRequired, PruneActionsOptions>,
   ) {}
 

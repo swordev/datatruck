@@ -1,32 +1,29 @@
-import { ConfigType } from "../../Config/Config";
-import type { PackageConfigType } from "../../Config/PackageConfig";
+import { Config } from "../../Config/Config";
+import type { PackageConfig } from "../../Config/PackageConfig";
 import {
-  RepositoryConfigEnabledActionType,
-  RepositoryConfigType,
+  RepositoryConfigEnabledAction,
+  RepositoryConfig,
 } from "../../Config/RepositoryConfig";
 import { AppError } from "../../Error/AppError";
 import { checkMatch, makePathPatterns, render } from "../string";
 import { tmpDir } from "../temp";
 import { isMatch } from "micromatch";
 
-export function findRepositoryOrFail(
-  config: ConfigType,
-  repositoryName: string,
-) {
+export function findRepositoryOrFail(config: Config, repositoryName: string) {
   const repo = config.repositories.find((v) => v.name === repositoryName);
   if (!repo) throw new AppError(`Repository '${repositoryName}' not found`);
   return repo;
 }
 
-export function findPackageOrFail(config: ConfigType, packageName: string) {
+export function findPackageOrFail(config: Config, packageName: string) {
   const pkg = config.packages.find((v) => v.name === packageName);
   if (!pkg) throw new AppError(`Package '${packageName}' not found`);
   return pkg;
 }
 
 export function ensureSameRepositoryType(
-  a: RepositoryConfigType,
-  b: RepositoryConfigType,
+  a: RepositoryConfig,
+  b: RepositoryConfig,
 ) {
   if (a.type !== b.type) {
     const names = [a.name, b.name].join(" and ");
@@ -38,8 +35,8 @@ export function ensureSameRepositoryType(
 }
 
 export function filterRepository(
-  repository: RepositoryConfigType,
-  action?: RepositoryConfigEnabledActionType,
+  repository: RepositoryConfig,
+  action?: RepositoryConfigEnabledAction,
 ) {
   const enabled = repository.enabled ?? true;
   if (typeof enabled === "boolean") return enabled;
@@ -48,13 +45,13 @@ export function filterRepository(
 }
 
 export function filterPackages(
-  config: ConfigType,
+  config: Config,
   options: {
     packageNames?: string[];
     packageTaskNames?: string[];
     repositoryNames?: string[];
     repositoryTypes?: string[];
-    sourceAction?: RepositoryConfigEnabledActionType;
+    sourceAction?: RepositoryConfigEnabledAction;
   },
 ) {
   const packagePatterns = makePathPatterns(options.packageNames);
@@ -86,14 +83,14 @@ export function filterPackages(
     });
 }
 
-type ResolvePackagePathParamsType = ResolvePackageParamsType & {
+type ResolvePackagePathParams = ResolvePackageParams & {
   packageName: string;
   path: string | undefined;
 };
 
 export function resolvePackagePath(
   value: string,
-  params: ResolvePackagePathParamsType,
+  params: ResolvePackagePathParams,
 ) {
   return render(value, {
     ...params,
@@ -103,27 +100,27 @@ export function resolvePackagePath(
   });
 }
 
-export type ResolveDatabaseNameParamsType = ResolvePackageParamsType & {
+export type ResolveDatabaseNameParams = ResolvePackageParams & {
   packageName: string;
   database: string | undefined;
 };
 
 export function resolveDatabaseName(
   value: string,
-  params: ResolveDatabaseNameParamsType,
+  params: ResolveDatabaseNameParams,
 ) {
   return render(value, params);
 }
 
-type ResolvePackageParamsType = {
+type ResolvePackageParams = {
   snapshotId: string;
   snapshotDate: string;
   action: "backup" | "restore";
 };
 
 export function resolvePackage(
-  pkg: PackageConfigType,
-  params: ResolvePackageParamsType,
+  pkg: PackageConfig,
+  params: ResolvePackageParams,
 ) {
   pkg = Object.assign({}, pkg);
   const pkgParams = {
@@ -149,16 +146,14 @@ export function resolvePackage(
 }
 
 export function resolvePackages(
-  packages: PackageConfigType[],
-  params: ResolvePackageParamsType,
+  packages: PackageConfig[],
+  params: ResolvePackageParams,
 ) {
   return packages.map((pkg) => resolvePackage(pkg, params));
 }
 
 export const pkgPathParams: {
-  [name in
-    | "temp"
-    | Exclude<keyof ResolvePackagePathParamsType, "path">]: string;
+  [name in "temp" | Exclude<keyof ResolvePackagePathParams, "path">]: string;
 } = {
   action: "{action}",
   packageName: "{packageName}",
@@ -171,7 +166,7 @@ export const pkgIncludeParams = pkgPathParams;
 export const pkgExcludeParams = pkgPathParams;
 
 export const pkgRestorePathParams: {
-  [name in "temp" | keyof ResolvePackagePathParamsType]: string;
+  [name in "temp" | keyof ResolvePackagePathParams]: string;
 } = {
   action: "{action}",
   packageName: "{packageName}",
@@ -182,7 +177,7 @@ export const pkgRestorePathParams: {
 };
 
 export const dbNameParams: {
-  [name in keyof ResolveDatabaseNameParamsType]: string;
+  [name in keyof ResolveDatabaseNameParams]: string;
 } = {
   action: "{action}",
   packageName: "{packageName}",

@@ -1,14 +1,14 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import {
-  DatatruckPackageRepositoryConfigType,
+  DatatruckPackageRepositoryConfig,
   datatruckRepositoryName,
 } from "../Repository/DatatruckRepository";
 import {
-  GitPackageRepositoryConfigType,
+  GitPackageRepositoryConfig,
   gitRepositoryName,
 } from "../Repository/GitRepository";
 import {
-  ResticPackageRepositoryConfigType,
+  ResticPackageRepositoryConfig,
   resticRepositoryName,
 } from "../Repository/ResticRepository";
 import type { JSONSchema7 } from "json-schema";
@@ -48,19 +48,19 @@ export const packageRepositoryConfigDefinition: JSONSchema7 = {
   ),
 };
 
-export type PackageRepositoryConfigType = {
+export type PackageRepositoryConfig = {
   names?: string[];
 } & (
   | {
       type: typeof resticRepositoryName;
-      config: ResticPackageRepositoryConfigType;
+      config: ResticPackageRepositoryConfig;
     }
   | {
       type: typeof datatruckRepositoryName;
-      config: DatatruckPackageRepositoryConfigType;
+      config: DatatruckPackageRepositoryConfig;
     }
   | {
       type: typeof gitRepositoryName;
-      config: GitPackageRepositoryConfigType;
+      config: GitPackageRepositoryConfig;
     }
 );

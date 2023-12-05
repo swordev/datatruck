@@ -20,7 +20,7 @@ import { isMatch } from "micromatch";
 import { join } from "path";
 import { createInterface } from "readline";
 
-export type GitTaskConfigType = {
+export type GitTaskConfig = {
   command?: string;
   /**
    * @default true
@@ -87,7 +87,7 @@ export const gitTaskDefinition: JSONSchema7 = {
   },
 };
 
-export class GitTask extends TaskAbstract<GitTaskConfigType> {
+export class GitTask extends TaskAbstract<GitTaskConfig> {
   protected verbose?: boolean;
   private get command() {
     return this.config.command ?? "git";

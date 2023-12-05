@@ -1,16 +1,13 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
-import { GitTaskConfigType, gitTaskName } from "../Task/GitTask";
-import { MariadbTaskConfigType, mariadbTaskName } from "../Task/MariadbTask";
-import { MssqlTaskConfigType, mssqlTaskName } from "../Task/MssqlTask";
+import { GitTaskConfig, gitTaskName } from "../Task/GitTask";
+import { MariadbTaskConfig, mariadbTaskName } from "../Task/MariadbTask";
+import { MssqlTaskConfig, mssqlTaskName } from "../Task/MssqlTask";
+import { MysqlDumpTaskConfig, mysqlDumpTaskName } from "../Task/MysqlDumpTask";
 import {
-  MysqlDumpTaskConfigType,
-  mysqlDumpTaskName,
-} from "../Task/MysqlDumpTask";
-import {
-  PostgresqlDumpTaskConfigType,
+  PostgresqlDumpTaskConfig,
   postgresqlDumpTaskName,
 } from "../Task/PostgresqlDumpTask";
-import { ScriptTaskConfigType, scriptTaskName } from "../Task/ScriptTask";
+import { ScriptTaskConfig, scriptTaskName } from "../Task/ScriptTask";
 import { JSONSchema7 } from "json-schema";
 
 const names: Record<string, DefinitionEnum> = {
@@ -49,28 +46,28 @@ export const taskConfigDefinition: JSONSchema7 = {
   ),
 };
 
-export type TaskConfigType =
+export type TaskConfig =
   | {
       name: typeof gitTaskName;
-      config?: GitTaskConfigType;
+      config?: GitTaskConfig;
     }
   | {
       name: typeof mariadbTaskName;
-      config: MariadbTaskConfigType;
+      config: MariadbTaskConfig;
     }
   | {
       name: typeof mssqlTaskName;
-      config: MssqlTaskConfigType;
+      config: MssqlTaskConfig;
     }
   | {
       name: typeof mysqlDumpTaskName;
-      config: MysqlDumpTaskConfigType;
+      config: MysqlDumpTaskConfig;
     }
   | {
       name: typeof postgresqlDumpTaskName;
-      config: PostgresqlDumpTaskConfigType;
+      config: PostgresqlDumpTaskConfig;
     }
   | {
       name: typeof scriptTaskName;
-      config: ScriptTaskConfigType;
+      config: ScriptTaskConfig;
     };

@@ -13,7 +13,9 @@ import { stat } from "fs/promises";
 import { createInterface } from "readline";
 import { Readable, Writable } from "stream";
 
-export type ExecLogSettingsType = {
+export type ProcessEnv = Record<string, string>;
+
+export type ExecLogSettings = {
   colorize?: boolean;
   exec?: boolean;
   stdout?: boolean;
@@ -40,7 +42,7 @@ export interface ExecSettingsInterface {
     | {
         stream: Readable;
       };
-  log?: ExecLogSettingsType | boolean;
+  log?: ExecLogSettings | boolean;
   onSpawn?: (p: ChildProcess) => void | undefined;
   stdout?: {
     save?: boolean;
@@ -53,7 +55,7 @@ export interface ExecSettingsInterface {
     onData?: (data: string) => void;
     toExitCode?: boolean;
   };
-  onExitCodeError?: (data: ExecResultType, error: Error) => Error | false;
+  onExitCodeError?: (data: ExecResult, error: Error) => Error | false;
 }
 
 export function logExecStdout(input: {
@@ -71,7 +73,7 @@ export function logExecStderr(data: string, colorize?: boolean) {
   process.stdout.write(colorize ? chalk.red(data) : data);
 }
 
-export type ExecResultType = {
+export type ExecResult = {
   stdout: string;
   stderr: string;
   exitCode: number;
@@ -318,7 +320,7 @@ export async function exec(
   settings: ExecSettingsInterface = {},
 ) {
   const pipe = settings.pipe;
-  let log: ExecLogSettingsType = {};
+  let log: ExecLogSettings = {};
   if (settings.log === true) {
     log.exec = log.stdout = log.stderr = log.allToStderr = log.colorize = true;
   } else if (settings.log) {
@@ -352,7 +354,7 @@ export async function exec(
   const p = spawn(command, argv, options ?? {});
   settings.onSpawn?.(p);
   let spawnError: Error;
-  const spawnData: ExecResultType = {
+  const spawnData: ExecResult = {
     stdout: "",
     stderr: "",
     exitCode: 0,
@@ -365,14 +367,14 @@ export async function exec(
 
   let streamError: Error | undefined;
 
-  return new Promise<ExecResultType>((resolve, reject) => {
+  return new Promise<ExecResult>((resolve, reject) => {
     const tryFinish = () => {
       if (!--finishListeners) finish();
     };
     const finish = () => {
       if (spawnData.exitCode) {
         let exitCodeError:
-          | ((data: ExecResultType, error?: Error) => Error)
+          | ((data: ExecResult, error?: Error) => Error)
           | false
           | Error
           | undefined;

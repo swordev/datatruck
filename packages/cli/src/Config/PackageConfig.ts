@@ -1,9 +1,9 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
 import { Step } from "../utils/steps";
-import { PackageRepositoryConfigType } from "./PackageRepositoryConfig";
-import { PrunePolicyConfigType } from "./PrunePolicyConfig";
-import type { TaskConfigType } from "./TaskConfig";
+import { PackageRepositoryConfig } from "./PackageRepositoryConfig";
+import { PrunePolicyConfig } from "./PrunePolicyConfig";
+import type { TaskConfig } from "./TaskConfig";
 import { JSONSchema7 } from "json-schema";
 
 export const packageConfigDefinition: JSONSchema7 = {
@@ -53,13 +53,15 @@ export const packageConfigDefinition: JSONSchema7 = {
   },
 };
 
-export type PackageConfigType = {
+export type Meta = Record<string, any>;
+
+export type PackageConfig = {
   name: string;
   enabled?: boolean;
-  task?: TaskConfigType;
+  task?: TaskConfig;
   path?: string;
   restorePath?: string;
-  meta?: Record<string, any>;
+  meta?: Meta;
   restorePermissions?: {
     uid: string | number;
     gid: string | number;
@@ -67,6 +69,6 @@ export type PackageConfigType = {
   include?: (string | Step)[];
   exclude?: (string | Step)[];
   repositoryNames?: string[];
-  prunePolicy?: PrunePolicyConfigType;
-  repositoryConfigs?: PackageRepositoryConfigType[];
+  prunePolicy?: PrunePolicyConfig;
+  repositoryConfigs?: PackageRepositoryConfig[];
 };

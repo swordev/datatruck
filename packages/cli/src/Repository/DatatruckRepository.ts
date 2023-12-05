@@ -37,7 +37,7 @@ import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
 
-export type MetaDataType = {
+export type MetaData = {
   id: string;
   date: string;
   package: string;
@@ -48,7 +48,7 @@ export type MetaDataType = {
   tarStats?: Record<string, { files: number; size: number; checksum: string }>;
 };
 
-export type DatatruckRepositoryConfigType = {
+export type DatatruckRepositoryConfig = {
   backend: string;
   compress?: boolean | CompressOptions;
 };
@@ -61,7 +61,7 @@ type PackObject = {
   onePackByResult?: boolean;
 };
 
-export type DatatruckPackageRepositoryConfigType = {
+export type DatatruckPackageRepositoryConfig = {
   compress?: boolean | CompressOptions;
   packs?: PackObject[];
 };
@@ -106,7 +106,7 @@ export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
   },
 };
 
-export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfigType> {
+export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfig> {
   static zipBasenameTpl = `.*.dd.tar.gz`;
 
   static buildSnapshotName(
@@ -132,7 +132,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return { snapshotDate, packageName, snapshotShortId, sourcePath: name };
   }
 
-  static async parseMetaData(data: string): Promise<MetaDataType> {
+  static async parseMetaData(data: string): Promise<MetaData> {
     return JSON.parse(data.toString());
   }
 
@@ -140,7 +140,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return this.config.backend;
   }
 
-  override fetchDiskStats(config: DatatruckRepositoryConfigType) {
+  override fetchDiskStats(config: DatatruckRepositoryConfig) {
     const fs = createFs(config.backend);
     return fs.fetchDiskStats(".");
   }
@@ -227,7 +227,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async backup(
-    data: RepoBackupData<DatatruckPackageRepositoryConfigType>,
+    data: RepoBackupData<DatatruckPackageRepositoryConfig>,
   ) {
     const fs = createFs(this.config.backend);
     const snapshotName = DatatruckRepository.buildSnapshotName(
@@ -320,7 +320,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     await stream.end();
 
     let packIndex = 0;
-    const tarStats: NonNullable<MetaDataType["tarStats"]> = {};
+    const tarStats: NonNullable<MetaData["tarStats"]> = {};
 
     for (const pack of packs) {
       const packBasename =
@@ -370,7 +370,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const metaPath = `${snapshotName}/meta.json`;
     const nodePkg = parsePackageFile();
-    const meta: MetaDataType = {
+    const meta: MetaData = {
       id: data.snapshot.id,
       date: data.snapshot.date,
       tags: data.options.tags ?? [],
@@ -389,7 +389,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async copy(
-    data: RepoCopyData<DatatruckRepositoryConfigType>,
+    data: RepoCopyData<DatatruckRepositoryConfig>,
   ): Promise<void> {
     const sourceFs = createFs(this.config.backend);
     const targetFs = createFs(data.mirrorRepositoryConfig.backend);
@@ -477,7 +477,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async restore(
-    data: RepoRestoreData<DatatruckPackageRepositoryConfigType>,
+    data: RepoRestoreData<DatatruckPackageRepositoryConfig>,
   ) {
     const fs = createFs(this.config.backend);
     const relRestorePath = data.snapshotPath;

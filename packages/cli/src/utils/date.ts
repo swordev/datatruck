@@ -9,7 +9,7 @@ dayjs.extend(advancedFormat);
 dayjs.extend($duration);
 dayjs.extend(customParseFormat);
 
-export type FilterByLastOptionsType = {
+export type FilterByLastOptions = {
   last?: number;
   lastMinutely?: number;
   lastHourly?: number;
@@ -31,7 +31,7 @@ export type KeepObject = {
 
 export function createFilterByLastOptions(
   keep: KeepObject,
-): FilterByLastOptionsType {
+): FilterByLastOptions {
   return {
     last: keep.keepLast,
     lastMinutely: keep.keepMinutely,
@@ -45,7 +45,7 @@ export function createFilterByLastOptions(
 
 export function filterByLast<TItem extends { date: string }>(
   items: TItem[],
-  options: FilterByLastOptionsType,
+  options: FilterByLastOptions,
 ): { item: TItem; reasons: string[] }[] {
   const filters: {
     [name in keyof typeof options]: {

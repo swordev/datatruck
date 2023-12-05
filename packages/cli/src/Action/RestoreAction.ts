@@ -1,5 +1,5 @@
-import type { ConfigType } from "../Config/Config";
-import { PackageConfigType } from "../Config/PackageConfig";
+import type { Config } from "../Config/Config";
+import { PackageConfig } from "../Config/PackageConfig";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
@@ -52,7 +52,7 @@ export class RestoreAction<TRequired extends boolean = true> {
   protected repoErrors: Record<string, Error[]> = {};
 
   constructor(
-    readonly config: ConfigType,
+    readonly config: Config,
     readonly options: IfRequireKeys<TRequired, RestoreActionOptions>,
   ) {}
 
@@ -110,7 +110,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
   }
   protected async restore(data: {
-    pkg: PackageConfigType;
+    pkg: PackageConfig;
     task: TaskAbstract | undefined;
     snapshot: RestoreSnapshot;
     gc: GargabeCollector;

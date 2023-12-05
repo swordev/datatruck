@@ -1,7 +1,7 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { PruneAction } from "../Action/PruneAction";
 import { SnapshotGroupByType } from "../Action/SnapshotsAction";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { confirm } from "../utils/cli";
 import { KeepObject } from "../utils/date";
@@ -14,7 +14,7 @@ export type PruneCommandOptions<TResolved = false> = KeepObject & {
   longId?: boolean;
   package?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
+  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
   tag?: If<TResolved, string[]>;
   groupBy?: If<TResolved, SnapshotGroupByType[]>;
   dryRun?: boolean;

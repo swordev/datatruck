@@ -1,14 +1,14 @@
 import { SnapshotGroupByType } from "../../Action/SnapshotsAction";
 import { Snapshot } from "../../Repository/RepositoryAbstract";
-import { filterByLast, FilterByLastOptionsType } from "../date";
+import { filterByLast, FilterByLastOptions } from "../date";
 import { groupBy } from "../object";
 
 export function groupAndFilter<TSnapshot extends Snapshot>(
   snapshots: TSnapshot[],
   groupKeys?: SnapshotGroupByType[],
   inFilter?:
-    | FilterByLastOptionsType
-    | ((group: TSnapshot[]) => FilterByLastOptionsType | string),
+    | FilterByLastOptions
+    | ((group: TSnapshot[]) => FilterByLastOptions | string),
 ): {
   item: TSnapshot;
   reasons: string[];

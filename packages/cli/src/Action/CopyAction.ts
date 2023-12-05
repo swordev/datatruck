@@ -1,4 +1,4 @@
-import type { ConfigType } from "../Config/Config";
+import type { Config } from "../Config/Config";
 import { createRepo } from "../Factory/RepositoryFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
@@ -17,7 +17,7 @@ import { ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import chalk from "chalk";
 
-export type CopyActionOptionsType = {
+export type CopyActionOptions = {
   ids?: string[];
   last?: number;
   repositoryName: string;
@@ -48,8 +48,8 @@ export type Context = {
 
 export class CopyAction<TRequired extends boolean = true> {
   constructor(
-    readonly config: ConfigType,
-    readonly options: IfRequireKeys<TRequired, CopyActionOptionsType>,
+    readonly config: Config,
+    readonly options: IfRequireKeys<TRequired, CopyActionOptions>,
   ) {}
   dataFormat(
     result: Listr3TaskResultEnd<Context>[],

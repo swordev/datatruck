@@ -1,14 +1,14 @@
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import {
-  DatatruckRepositoryConfigType,
+  DatatruckRepositoryConfig,
   datatruckRepositoryName,
 } from "../Repository/DatatruckRepository";
 import {
-  GitRepositoryConfigType,
+  GitRepositoryConfig,
   gitRepositoryName,
 } from "../Repository/GitRepository";
 import {
-  ResticRepositoryConfigType,
+  ResticRepositoryConfig,
   resticRepositoryName,
 } from "../Repository/ResticRepository";
 import type { JSONSchema7 } from "json-schema";
@@ -74,34 +74,34 @@ export const repositoryConfigDefinition: JSONSchema7 = {
   ),
 };
 
-export type RepositoryConfigTypeType = RepositoryConfigType["type"];
+export type RepositoryConfigType = RepositoryConfig["type"];
 
-export type RepositoryConfigEnabledActionType =
+export type RepositoryConfigEnabledAction =
   | "backup"
   | "init"
   | "prune"
   | "restore"
   | "snapshots";
 
-export type RepositoryConfigType = {
+export type RepositoryEnabledObject = {
+  [K in "defaults" | RepositoryConfigEnabledAction]?: boolean;
+};
+
+export type RepositoryConfig = {
   name: string;
   mirrorRepoNames?: string[];
-  enabled?:
-    | boolean
-    | {
-        [K in "defaults" | RepositoryConfigEnabledActionType]?: boolean;
-      };
+  enabled?: boolean | RepositoryEnabledObject;
 } & (
   | {
       type: typeof resticRepositoryName;
-      config: ResticRepositoryConfigType;
+      config: ResticRepositoryConfig;
     }
   | {
       type: typeof datatruckRepositoryName;
-      config: DatatruckRepositoryConfigType;
+      config: DatatruckRepositoryConfig;
     }
   | {
       type: typeof gitRepositoryName;
-      config: GitRepositoryConfigType;
+      config: GitRepositoryConfig;
     }
 );

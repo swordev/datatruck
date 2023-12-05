@@ -1,20 +1,18 @@
 import { post } from "./http";
-import { exec } from "./process";
+import { ProcessEnv, exec } from "./process";
 import { render } from "./string";
 import { mkTmpDir } from "./temp";
 import { writeFile } from "fs/promises";
 import { join } from "path";
 
-export type StepEnv = Record<string, string>;
-
 export type ProcessStepConfig = {
   command: string;
-  env?: StepEnv;
+  env?: ProcessEnv;
   args?: string[];
 };
 
 export type NodeStepConfig = {
-  env?: StepEnv;
+  env?: ProcessEnv;
   vars?: Record<string, any>;
   code: string | string[];
 };

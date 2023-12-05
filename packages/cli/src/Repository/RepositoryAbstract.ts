@@ -5,8 +5,8 @@ import type {
   ExtendedSnapshot,
   SnapshotsActionOptions,
 } from "../Action/SnapshotsAction";
-import type { PackageConfigType } from "../Config/PackageConfig";
-import type { RepositoryConfigType } from "../Config/RepositoryConfig";
+import type { PackageConfig } from "../Config/PackageConfig";
+import type { RepositoryConfig } from "../Config/RepositoryConfig";
 import { ensureFreeDiskSpace, type DiskStats } from "../utils/fs";
 import type { Progress } from "../utils/progress";
 
@@ -37,7 +37,7 @@ export type RepoFetchSnapshotsData = {
 export type RepoCopyData<TRepositoryConfig> = {
   options: BackupActionOptions;
   snapshot: PreSnapshot;
-  package: PackageConfigType;
+  package: PackageConfig;
   mirrorRepositoryConfig: TRepositoryConfig;
   onProgress: (data: Progress) => void;
 };
@@ -45,7 +45,7 @@ export type RepoCopyData<TRepositoryConfig> = {
 export type RepoBackupData<TPackageConfig> = {
   options: BackupActionOptions;
   snapshot: PreSnapshot;
-  package: Omit<PackageConfigType, "path"> & { path: string };
+  package: Omit<PackageConfig, "path"> & { path: string };
   packageConfig: TPackageConfig | undefined;
   onProgress: (data: Progress) => void;
 };
@@ -53,7 +53,7 @@ export type RepoBackupData<TPackageConfig> = {
 export type RepoRestoreData<TPackageConfig> = {
   options: RestoreActionOptions;
   snapshot: PreSnapshot;
-  package: PackageConfigType;
+  package: PackageConfig;
   snapshotPath: string;
   packageConfig: TPackageConfig;
   onProgress: (data: Progress) => void;
@@ -75,7 +75,7 @@ export enum SnapshotTagEnum {
   SIZE = "size",
 }
 
-export type SnapshotTagObjectType = {
+export type SnapshotTagObject = {
   [SnapshotTagEnum.ID]: string;
   [SnapshotTagEnum.SHORT_ID]: string;
   [SnapshotTagEnum.DATE]: string;
@@ -88,7 +88,7 @@ export type SnapshotTagObjectType = {
 
 export abstract class RepositoryAbstract<TConfig> {
   readonly config: TConfig;
-  constructor(readonly repository: RepositoryConfigType) {
+  constructor(readonly repository: RepositoryConfig) {
     this.config = repository.config as never;
   }
   abstract getSource(): string;

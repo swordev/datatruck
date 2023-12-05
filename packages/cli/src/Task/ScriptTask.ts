@@ -1,4 +1,4 @@
-import { PackageConfigType } from "../Config/PackageConfig";
+import { PackageConfig } from "../Config/PackageConfig";
 import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { Step, runSteps } from "../utils/steps";
@@ -14,12 +14,12 @@ import { JSONSchema7 } from "json-schema";
 type NodeVars = {
   dtt: {
     snapshot: PreSnapshot;
-    package: PackageConfigType;
+    package: PackageConfig;
     snapshotPath: string;
   };
 };
 
-export type ScriptTaskConfigType = {
+export type ScriptTaskConfig = {
   env?: Record<string, string | undefined>;
   backupSteps: Step[];
   restoreSteps: Step[];
@@ -148,7 +148,7 @@ export const scriptTaskDefinition: JSONSchema7 = {
   },
 };
 
-export class ScriptTask extends TaskAbstract<ScriptTaskConfigType> {
+export class ScriptTask extends TaskAbstract<ScriptTaskConfig> {
   protected verbose?: boolean;
   override async backup(data: TaskBackupData) {
     const config = this.config;

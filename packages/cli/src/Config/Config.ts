@@ -2,24 +2,25 @@ import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { backupCommandOptionDef } from "../JsonSchema/backup-def";
 import { copyCommandOptionsDef } from "../JsonSchema/copy-def";
 import { ScriptTaskDefinitionEnum } from "../Task/ScriptTask";
-import { FormatType, dataFormats } from "../utils/DataFormat";
+import { DataFormatType, dataFormats } from "../utils/DataFormat";
 import { DatatruckCronServerOptions } from "../utils/datatruck/cron-server";
 import { DatatruckRepositoryServerOptions } from "../utils/datatruck/repository-server";
 import { createCaseSchema, omitPropertySchema } from "../utils/schema";
 import { Step } from "../utils/steps";
-import { PackageConfigType } from "./PackageConfig";
-import { PrunePolicyConfigType } from "./PrunePolicyConfig";
-import { RepositoryConfigType } from "./RepositoryConfig";
+import { PackageConfig } from "./PackageConfig";
+import { PrunePolicyConfig } from "./PrunePolicyConfig";
+import { RepositoryConfig } from "./RepositoryConfig";
 import type { JSONSchema7 } from "json-schema";
 
-export type ConfigType = {
+export type Config = {
+  $schema?: string;
   tempDir?: string;
   minFreeDiskSpace?: string | number;
-  repositories: RepositoryConfigType[];
-  packages: PackageConfigType[];
+  repositories: RepositoryConfig[];
+  packages: PackageConfig[];
   server?: DatatruckServerOptions;
   reports?: ReportConfig[];
-  prunePolicy?: PrunePolicyConfigType;
+  prunePolicy?: PrunePolicyConfig;
 };
 
 export type DatatruckServerOptions = {
@@ -30,7 +31,7 @@ export type DatatruckServerOptions = {
 
 export type ReportConfig = {
   when?: "success" | "error";
-  format?: Exclude<FormatType, "custom" | "tpl">;
+  format?: Exclude<DataFormatType, "custom" | "tpl">;
   run: Step;
 };
 

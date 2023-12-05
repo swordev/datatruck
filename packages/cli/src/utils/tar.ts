@@ -17,14 +17,14 @@ export type CoresOptions = number | { percent: number };
 export type CompressOptions = {
   level?: number;
   /**
-   * @default {percent:50}
+   * @default {{ "percent": 50 }}
    */
   cores?: CoresOptions;
 };
 
 export type DecompressOptions = {
   /**
-   * @default {percent:50}
+   * @default {{ "percent": 50 }}
    */
   cores?: CoresOptions;
 };

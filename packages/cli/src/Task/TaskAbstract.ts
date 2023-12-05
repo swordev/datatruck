@@ -1,11 +1,11 @@
 import { BackupActionOptions } from "../Action/BackupAction";
 import { RestoreActionOptions } from "../Action/RestoreAction";
-import { PackageConfigType } from "../Config/PackageConfig";
+import { PackageConfig } from "../Config/PackageConfig";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { Progress } from "../utils/progress";
 
 type TaskCommonData = {
-  package: PackageConfigType;
+  package: PackageConfig;
   snapshot: PreSnapshot;
 };
 

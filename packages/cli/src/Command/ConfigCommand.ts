@@ -1,5 +1,5 @@
 import { ConfigAction } from "../Action/ConfigAction";
-import { RepositoryConfigType } from "../Config/RepositoryConfig";
+import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { filterPackages } from "../utils/datatruck/config";
 import { parseStringList } from "../utils/string";
@@ -10,7 +10,7 @@ export type ConfigCommandOptions<TResolved = false> = {
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
   repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfigType["type"][]>;
+  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
 };
 
 export type ConfigCommandResult = Unwrap<ConfigAction["exec"]>;
