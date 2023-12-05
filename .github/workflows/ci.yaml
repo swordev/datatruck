@@ -34,8 +34,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: pnpm build
       - name: Setup system config
         run: git config --global user.email "datatruck@localhost" && git config --global user.name "Datatruck"
       - name: Install system dependencies
@@ -46,8 +45,6 @@ jobs:
         run: sudo npm test
         env:
           CI: true
-      - name: Build
-        run: pnpm build
       - name: Create release pull request or publish to npm
         id: changesets
         uses: changesets/action@v1
