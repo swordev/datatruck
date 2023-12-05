@@ -25,7 +25,6 @@ RUN set -x \
     && npm install -g pnpm@8 \
     && pnpm install \
     && pnpm build \
-    && pnpm compose \
     && echo "#!/bin/sh" > $BIN_PATH \
     && echo "node /var/lib/datatruck/packages/cli/lib/bin.js \"\$@\"" >> $BIN_PATH \
     && cp "/var/lib/datatruck/docker/docker-entrypoint.sh" $ENTRYPOINT_PATH \
