@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.32.2
+
+### Patch Changes
+
+- [`c559977`](https://github.com/swordev/datatruck/commit/c55997743c9c142e0c344024b41b96e815f14726) Thanks [@juanrgm](https://github.com/juanrgm)! - Refactor step configs
+
+- [`2bfa7de`](https://github.com/swordev/datatruck/commit/2bfa7de75de7ccd869068a455e38fbfeb3053be7) Thanks [@juanrgm](https://github.com/juanrgm)! - Update deps
+
 ## 0.32.1
 
 ### Patch Changes
