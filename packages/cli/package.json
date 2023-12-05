@@ -33,22 +33,22 @@
   "dependencies": {
     "@supercharge/promise-pool": "^3.1.0",
     "ajv": "^8.12.0",
-    "async": "^3.2.4",
+    "async": "^3.2.5",
     "chalk": "^4.1.2",
-    "commander": "^11.0.0",
-    "croner": "^7.0.4",
+    "commander": "^11.1.0",
+    "croner": "^7.0.5",
     "dayjs": "^1.11.10",
     "fast-folder-size": "^2.2.0",
-    "fast-glob": "^3.3.1",
-    "listr2": "^7.0.1",
+    "fast-glob": "^3.3.2",
+    "listr2": "^8.0.0",
     "micromatch": "^4.0.5",
-    "mysql2": "^3.6.1",
-    "tty-table": "^4.2.2",
-    "yaml": "^2.3.2"
+    "mysql2": "^3.6.5",
+    "tty-table": "^4.2.3",
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
-    "@types/async": "^3.2.20",
-    "@types/micromatch": "^4.0.2"
+    "@types/async": "^3.2.24",
+    "@types/micromatch": "^4.0.6"
   },
   "optionalDependencies": {
     "ts-node": "^10.9.1"
