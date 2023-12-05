@@ -27,7 +27,6 @@ import {
 } from "./RepositoryAbstract";
 import FastGlob from "fast-glob";
 import { writeFile } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, resolve } from "path";
 
@@ -39,70 +38,6 @@ export type ResticRepositoryConfig = {
 export type ResticPackageRepositoryConfig = {};
 
 export const resticRepositoryName = "restic";
-
-export const resticRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  required: ["password", "repository"],
-  additionalProperties: false,
-  properties: {
-    password: {
-      anyOf: [
-        { type: "string" },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["path"],
-          properties: {
-            path: { type: "string" },
-          },
-        },
-      ],
-    },
-    repository: {
-      type: "object",
-      additionalProperties: false,
-      required: ["backend"],
-      properties: {
-        name: { type: "string" },
-        env: {
-          type: "object",
-          patternProperties: {
-            ".+": { type: "string" },
-          },
-        },
-        backend: {
-          enum: ["local", "rest", "sftp", "s3", "azure", "gs", "rclone"],
-        },
-        protocol: {
-          enum: ["http", "https"],
-        },
-        host: { type: "string" },
-        username: { type: "string" },
-        password: {
-          anyOf: [
-            { type: "string" },
-            {
-              type: "object",
-              additionalProperties: false,
-              required: ["path"],
-              properties: {
-                path: { type: "string" },
-              },
-            },
-          ],
-        },
-        port: { type: "integer" },
-        path: { type: "string" },
-      },
-    },
-  },
-};
-
-export const resticPackageRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {},
-};
 
 export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig> {
   static refPrefix = "dt-";

@@ -1,4 +1,3 @@
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { exec } from "../utils/process";
 import {
   SqlDumpTaskAbstract,
@@ -6,16 +5,11 @@ import {
   TargetDatabase,
 } from "./SqlDumpTaskAbstract";
 import { createWriteStream } from "fs";
-import { JSONSchema7 } from "json-schema";
 import { normalize } from "path";
 
 export const postgresqlDumpTaskName = "postgresql-dump";
 
 export type PostgresqlDumpTaskConfig = SqlDumpTaskConfig;
-
-export const postgresqlDumpTaskDefinition: JSONSchema7 = {
-  allOf: [makeRef(DefinitionEnum.sqlDumpTask)],
-};
 
 export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskConfig> {
   async buildConnectionArgs(database?: string) {

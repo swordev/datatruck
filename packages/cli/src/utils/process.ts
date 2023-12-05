@@ -13,7 +13,9 @@ import { stat } from "fs/promises";
 import { createInterface } from "readline";
 import { Readable, Writable } from "stream";
 
-export type ProcessEnv = Record<string, string>;
+export type ProcessEnv = {
+  [name: string]: string | undefined;
+};
 
 export type ExecLogSettings = {
   colorize?: boolean;

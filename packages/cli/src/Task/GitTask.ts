@@ -1,4 +1,3 @@
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import {
   existsDir,
@@ -15,7 +14,6 @@ import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { createWriteStream } from "fs";
 import { copyFile, rm } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
 import { createInterface } from "readline";
@@ -45,47 +43,6 @@ export type GitTaskConfig = {
 };
 
 export const gitTaskName = "git";
-
-export const gitTaskDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    command: {
-      type: "string",
-    },
-    includeModified: {
-      anyOf: [
-        {
-          type: "boolean",
-        },
-        makeRef(DefinitionEnum.stringListUtil),
-      ],
-    },
-    includeUntracked: {
-      anyOf: [
-        {
-          type: "boolean",
-        },
-        makeRef(DefinitionEnum.stringListUtil),
-      ],
-    },
-    includeIgnored: {
-      anyOf: [
-        {
-          type: "boolean",
-        },
-        makeRef(DefinitionEnum.stringListUtil),
-      ],
-    },
-    includeConfig: {
-      type: "boolean",
-    },
-    fileCopyConcurrency: {
-      type: "integer",
-      minimum: 1,
-    },
-  },
-};
 
 export class GitTask extends TaskAbstract<GitTaskConfig> {
   protected verbose?: boolean;

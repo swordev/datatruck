@@ -1,6 +1,6 @@
 import { PackageConfig } from "../Config/PackageConfig";
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
+import { ProcessEnv } from "../utils/process";
 import { Step, runSteps } from "../utils/steps";
 import { mkTmpDir } from "../utils/temp";
 import {
@@ -9,7 +9,6 @@ import {
   TaskRestoreData,
   TaskAbstract,
 } from "./TaskAbstract";
-import { JSONSchema7 } from "json-schema";
 
 type NodeVars = {
   dtt: {
@@ -20,7 +19,7 @@ type NodeVars = {
 };
 
 export type ScriptTaskConfig = {
-  env?: Record<string, string | undefined>;
+  env?: ProcessEnv;
   backupSteps: Step[];
   restoreSteps: Step[];
 };
@@ -31,122 +30,7 @@ export function scriptTaskCode<V extends Record<string, any>>(
   return `(${cb.toString()})(...arguments);`;
 }
 
-export enum ScriptTaskDefinitionEnum {
-  step = "step",
-  processStepConfig = "processStepConfig",
-  nodeStepConfig = "nodeStepConfig",
-  telegramMessageStepConfig = "telegramMessageStepConfig",
-  ntfyStepConfig = "ntfyStepConfig",
-}
-
-const stepTypes = {
-  process: ScriptTaskDefinitionEnum.processStepConfig,
-  node: ScriptTaskDefinitionEnum.nodeStepConfig,
-  "telegram-message": ScriptTaskDefinitionEnum.telegramMessageStepConfig,
-  ntfy: ScriptTaskDefinitionEnum.ntfyStepConfig,
-};
-
 export const scriptTaskName = "script";
-
-export const scriptTaskDefinition: JSONSchema7 = {
-  definitions: {
-    step: {
-      type: "object",
-      required: ["type"],
-      properties: {
-        type: { enum: Object.keys(stepTypes) },
-        config: {},
-      },
-      anyOf: Object.keys(stepTypes).map(
-        (name) =>
-          ({
-            if: {
-              type: "object",
-              properties: {
-                type: { const: name },
-              },
-            },
-            then: {
-              type: "object",
-              properties: {
-                config: makeRef(
-                  DefinitionEnum.scriptTask,
-                  stepTypes[name as keyof typeof stepTypes],
-                ),
-              },
-            },
-            else: false,
-          }) as JSONSchema7,
-      ),
-    },
-    processStepConfig: {
-      type: "object",
-      required: ["command"],
-      properties: {
-        command: { type: "string" },
-        env: {
-          type: "object",
-          patternProperties: { ".+": { type: "string" } },
-        },
-        args: makeRef(DefinitionEnum.stringListUtil),
-      },
-    },
-    nodeStepConfig: {
-      type: "object",
-      required: ["code"],
-      properties: {
-        code: {
-          anyOf: [{ type: "string" }, makeRef(DefinitionEnum.stringListUtil)],
-        },
-        vars: {
-          type: "object",
-          patternProperties: { ".+": {} },
-        },
-        env: {
-          type: "object",
-          patternProperties: { ".+": { type: "string" } },
-        },
-      },
-    },
-    telegramMessageStepConfig: {
-      type: "object",
-      required: ["bot", "chatId"],
-      properties: {
-        command: { type: "string" },
-        chatId: { type: "integer" },
-        text: { type: "string" },
-      },
-    },
-    ntfyStepConfig: {
-      type: "object",
-      required: ["token"],
-      properties: {
-        token: { type: "string" },
-        topic: { type: "string" },
-        text: { type: "string" },
-      },
-    },
-  },
-  type: "object",
-  additionalProperties: false,
-  required: ["backupSteps", "restoreSteps"],
-  properties: {
-    env: {
-      type: "object",
-      patternProperties: {
-        ".+": { type: "string" },
-      },
-    },
-    backupSteps: {
-      type: "array",
-      items: makeRef(DefinitionEnum.scriptTask, ScriptTaskDefinitionEnum.step),
-    },
-    restoreSteps: {
-      type: "array",
-      items: makeRef(DefinitionEnum.scriptTask, ScriptTaskDefinitionEnum.step),
-    },
-  },
-};
 
 export class ScriptTask extends TaskAbstract<ScriptTaskConfig> {
   protected verbose?: boolean;

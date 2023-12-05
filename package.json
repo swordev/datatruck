@@ -21,10 +21,9 @@
   ],
   "scripts": {
     "build": "pnpm build:ts && pnpm build:schema",
-    "build:schema": "node ./packages/cli/scripts/gen-schema.js",
+    "build:schema": "node ./packages/cli/scripts/gen-schema.mjs",
     "build:ts": "tsc -b tsconfig.build.json --pretty",
-    "clean": "wspa clean",
-    "compose": "wspa compose",
+    "clean": "tsc -b tsconfig.build.json --clean",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
     "start": "node packages/datatruck/lib",
@@ -37,14 +36,13 @@
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@tsconfig/node20": "^20.1.2",
     "@types/node": "^20.6.2",
-    "@wspa/cli": "^0.6.0",
-    "@wspa/config": "^0.3.1",
     "npm-check-updates": "^16.14.4",
     "prettier": "3.0.3",
     "prettier-plugin-packagejson": "^2.4.5",
     "prettier-plugin-sort-json": "^3.1.0",
     "rimraf": "^5.0.1",
     "typescript": "^5.2.2",
+    "typescript-json-schema": "^0.62.0",
     "vite": "^4.4.9",
     "vitest": "^0.34.4"
   },
@@ -54,26 +52,6 @@
   "pnpm": {
     "patchedDependencies": {
       "smartwrap@2.0.2": "patches/smartwrap@2.0.2.patch"
-    }
-  },
-  "x-wspa": {
-    "extends": "@wspa/config/auto",
-    "pkgManifest": {
-      "description": "Tool for creating and managing backups",
-      "homepage": "https://github.com/swordev/datatruck#readme",
-      "bugs": {
-        "url": "https://github.com/swordev/datatruck/issues"
-      },
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/swordev/datatruck"
-      },
-      "license": "MIT",
-      "author": {
-        "name": "Juanra GM",
-        "email": "juanrgm724@gmail.com",
-        "url": "https://github.com/juanrgm"
-      }
     }
   }
 }

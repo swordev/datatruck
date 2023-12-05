@@ -24,7 +24,6 @@ import {
 } from "./RepositoryAbstract";
 import fg from "fast-glob";
 import { copyFile, rm, mkdir } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join, dirname } from "path";
 
@@ -36,22 +35,6 @@ export type GitRepositoryConfig = {
 export type GitPackageRepositoryConfig = {};
 
 export const gitRepositoryName = "git";
-
-export const gitRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  required: ["repo"],
-  properties: {
-    repo: { type: "string" },
-    branch: { type: "string" },
-  },
-};
-
-export const gitPackageRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {},
-};
 
 export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
   static refPrefix = "dt";

@@ -1,5 +1,4 @@
 import { AppError } from "../Error/AppError";
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import {
@@ -19,11 +18,7 @@ import { createMysqlCli } from "../utils/mysql";
 import { endsWith } from "../utils/string";
 import { CompressOptions, createTar, extractTar } from "../utils/tar";
 import { mkTmpDir, useTempDir, useTempFile } from "../utils/temp";
-import {
-  SqlDumpTaskConfig,
-  TargetDatabase,
-  sqlDumpTaskDefinition,
-} from "./SqlDumpTaskAbstract";
+import { SqlDumpTaskConfig, TargetDatabase } from "./SqlDumpTaskAbstract";
 import {
   TaskBackupData,
   TaskPrepareRestoreData,
@@ -47,15 +42,6 @@ export type MysqlDumpTaskConfig = {
   concurrency?: number;
   compress?: boolean | CompressOptions;
 } & SqlDumpTaskConfig;
-
-export const mysqlDumpTaskDefinition = sqlDumpTaskDefinition({
-  dataFormat: { enum: ["csv", "sql"] },
-  concurrency: { type: "integer", minimum: 1 },
-  csvSharedPath: { type: "string" },
-  compress: {
-    anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
-  },
-});
 
 const suffix = {
   database: ".database.sql",

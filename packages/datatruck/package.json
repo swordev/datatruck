@@ -1,6 +1,30 @@
 {
   "name": "datatruck",
   "version": "0.32.1",
+  "description": "Tool for creating and managing backups",
+  "homepage": "https://github.com/swordev/datatruck#readme",
+  "bugs": {
+    "url": "https://github.com/swordev/datatruck/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swordev/datatruck"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Juanra GM",
+    "email": "juanrgm724@gmail.com",
+    "url": "https://github.com/juanrgm"
+  },
+  "main": "lib/index.js",
+  "bin": {
+    "datatruck": "lib/bin.js",
+    "dtt": "lib/bin.js"
+  },
+  "files": [
+    "lib",
+    "config.schema.json"
+  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "tsc -b --clean",
@@ -9,18 +33,7 @@
   "dependencies": {
     "@datatruck/cli": "workspace:*"
   },
-  "publishConfig": {
-    "directory": "lib"
-  },
   "engine": {
     "node": ">=16.0.0"
-  },
-  "x-wspa": {
-    "pkgManifest": {
-      "bin": {
-        "datatruck": "index.js",
-        "dtt": "index.js"
-      }
-    }
   }
 }

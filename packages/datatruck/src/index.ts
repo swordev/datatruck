@@ -1,2 +1,1 @@
-#!/usr/bin/env node
-import "@datatruck/cli/bin";
+export * from "@datatruck/cli";

@@ -1,27 +1,13 @@
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
-import {
-  ensureEmptyDir,
-  forEachFile,
-  initEmptyDir,
-  mkdirIfNotExists,
-  readDir,
-  waitForClose,
-} from "../utils/fs";
+import { forEachFile, readDir, waitForClose } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { createProcess, exec } from "../utils/process";
 import { extractTar } from "../utils/tar";
 import { mkTmpDir } from "../utils/temp";
-import {
-  TaskBackupData,
-  TaskPrepareRestoreData,
-  TaskRestoreData,
-  TaskAbstract,
-} from "./TaskAbstract";
+import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
 import { createReadStream, createWriteStream } from "fs";
 import { readFile, rm, writeFile } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
 import { cpus } from "os";
 import { join } from "path";
 
@@ -52,59 +38,6 @@ export type MariadbTaskConfig = {
 type Stats = { xbFiles?: number };
 
 export const mariadbTaskName = "mariadb";
-
-export const mariadbTaskDefinition: JSONSchema7 = {
-  type: "object",
-  required: ["hostname", "username", "password"],
-  additionalProperties: false,
-  properties: {
-    command: { type: "string" },
-    hostname: { type: "string" },
-    username: { type: "string" },
-    password: {
-      anyOf: [
-        {
-          type: "string",
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          required: ["path"],
-          properties: {
-            path: { type: "string" },
-          },
-        },
-      ],
-    },
-    includeTables: makeRef(DefinitionEnum.stringListUtil),
-    excludeTables: makeRef(DefinitionEnum.stringListUtil),
-    includeDatabases: makeRef(DefinitionEnum.stringListUtil),
-    excludeDatabases: makeRef(DefinitionEnum.stringListUtil),
-    parallel: {
-      anyOf: [{ type: "integer", minimum: 1 }, { enum: ["auto"] }],
-    },
-    compress: {
-      anyOf: [
-        {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            command: { type: "string" },
-            args: makeRef(DefinitionEnum.stringListUtil),
-          },
-        },
-        {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            type: { enum: ["gzip", "pigz"] },
-            args: makeRef(DefinitionEnum.stringListUtil),
-          },
-        },
-      ],
-    },
-  },
-};
 
 function normalizeConfig(
   input: Pick<MariadbTaskConfig, "compress" | "parallel">,

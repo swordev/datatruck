@@ -1,12 +1,12 @@
 import { fastFolderSizeAsync } from "./fs";
-import { exec, ExecResult, ExecSettingsInterface } from "./process";
+import { exec, ExecResult, ExecSettingsInterface, ProcessEnv } from "./process";
 import { formatUri, Uri } from "./string";
 import { writeFile, readFile } from "fs/promises";
 import { resolve } from "path";
 
 export type ResticRepositoryUri = {
   name?: string;
-  env?: Record<string, string>;
+  env?: ProcessEnv;
   password?: string | { path: string };
   backend: "local" | "rest" | "sftp" | "s3" | "azure" | "gs" | "rclone";
 } & Omit<Uri, "password">;

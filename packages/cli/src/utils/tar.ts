@@ -4,7 +4,6 @@ import { progressPercent } from "./math";
 import { exec } from "./process";
 import { BasicProgress } from "./progress";
 import { mkdir } from "fs/promises";
-import type { JSONSchema7 } from "json-schema";
 import { cpus, platform } from "os";
 
 export type TarEntry = {
@@ -16,16 +15,10 @@ export type CoresOptions = number | { percent: number };
 
 export type CompressOptions = {
   level?: number;
-  /**
-   * @default {{ "percent": 50 }}
-   */
   cores?: CoresOptions;
 };
 
 export type DecompressOptions = {
-  /**
-   * @default {{ "percent": 50 }}
-   */
   cores?: CoresOptions;
 };
 
@@ -52,24 +45,6 @@ export interface ExtractOptions {
   total?: number;
   onEntry?: (entry: TarEntry) => void;
 }
-
-export const compressDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    level: { type: "integer" },
-    cores: {
-      anyOf: [
-        { type: "integer" },
-        {
-          type: "object",
-          required: ["percent"],
-          properties: { percent: { type: "integer" } },
-        },
-      ],
-    },
-  },
-};
 
 export type TarVendor = "busybox" | "bsdtar" | "gnu";
 

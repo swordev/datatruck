@@ -11,9 +11,13 @@ export type ProcessStepConfig = {
   args?: string[];
 };
 
+export type Vars = {
+  [name: string]: any;
+};
+
 export type NodeStepConfig = {
   env?: ProcessEnv;
-  vars?: Record<string, any>;
+  vars?: Vars;
   code: string | string[];
 };
 
@@ -48,8 +52,8 @@ export type Step =
     };
 
 export type StepOptions = {
-  env?: Record<string, string | undefined>;
-  vars?: Record<string, any>;
+  env?: ProcessEnv;
+  vars?: Vars;
   cwd?: string;
   tempDir?: () => Promise<string>;
   onLine?: (p: string) => any;

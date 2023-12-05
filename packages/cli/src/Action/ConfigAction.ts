@@ -2,7 +2,7 @@ import { GlobalOptions } from "../Command/CommandAbstract";
 import type { Config } from "../Config/Config";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { AppError } from "../Error/AppError";
-import { schema } from "../JsonSchema/JsonSchema";
+import { configSchema } from "../config.schema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
 import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
 import { IfRequireKeys } from "../utils/ts";
@@ -20,7 +20,9 @@ export class ConfigAction<TRequired extends boolean = true> {
   ) {}
 
   static validate(config: Config) {
-    const validate = new Ajv().compile(schema);
+    const validate = new Ajv({
+      allowUnionTypes: true,
+    }).compile(configSchema);
     if (!validate(config))
       throw new AppError(
         "Json schema error: " + JSON.stringify(validate.errors, null, 2),

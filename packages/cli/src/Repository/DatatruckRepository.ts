@@ -1,5 +1,4 @@
 import { AppError } from "../Error/AppError";
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { logExec } from "../utils/cli";
 import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
@@ -33,7 +32,6 @@ import {
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import { rm, stat } from "fs/promises";
-import type { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
 
@@ -67,44 +65,6 @@ export type DatatruckPackageRepositoryConfig = {
 };
 
 export const datatruckRepositoryName = "datatruck";
-
-export const datatruckRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  required: ["backend"],
-  additionalProperties: false,
-  properties: {
-    backend: { type: "string" },
-    compress: {
-      anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
-    },
-  },
-};
-
-export const datatruckPackageRepositoryDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    compress: {
-      anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
-    },
-    packs: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          name: { type: "string" },
-          compress: {
-            anyOf: [{ type: "boolean" }, makeRef(DefinitionEnum.compressUtil)],
-          },
-          include: makeRef(DefinitionEnum.stringListUtil),
-          exclude: makeRef(DefinitionEnum.stringListUtil),
-          onePackByResult: { type: "boolean" },
-        },
-      },
-    },
-  },
-};
 
 export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfig> {
   static zipBasenameTpl = `.*.dd.tar.gz`;

@@ -1,12 +1,10 @@
 import { AppError } from "../Error/AppError";
-import { DefinitionEnum, makeRef } from "../JsonSchema/DefinitionEnum";
 import { resolveDatabaseName } from "../utils/datatruck/config";
 import { readDir } from "../utils/fs";
 import { exec } from "../utils/process";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { readFile } from "fs/promises";
-import { JSONSchema7 } from "json-schema";
 import { isMatch } from "micromatch";
 import { join } from "path";
 
@@ -21,19 +19,6 @@ export type MssqlTaskConfig = {
 };
 
 export const mssqlTaskName = "mssql";
-
-export const mssqlTaskDefinition: JSONSchema7 = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    command: { type: "string" },
-    hostname: { type: "string" },
-    username: { type: "string" },
-    passwordFile: { type: "string" },
-    includeDatabases: makeRef(DefinitionEnum.stringListUtil),
-    excludeDatabases: makeRef(DefinitionEnum.stringListUtil),
-  },
-};
 
 export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
   static SUFFIX = ".BAK";
