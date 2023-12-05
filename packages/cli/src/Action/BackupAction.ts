@@ -15,7 +15,8 @@ import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
-import { runSteps } from "../utils/steps";
+import { isReportStep, runReportSteps } from "../utils/reportSteps";
+import { isSpawnStep, runSpawnSteps } from "../utils/spawnSteps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -447,15 +448,33 @@ export class BackupAction<TRequired extends boolean = true> {
 
                     if (!enabled)
                       return task.skip(`Report send skipped: ${reportIndex}`);
-                    const text = this.dataFormat(result).format(
+                    const message = this.dataFormat(result).format(
                       report.format ?? "list",
                     );
-                    await runSteps(report.run, {
-                      vars: {
-                        dtt: { title: "DTT Backup", text, result, success },
-                      },
-                      verbose: this.options.verbose,
-                    });
+                    if (isSpawnStep(report.run)) {
+                      await runSpawnSteps(report.run, {
+                        data: {
+                          dtt: {
+                            message,
+                            result,
+                            success,
+                          },
+                        },
+                        verbose: this.options.verbose,
+                      });
+                    } else if (isReportStep(report.run)) {
+                      await runReportSteps(report.run, {
+                        data: {
+                          title: "DTT Backup",
+                          message,
+                          success,
+                        },
+                      });
+                    } else {
+                      throw new Error(
+                        `Invalid step type: ${(report.run as any).type}`,
+                      );
+                    }
                   },
                 });
               }),

@@ -7,7 +7,7 @@ export function snakeCase(value: string, char = "_") {
 
 export function render(
   subject: string,
-  vars: Record<string, string | undefined>,
+  data: Record<string, string | undefined>,
 ) {
   return subject.replace(/{([\w\./]*)}/g, function (match, name) {
     if (!name.length) {
@@ -16,7 +16,7 @@ export function render(
       return "}";
     }
 
-    let ref: any = vars;
+    let ref: any = data;
 
     for (const key of name.split(".")) {
       if (!!ref && typeof ref === "object") {
@@ -33,7 +33,7 @@ export function render(
     )
       throw new Error(`Variable is not valid: ${name}`, {
         cause: {
-          vars,
+          data,
           value: ref,
         },
       });

@@ -1,7 +1,7 @@
 import { PackageConfig } from "../Config/PackageConfig";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { ProcessEnv } from "../utils/process";
-import { Step, runSteps } from "../utils/steps";
+import { SpawnStep, runSpawnSteps } from "../utils/spawnSteps";
 import { mkTmpDir } from "../utils/temp";
 import {
   TaskBackupData,
@@ -10,7 +10,7 @@ import {
   TaskAbstract,
 } from "./TaskAbstract";
 
-type NodeVars = {
+type NodeData = {
   dtt: {
     snapshot: PreSnapshot;
     package: PackageConfig;
@@ -20,12 +20,12 @@ type NodeVars = {
 
 export type ScriptTaskConfig = {
   env?: ProcessEnv;
-  backupSteps: Step[];
-  restoreSteps: Step[];
+  backupSteps: SpawnStep[];
+  restoreSteps: SpawnStep[];
 };
 
-export function scriptTaskCode<V extends Record<string, any>>(
-  cb: (vars: NodeVars & V) => void,
+export function scriptTaskCode<Data extends Record<string, any>>(
+  cb: (data: NodeData & Data) => void,
 ) {
   return `(${cb.toString()})(...arguments);`;
 }
@@ -40,15 +40,15 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfig> {
       data.package.path ??
       (await mkTmpDir(scriptTaskName, "task", "backup", "snapshot"));
 
-    await runSteps(config.backupSteps, {
-      env: config.env,
-      vars: {
+    await runSpawnSteps(config.backupSteps, {
+      data: {
         dtt: {
           snapshot: data.snapshot,
           snapshotPath: snapshotPath,
           package: data.package,
         },
       },
+      env: config.env,
       cwd: snapshotPath,
       verbose: data.options.verbose,
       tempDir: () => mkTmpDir(scriptTaskName, "task", "backup", "nodeStep"),
@@ -67,15 +67,15 @@ export class ScriptTask extends TaskAbstract<ScriptTaskConfig> {
 
   override async restore(data: TaskRestoreData) {
     const config = this.config;
-    await runSteps(config.restoreSteps, {
-      env: config.env,
-      vars: {
+    await runSpawnSteps(config.restoreSteps, {
+      data: {
         dtt: {
           snapshot: data.snapshot,
           snapshotPath: data.snapshotPath,
           package: data.package,
         },
       },
+      env: config.env,
       verbose: data.options.verbose,
       tempDir: () => mkTmpDir(scriptTaskName, "task", "restore", "nodeStep"),
     });

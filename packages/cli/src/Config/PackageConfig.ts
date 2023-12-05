@@ -1,4 +1,4 @@
-import { Step } from "../utils/steps";
+import { SpawnStep } from "../utils/spawnSteps";
 import { PackageRepositoryConfig } from "./PackageRepositoryConfig";
 import { PrunePolicyConfig } from "./PrunePolicyConfig";
 import type { TaskConfig } from "./TaskConfig";
@@ -18,8 +18,8 @@ export type PackageConfig = {
     uid: string | number;
     gid: string | number;
   };
-  include?: (string | Step)[];
-  exclude?: (string | Step)[];
+  include?: (string | SpawnStep)[];
+  exclude?: (string | SpawnStep)[];
   repositoryNames?: string[];
   prunePolicy?: PrunePolicyConfig;
   repositoryConfigs?: PackageRepositoryConfig[];

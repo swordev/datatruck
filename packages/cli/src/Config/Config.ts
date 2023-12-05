@@ -1,7 +1,8 @@
 import { DataFormatType } from "../utils/DataFormat";
 import { DatatruckCronServerOptions } from "../utils/datatruck/cron-server";
 import { DatatruckRepositoryServerOptions } from "../utils/datatruck/repository-server";
-import { Step } from "../utils/steps";
+import { ReportStep } from "../utils/reportSteps";
+import { SpawnStep } from "../utils/spawnSteps";
 import { PackageConfig } from "./PackageConfig";
 import { PrunePolicyConfig } from "./PrunePolicyConfig";
 import { RepositoryConfig } from "./RepositoryConfig";
@@ -26,5 +27,5 @@ export type DatatruckServerOptions = {
 export type ReportConfig = {
   when?: "success" | "error";
   format?: Exclude<DataFormatType, "custom" | "tpl">;
-  run: Step;
+  run: SpawnStep | ReportStep;
 };

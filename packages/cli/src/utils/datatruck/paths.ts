@@ -1,16 +1,16 @@
 import { PackageConfig } from "../../Config/PackageConfig";
 import { PreSnapshot } from "../../Repository/RepositoryAbstract";
-import { Step, runSteps } from "../steps";
+import { SpawnStep, runSpawnSteps } from "../spawnSteps";
 
 export type ParsePathsOptions = {
   cwd?: string;
   verbose?: boolean;
-  vars?: Record<string, any>;
+  data?: Record<string, any>;
   tempDir?: () => Promise<string>;
 };
 
 export async function parsePaths(
-  values: (string | Step)[],
+  values: (string | SpawnStep)[],
   options: ParsePathsOptions,
 ) {
   let paths: string[] = [];
@@ -18,7 +18,7 @@ export async function parsePaths(
     if (typeof value === "string") {
       paths.push(value);
     } else {
-      await runSteps(value, {
+      await runSpawnSteps(value, {
         tempDir: options.tempDir,
         verbose: options.verbose,
         onLine: (path) => paths.push(path),
@@ -36,13 +36,13 @@ export type BackupPathsOptions = {
 };
 
 export async function parseBackupPaths(
-  paths: (string | Step)[],
+  paths: (string | SpawnStep)[],
   options: BackupPathsOptions,
 ) {
   return parsePaths(paths, {
     cwd: options.path,
     verbose: options.verbose,
-    vars: {
+    data: {
       package: options.package,
       snapshot: options.snapshot,
       path: options.path,

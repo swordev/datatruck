@@ -46,7 +46,7 @@ describe(
                     {
                       type: "node",
                       config: {
-                        vars: {
+                        data: {
                           storePath,
                         },
                         code: scriptTaskCode<{ storePath: string }>(
@@ -99,7 +99,7 @@ describe(
                     {
                       type: "node",
                       config: {
-                        vars: {
+                        data: {
                           backupPath,
                         },
                         code: scriptTaskCode<{ backupPath: string }>(
@@ -121,7 +121,7 @@ describe(
                     {
                       type: "node",
                       config: {
-                        vars: {
+                        data: {
                           restorePath,
                         },
                         code: scriptTaskCode<{ restorePath: string }>(
