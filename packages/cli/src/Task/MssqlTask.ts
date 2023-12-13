@@ -1,5 +1,5 @@
-import { AppError } from "../Error/AppError";
 import { resolveDatabaseName } from "../utils/datatruck/config";
+import { AppError } from "../utils/datatruck/error";
 import { readDir } from "../utils/fs";
 import { exec } from "../utils/process";
 import { mkTmpDir } from "../utils/temp";

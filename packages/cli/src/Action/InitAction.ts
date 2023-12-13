@@ -1,6 +1,6 @@
 import type { Config } from "../Config/Config";
-import { createRepo } from "../Factory/RepositoryFactory";
 import { filterRepository } from "../utils/datatruck/config";
+import { createRepo } from "../utils/datatruck/repository";
 import { IfRequireKeys } from "../utils/ts";
 
 export type InitActionOptions = {

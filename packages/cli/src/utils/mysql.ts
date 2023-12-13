@@ -1,5 +1,5 @@
-import { AppError } from "../Error/AppError";
 import { logExec } from "./cli";
+import { AppError } from "./datatruck/error";
 import { existsFile, fetchData, mkdirIfNotExists, readPartialFile } from "./fs";
 import { exec, logExecStdout } from "./process";
 import { createMatchFilter, undefIfEmpty } from "./string";

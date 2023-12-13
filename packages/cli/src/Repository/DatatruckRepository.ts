@@ -1,7 +1,7 @@
-import { AppError } from "../Error/AppError";
 import { logExec } from "../utils/cli";
 import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
+import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   createFileScanner,

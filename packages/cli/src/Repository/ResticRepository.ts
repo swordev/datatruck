@@ -1,6 +1,6 @@
-import { AppError } from "../Error/AppError";
 import { ResticRepositoryUri, Restic } from "../utils/Restic";
 import { logExec } from "../utils/cli";
+import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   fastglobToGitIgnore,

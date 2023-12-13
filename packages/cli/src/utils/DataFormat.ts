@@ -1,4 +1,4 @@
-import { AppError } from "../Error/AppError";
+import { AppError } from "./datatruck/error";
 import { Streams, createStreams } from "./stream";
 import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";

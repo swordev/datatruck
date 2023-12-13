@@ -1,6 +1,6 @@
 import type { Config } from "../Config/Config";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
-import { createRepo } from "../Factory/RepositoryFactory";
+import { createRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { KeepObject, createFilterByLastOptions } from "../utils/date";
 import { groupBy } from "../utils/object";
@@ -82,22 +82,22 @@ export class PruneAction<TRequired extends boolean = true> {
     const keepSnapshots = hasKeepFilter
       ? groupAndFilter(snapshots, this.options.groupBy, keepFilter)
       : prunePolicy
-      ? groupAndFilter(snapshots, this.options.groupBy, (groups) => {
-          const [snapshot] = groups;
-          const packageName = snapshot.packageName;
-          const config = this.config.packages.find(
-            (pkg) => pkg.name === packageName,
-          );
-          const prunePolicy =
-            config?.prunePolicy ?? this.config.prunePolicy ?? {};
-          const hasPrunePolicy = Object.values(prunePolicy).some(
-            (v) => typeof v === "number",
-          );
-          return hasPrunePolicy
-            ? createFilterByLastOptions(prunePolicy)
-            : "no-policy";
-        })
-      : [];
+        ? groupAndFilter(snapshots, this.options.groupBy, (groups) => {
+            const [snapshot] = groups;
+            const packageName = snapshot.packageName;
+            const config = this.config.packages.find(
+              (pkg) => pkg.name === packageName,
+            );
+            const prunePolicy =
+              config?.prunePolicy ?? this.config.prunePolicy ?? {};
+            const hasPrunePolicy = Object.values(prunePolicy).some(
+              (v) => typeof v === "number",
+            );
+            return hasPrunePolicy
+              ? createFilterByLastOptions(prunePolicy)
+              : "no-policy";
+          })
+        : [];
 
     const result: PruneResult = {
       total: snapshots.length,

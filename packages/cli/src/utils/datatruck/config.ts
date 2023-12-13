@@ -4,9 +4,9 @@ import {
   RepositoryConfigEnabledAction,
   RepositoryConfig,
 } from "../../Config/RepositoryConfig";
-import { AppError } from "../../Error/AppError";
 import { checkMatch, makePathPatterns, render } from "../string";
 import { tmpDir } from "../temp";
+import { AppError } from "./error";
 import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(config: Config, repositoryName: string) {

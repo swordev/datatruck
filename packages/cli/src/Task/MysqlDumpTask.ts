@@ -1,10 +1,10 @@
-import { AppError } from "../Error/AppError";
 import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import {
   ResolveDatabaseNameParams,
   resolveDatabaseName,
 } from "../utils/datatruck/config";
+import { AppError } from "../utils/datatruck/error";
 import {
   ensureEmptyDir,
   ensureSingleFile,

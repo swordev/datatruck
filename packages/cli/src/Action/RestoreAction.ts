@@ -1,7 +1,5 @@
 import type { Config } from "../Config/Config";
 import { PackageConfig } from "../Config/PackageConfig";
-import { createRepo } from "../Factory/RepositoryFactory";
-import { createTask } from "../Factory/TaskFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { TaskAbstract } from "../Task/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
@@ -11,6 +9,8 @@ import {
   findRepositoryOrFail,
   resolvePackage,
 } from "../utils/datatruck/config";
+import { createRepo } from "../utils/datatruck/repository";
+import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
@@ -180,19 +180,20 @@ export class RestoreAction<TRequired extends boolean = true> {
       return item.key === "snapshots"
         ? `${item.data.id.slice(0, 8)} ${g(`${item.data.packages} packages`)}`
         : item.key === "task"
-        ? `${item.data.packageName} ${g(item.data.taskName)}`
-        : item.key === "restore"
-        ? `${item.data.packageName} ${g(item.data.repositoryName)}`
-        : item.key === "summary"
-        ? renderObject(
-            {
-              errors: item.data.errors,
-              restores: result.filter((r) => !r.error && r.key === "restore")
-                .length,
-            },
-            color,
-          )
-        : "";
+          ? `${item.data.packageName} ${g(item.data.taskName)}`
+          : item.key === "restore"
+            ? `${item.data.packageName} ${g(item.data.repositoryName)}`
+            : item.key === "summary"
+              ? renderObject(
+                  {
+                    errors: item.data.errors,
+                    restores: result.filter(
+                      (r) => !r.error && r.key === "restore",
+                    ).length,
+                  },
+                  color,
+                )
+              : "";
     };
     return new DataFormat({
       streams: options.streams,

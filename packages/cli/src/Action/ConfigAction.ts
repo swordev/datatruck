@@ -1,9 +1,9 @@
 import { GlobalOptions } from "../Command/CommandAbstract";
 import type { Config } from "../Config/Config";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
-import { AppError } from "../Error/AppError";
 import { configSchema } from "../config.schema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
+import { AppError } from "../utils/datatruck/error";
 import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
 import { IfRequireKeys } from "../utils/ts";
 import Ajv from "ajv";

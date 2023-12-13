@@ -1,6 +1,6 @@
-import { AppError } from "../Error/AppError";
 import { logExec } from "../utils/cli";
 import { resolveDatabaseName } from "../utils/datatruck/config";
+import { AppError } from "../utils/datatruck/error";
 import {
   ensureEmptyDir,
   existsDir,

@@ -1,4 +1,4 @@
-import { AppError } from "../Error/AppError";
+import { AppError } from "./datatruck/error";
 import { isMatch } from "micromatch";
 
 export function snakeCase(value: string, char = "_") {

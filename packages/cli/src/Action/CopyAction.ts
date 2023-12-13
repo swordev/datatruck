@@ -1,5 +1,4 @@
 import type { Config } from "../Config/Config";
-import { createRepo } from "../Factory/RepositoryFactory";
 import { Snapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
@@ -8,6 +7,7 @@ import {
   filterRepository,
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
+import { createRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
@@ -74,26 +74,26 @@ export class CopyAction<TRequired extends boolean = true> {
       return item.key === "snapshots"
         ? item.data.snapshots.length
         : item.key === "copy"
-        ? `${item.data.packageName} ${g(
-            [
-              item.data.snapshotId.slice(0, 8),
-              item.data.mirrorRepositoryName,
-            ].join(" "),
-          )}`
-        : item.key === "summary"
-        ? renderObject(
-            {
-              errors: item.data.errors,
-              copied: items.filter(
-                (i) => i.key === "copy" && !i.error && !i.data.skipped,
-              ).length,
-              skipped: items.filter(
-                (i) => i.key === "copy" && !i.error && i.data.skipped,
-              ).length,
-            },
-            color,
-          )
-        : "";
+          ? `${item.data.packageName} ${g(
+              [
+                item.data.snapshotId.slice(0, 8),
+                item.data.mirrorRepositoryName,
+              ].join(" "),
+            )}`
+          : item.key === "summary"
+            ? renderObject(
+                {
+                  errors: item.data.errors,
+                  copied: items.filter(
+                    (i) => i.key === "copy" && !i.error && !i.data.skipped,
+                  ).length,
+                  skipped: items.filter(
+                    (i) => i.key === "copy" && !i.error && i.data.skipped,
+                  ).length,
+                },
+                color,
+              )
+            : "";
     };
     return new DataFormat({
       streams: options.streams,

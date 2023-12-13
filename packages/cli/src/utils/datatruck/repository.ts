@@ -1,15 +1,18 @@
-import type { RepositoryConfig } from "../Config/RepositoryConfig";
-import { AppError } from "../Error/AppError";
+import type { RepositoryConfig } from "../../Config/RepositoryConfig";
 import {
   DatatruckRepository,
   datatruckRepositoryName,
-} from "../Repository/DatatruckRepository";
-import { GitRepository, gitRepositoryName } from "../Repository/GitRepository";
-import type { RepositoryAbstract } from "../Repository/RepositoryAbstract";
+} from "../../Repository/DatatruckRepository";
+import {
+  GitRepository,
+  gitRepositoryName,
+} from "../../Repository/GitRepository";
+import type { RepositoryAbstract } from "../../Repository/RepositoryAbstract";
 import {
   ResticRepository,
   resticRepositoryName,
-} from "../Repository/ResticRepository";
+} from "../../Repository/ResticRepository";
+import { AppError } from "./error";
 
 export function createRepo(
   repository: RepositoryConfig,

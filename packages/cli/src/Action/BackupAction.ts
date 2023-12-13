@@ -1,8 +1,6 @@
 import type { Config } from "../Config/Config";
 import { PackageConfig } from "../Config/PackageConfig";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
-import { createRepo } from "../Factory/RepositoryFactory";
-import { createTask } from "../Factory/TaskFactory";
 import { PreSnapshot } from "../Repository/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
@@ -11,6 +9,8 @@ import {
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
+import { createRepo } from "../utils/datatruck/repository";
+import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
@@ -184,32 +184,38 @@ export class BackupAction<TRequired extends boolean = true> {
             `${item.data.pruned}/${item.data.total}`,
           )}`
         : item.key === "snapshot"
-        ? item.data.id
-        : item.key === "task"
-        ? `${item.data.packageName} ${g(item.data.taskName)}`
-        : item.key === "backup"
-        ? `${item.data.packageName} ${g(item.data.repositoryName)}`
-        : item.key === "copy"
-        ? `${item.data.packageName} ${g(item.data.mirrorRepositoryName)}`
-        : item.key === "summary"
-        ? renderObject(
-            {
-              errors: item.data.errors,
-              backups: result.filter((r) => !r.error && r.key === "backup")
-                .length,
-              copies: result.filter((r) => !r.error && r.key === "copy").length,
-              prunes: result
-                .filter((r) => !r.error && r.key === "prune")
-                .reduce((result, item) => {
-                  if (item.key === "prune") result += item.data.pruned;
-                  return result;
-                }, 0),
-            },
-            color,
-          )
-        : item.key === "report"
-        ? item.data.type
-        : "";
+          ? item.data.id
+          : item.key === "task"
+            ? `${item.data.packageName} ${g(item.data.taskName)}`
+            : item.key === "backup"
+              ? `${item.data.packageName} ${g(item.data.repositoryName)}`
+              : item.key === "copy"
+                ? `${item.data.packageName} ${g(
+                    item.data.mirrorRepositoryName,
+                  )}`
+                : item.key === "summary"
+                  ? renderObject(
+                      {
+                        errors: item.data.errors,
+                        backups: result.filter(
+                          (r) => !r.error && r.key === "backup",
+                        ).length,
+                        copies: result.filter(
+                          (r) => !r.error && r.key === "copy",
+                        ).length,
+                        prunes: result
+                          .filter((r) => !r.error && r.key === "prune")
+                          .reduce((result, item) => {
+                            if (item.key === "prune")
+                              result += item.data.pruned;
+                            return result;
+                          }, 0),
+                      },
+                      color,
+                    )
+                  : item.key === "report"
+                    ? item.data.type
+                    : "";
     };
     return new DataFormat({
       streams: options.streams,
