@@ -1,6 +1,6 @@
-import { PackageConfig } from "../../Config/PackageConfig";
 import { PreSnapshot } from "../../repositories/RepositoryAbstract";
 import { SpawnStep, runSpawnSteps } from "../spawnSteps";
+import type { PackageConfig } from "./config-type";
 
 export type ParsePathsOptions = {
   cwd?: string;

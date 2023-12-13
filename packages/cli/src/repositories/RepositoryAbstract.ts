@@ -1,5 +1,3 @@
-import type { PackageConfig } from "../Config/PackageConfig";
-import type { RepositoryConfig } from "../Config/RepositoryConfig";
 import type { BackupActionOptions } from "../actions/BackupAction";
 import type { InitActionOptions } from "../actions/InitAction";
 import type { RestoreActionOptions } from "../actions/RestoreAction";
@@ -7,6 +5,10 @@ import type {
   ExtendedSnapshot,
   SnapshotsActionOptions,
 } from "../actions/SnapshotsAction";
+import type {
+  PackageConfig,
+  RepositoryConfig,
+} from "../utils/datatruck/config-type";
 import { ensureFreeDiskSpace, type DiskStats } from "../utils/fs";
 import type { Progress } from "../utils/progress";
 

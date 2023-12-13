@@ -1,12 +1,18 @@
-import { GitTaskConfig, gitTaskName } from "../tasks/GitTask";
-import { MariadbTaskConfig, mariadbTaskName } from "../tasks/MariadbTask";
-import { MssqlTaskConfig, mssqlTaskName } from "../tasks/MssqlTask";
-import { MysqlDumpTaskConfig, mysqlDumpTaskName } from "../tasks/MysqlDumpTask";
-import {
+import type { GitTaskConfig, gitTaskName } from "../../tasks/GitTask";
+import type {
+  MariadbTaskConfig,
+  mariadbTaskName,
+} from "../../tasks/MariadbTask";
+import type { MssqlTaskConfig, mssqlTaskName } from "../../tasks/MssqlTask";
+import type {
+  MysqlDumpTaskConfig,
+  mysqlDumpTaskName,
+} from "../../tasks/MysqlDumpTask";
+import type {
   PostgresqlDumpTaskConfig,
   postgresqlDumpTaskName,
-} from "../tasks/PostgresqlDumpTask";
-import { ScriptTaskConfig, scriptTaskName } from "../tasks/ScriptTask";
+} from "../../tasks/PostgresqlDumpTask";
+import type { ScriptTaskConfig, scriptTaskName } from "../../tasks/ScriptTask";
 
 export type GitTaskConfigItem = {
   name: typeof gitTaskName;

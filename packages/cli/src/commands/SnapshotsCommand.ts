@@ -1,8 +1,8 @@
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { ConfigAction } from "../actions/ConfigAction";
 import { SnapshotsAction } from "../actions/SnapshotsAction";
 import { DataFormat } from "../utils/DataFormat";
 import { formatBytes } from "../utils/bytes";
+import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";

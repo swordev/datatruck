@@ -1,7 +1,9 @@
-import type { Config } from "../Config/Config";
-import { RepositoryConfigEnabledAction } from "../Config/RepositoryConfig";
 import { Snapshot } from "../repositories/RepositoryAbstract";
 import { filterRepository } from "../utils/datatruck/config";
+import type {
+  Config,
+  RepositoryConfigEnabledAction,
+} from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { IfRequireKeys } from "../utils/ts";

@@ -1,5 +1,7 @@
-import { Config } from "../src/Config/Config";
-import { RepositoryConfig } from "../src/Config/RepositoryConfig";
+import type {
+  Config,
+  RepositoryConfig,
+} from "../src/utils/datatruck/config-type";
 import { createDatatruckRepositoryServer } from "../src/utils/datatruck/repository-server";
 import { writeJSONFile } from "../src/utils/fs";
 import { mkTmpDir } from "../src/utils/temp";

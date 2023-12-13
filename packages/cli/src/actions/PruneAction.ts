@@ -1,5 +1,4 @@
-import type { Config } from "../Config/Config";
-import { RepositoryConfig } from "../Config/RepositoryConfig";
+import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { KeepObject, createFilterByLastOptions } from "../utils/date";

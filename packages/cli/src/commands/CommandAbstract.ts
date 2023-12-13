@@ -1,6 +1,6 @@
-import { Config } from "../Config/Config";
 import { DataFormatType } from "../utils/DataFormat";
 import { OptionsConfig, parseOptions } from "../utils/cli";
+import type { Config } from "../utils/datatruck/config-type";
 import { ProgressMode } from "../utils/progress";
 import { Streams, createStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";

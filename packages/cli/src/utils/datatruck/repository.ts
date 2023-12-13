@@ -1,4 +1,3 @@
-import type { RepositoryConfig } from "../../Config/RepositoryConfig";
 import {
   DatatruckRepository,
   datatruckRepositoryName,
@@ -12,6 +11,7 @@ import {
   ResticRepository,
   resticRepositoryName,
 } from "../../repositories/ResticRepository";
+import type { RepositoryConfig } from "./config-type";
 import { AppError } from "./error";
 
 export function createRepo(

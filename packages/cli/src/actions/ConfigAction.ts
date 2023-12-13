@@ -1,8 +1,7 @@
-import type { Config } from "../Config/Config";
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { GlobalOptions } from "../commands/CommandAbstract";
 import { configSchema } from "../config.schema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
+import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
 import { AppError } from "../utils/datatruck/error";
 import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
 import { IfRequireKeys } from "../utils/ts";

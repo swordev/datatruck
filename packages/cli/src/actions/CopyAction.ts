@@ -1,4 +1,3 @@
-import type { Config } from "../Config/Config";
 import { Snapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
@@ -7,6 +6,7 @@ import {
   filterRepository,
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
+import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";

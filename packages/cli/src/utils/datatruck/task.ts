@@ -1,4 +1,3 @@
-import { TaskConfig } from "../../Config/TaskConfig";
 import { GitTask, gitTaskName } from "../../tasks/GitTask";
 import { MariadbTask, mariadbTaskName } from "../../tasks/MariadbTask";
 import { MssqlTask, mssqlTaskName } from "../../tasks/MssqlTask";
@@ -9,6 +8,7 @@ import {
 } from "../../tasks/PostgresqlDumpTask";
 import { ScriptTask, scriptTaskName } from "../../tasks/ScriptTask";
 import type { TaskAbstract } from "../../tasks/TaskAbstract";
+import type { TaskConfig } from "./config-type";
 import { AppError } from "./error";
 
 export function createTask(task: TaskConfig): TaskAbstract {

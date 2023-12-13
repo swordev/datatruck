@@ -1,11 +1,11 @@
-import { Config } from "../../Config/Config";
-import type { PackageConfig } from "../../Config/PackageConfig";
-import {
-  RepositoryConfigEnabledAction,
-  RepositoryConfig,
-} from "../../Config/RepositoryConfig";
 import { checkMatch, makePathPatterns, render } from "../string";
 import { tmpDir } from "../temp";
+import type { Config } from "./config-type";
+import type {
+  PackageConfig,
+  RepositoryConfigEnabledAction,
+  RepositoryConfig,
+} from "./config-type";
 import { AppError } from "./error";
 import { isMatch } from "micromatch";
 

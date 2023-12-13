@@ -1,14 +1,20 @@
-export type { Config } from "./Config/Config";
-export type { PackageConfig } from "./Config/PackageConfig";
-export type { PackageRepositoryConfig } from "./Config/PackageRepositoryConfig";
-export type { PrunePolicyConfig } from "./Config/PrunePolicyConfig";
-
-export type { RepositoryConfig } from "./Config/RepositoryConfig";
+export type {
+  Config,
+  PackageConfig,
+  PackageConfigMeta,
+  DatatruckPolicyConfig,
+  DatatruckReportConfig,
+  DatatruckServerOptions,
+} from "./utils/datatruck/config-type";
+export type {
+  PackageRepositoryConfig,
+  RepositoryConfig,
+} from "./utils/datatruck/config-repository-type";
+export type { TaskConfig } from "./utils/datatruck/config-task-type";
 export { type ResticRepositoryConfig } from "./repositories/ResticRepository";
 export { type DatatruckRepositoryConfig } from "./repositories/DatatruckRepository";
 export { type GitRepositoryConfig } from "./repositories/GitRepository";
 
-export type { TaskConfig } from "./Config/TaskConfig";
 export { type GitTaskConfig } from "./tasks/GitTask";
 export { type MariadbTaskConfig } from "./tasks/MariadbTask";
 export { type MssqlTaskConfig } from "./tasks/MssqlTask";

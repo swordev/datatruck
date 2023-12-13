@@ -1,5 +1,3 @@
-import type { Config } from "../Config/Config";
-import { PackageConfig } from "../Config/PackageConfig";
 import { Snapshot } from "../repositories/RepositoryAbstract";
 import { TaskAbstract } from "../tasks/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
@@ -9,6 +7,7 @@ import {
   findRepositoryOrFail,
   resolvePackage,
 } from "../utils/datatruck/config";
+import type { Config, PackageConfig } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";

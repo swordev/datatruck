@@ -1,6 +1,3 @@
-import type { Config } from "../Config/Config";
-import { PackageConfig } from "../Config/PackageConfig";
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { PreSnapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
@@ -9,6 +6,11 @@ import {
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
+import type {
+  Config,
+  PackageConfig,
+  RepositoryConfig,
+} from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";

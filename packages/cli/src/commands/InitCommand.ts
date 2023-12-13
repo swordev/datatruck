@@ -1,8 +1,8 @@
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { ConfigAction } from "../actions/ConfigAction";
 import { InitAction } from "../actions/InitAction";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
+import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";

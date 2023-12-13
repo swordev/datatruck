@@ -1,7 +1,7 @@
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { ConfigAction } from "../actions/ConfigAction";
 import { DataFormat } from "../utils/DataFormat";
 import { filterPackages } from "../utils/datatruck/config";
+import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";

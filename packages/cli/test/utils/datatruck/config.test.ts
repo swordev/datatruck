@@ -1,4 +1,3 @@
-import { Config } from "../../../src/Config/Config";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -8,6 +7,7 @@ import {
   resolveDatabaseName,
   params,
 } from "../../../src/utils/datatruck/config";
+import type { Config } from "../../../src/utils/datatruck/config-type";
 import { describe, expect, it } from "vitest";
 
 describe("filterPackages", () => {

@@ -1,7 +1,7 @@
-import { PackageConfig } from "../Config/PackageConfig";
 import { BackupActionOptions } from "../actions/BackupAction";
 import { RestoreActionOptions } from "../actions/RestoreAction";
 import { PreSnapshot } from "../repositories/RepositoryAbstract";
+import type { PackageConfig } from "../utils/datatruck/config-type";
 import { Progress } from "../utils/progress";
 
 type TaskCommonData = {

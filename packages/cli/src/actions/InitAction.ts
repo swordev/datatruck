@@ -1,5 +1,5 @@
-import type { Config } from "../Config/Config";
 import { filterRepository } from "../utils/datatruck/config";
+import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { IfRequireKeys } from "../utils/ts";
 

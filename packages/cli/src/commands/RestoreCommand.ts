@@ -1,6 +1,6 @@
-import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { ConfigAction } from "../actions/ConfigAction";
 import { RestoreAction } from "../actions/RestoreAction";
+import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
