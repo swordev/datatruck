@@ -2,7 +2,7 @@ import { BackupAction } from "../Action/BackupAction";
 import { ConfigAction } from "../Action/ConfigAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { parseStringList } from "../utils/string";
-import { If, Unwrap } from "../utils/ts";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type BackupCommandOptions<TResolved = false> = {
@@ -16,14 +16,12 @@ export type BackupCommandOptions<TResolved = false> = {
   prune?: boolean;
 };
 
-export type BackupCommandResult = Unwrap<BackupAction["exec"]>;
-
 export class BackupCommand extends CommandAbstract<
   BackupCommandOptions<false>,
   BackupCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       dryRun: {
         description: "Skip execution",
         option: "--dryRun",
@@ -63,7 +61,7 @@ export class BackupCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const backup = new BackupAction(config, {
@@ -88,6 +86,8 @@ export class BackupCommand extends CommandAbstract<
         .dataFormat(result, { streams: this.streams, verbose })
         .log(this.globalOptions.outputFormat);
 
-    return result.some((item) => item.error) ? 1 : 0;
+    const exitCode = result.some((item) => item.error) ? 1 : 0;
+
+    return { result, exitCode };
   }
 }

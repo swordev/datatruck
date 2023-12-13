@@ -1,7 +1,7 @@
 import { ConfigAction } from "../Action/ConfigAction";
 import { CopyAction } from "../Action/CopyAction";
 import { parseStringList } from "../utils/string";
-import { If, Unwrap } from "../utils/ts";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type CopyCommandOptionsType<TResolved = false> = {
@@ -13,14 +13,12 @@ export type CopyCommandOptionsType<TResolved = false> = {
   repository2?: If<TResolved, string[]>;
 };
 
-export type CopyCommandResult = Unwrap<CopyAction["exec"]>;
-
 export class CopyCommand extends CommandAbstract<
   CopyCommandOptionsType<false>,
   CopyCommandOptionsType<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       id: {
         option: "-i,--id <ids>",
         description: "Filter by identifiers",
@@ -53,7 +51,7 @@ export class CopyCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const copy = new CopyAction(config, {
@@ -75,6 +73,8 @@ export class CopyCommand extends CommandAbstract<
         .dataFormat(result, { streams: this.streams, verbose })
         .log(this.globalOptions.outputFormat);
 
-    return result.some((item) => item.error) ? 1 : 0;
+    const exitCode = result.some((item) => item.error) ? 1 : 0;
+
+    return { result, exitCode };
   }
 }

@@ -5,7 +5,7 @@ import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type RestoreCommandOptionsType<TResolved = false> = {
+export type RestoreCommandOptions<TResolved = false> = {
   id: string;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
@@ -17,11 +17,11 @@ export type RestoreCommandOptionsType<TResolved = false> = {
 };
 
 export class RestoreCommand extends CommandAbstract<
-  RestoreCommandOptionsType<false>,
-  RestoreCommandOptionsType<true>
+  RestoreCommandOptions<false>,
+  RestoreCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       id: {
         description: "Filter by snapshot id",
         option: "-i,--id <id>",
@@ -62,7 +62,7 @@ export class RestoreCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const restore = new RestoreAction(config, {
@@ -87,6 +87,8 @@ export class RestoreCommand extends CommandAbstract<
         .dataFormat(result, { streams: this.streams, verbose })
         .log(this.globalOptions.outputFormat);
 
-    return result.some((item) => item.error) ? 1 : 0;
+    const exitCode = result.some((item) => item.error) ? 1 : 0;
+
+    return { result, exitCode };
   }
 }

@@ -4,7 +4,7 @@ import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { formatBytes } from "../utils/bytes";
 import { parseStringList } from "../utils/string";
-import { If, Unwrap } from "../utils/ts";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type SnapshotsCommandOptions<TResolved = false> = {
@@ -26,20 +26,18 @@ export type SnapshotsCommandOptions<TResolved = false> = {
   tag?: If<TResolved, string[]>;
 };
 
-export type SnapshotsCommandResult = Unwrap<SnapshotsAction["exec"]>;
-
 export class SnapshotsCommand extends CommandAbstract<
   SnapshotsCommandOptions<false>,
   SnapshotsCommandOptions<true>
 > {
-  override onOptions() {
+  override optionsConfig() {
     const groupByValues = [
       "id",
       "packageName",
       "repositoryName",
       "repositoryType",
     ];
-    return this.returnsOptions({
+    return this.castOptionsConfig({
       groupBy: {
         option: "-g,--group-by <values>",
         description: `Group by values (${groupByValues.join(", ")})`,
@@ -120,7 +118,7 @@ export class SnapshotsCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const snapshots = new SnapshotsAction(config, {
@@ -141,10 +139,10 @@ export class SnapshotsCommand extends CommandAbstract<
       verbose: verbose > 0,
       tags: this.options.tag,
     });
-    const items = await snapshots.exec();
+    const result = await snapshots.exec();
     const dataFormat = new DataFormat({
       streams: this.streams,
-      json: items,
+      json: result,
       table: {
         headers: [
           { value: "Id.", width: (this.options.longId ? 32 : 8) + 2 },
@@ -156,7 +154,7 @@ export class SnapshotsCommand extends CommandAbstract<
           { value: "Repository type" },
         ],
         rows: () =>
-          items.map((item) => [
+          result.map((item) => [
             this.options.longId ? item.id : item.id.slice(0, 8),
             item.date.replace("T", " ").replace("Z", ""),
             item.packageName,
@@ -171,12 +169,12 @@ export class SnapshotsCommand extends CommandAbstract<
     if (this.globalOptions.outputFormat)
       dataFormat.log(this.globalOptions.outputFormat, {
         tpl: {
-          sids: () => items.map((i) => i.id).join(),
-          ssids: () => items.map((i) => i.shortId).join(),
-          pkgNames: () => items.map((i) => i.packageName).join(),
+          sids: () => result.map((i) => i.id).join(),
+          ssids: () => result.map((i) => i.shortId).join(),
+          pkgNames: () => result.map((i) => i.packageName).join(),
         },
       });
 
-    return 0;
+    return { result, exitCode: 0 };
   }
 }

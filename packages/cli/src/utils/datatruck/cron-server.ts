@@ -1,6 +1,6 @@
 import { BackupCommandOptions } from "../../Command/BackupCommand";
 import { CopyCommandOptionsType } from "../../Command/CopyCommand";
-import { CommandConstructorFactory } from "../../Factory/CommandFactory";
+import { datatruckCommandMap } from "../../Factory/CommandFactory";
 import { stringifyOptions } from "../cli";
 import { exec } from "../process";
 import { Cron } from "croner";
@@ -65,12 +65,15 @@ export function createCronServer(
   const worker = async (action: CronAction, index: number) => {
     if (config.log) console.info(`> [job] ${index} - ${action.name}`);
     try {
-      const Command = CommandConstructorFactory(action.name as any);
+      const Command = datatruckCommandMap[action.name];
       const command = new Command(
         { config: { packages: [], repositories: [] } },
-        {},
+        {} as any,
       );
-      const cliOptions = stringifyOptions(command.onOptions(), action.options);
+      const cliOptions = stringifyOptions(
+        command.optionsConfig() as any,
+        action.options,
+      );
       const [node, bin] = process.argv;
       await exec(
         node,

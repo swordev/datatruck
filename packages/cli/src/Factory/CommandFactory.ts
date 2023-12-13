@@ -1,99 +1,59 @@
-import { CleanCacheActionOptions } from "../Action/CleanCacheAction";
-import {
-  BackupCommand,
-  BackupCommandOptions,
-  BackupCommandResult,
-} from "../Command/BackupCommand";
+import { BackupCommand } from "../Command/BackupCommand";
 import { CleanCacheCommand } from "../Command/CleanCacheCommand";
 import { GlobalOptions } from "../Command/CommandAbstract";
-import {
-  ConfigCommand,
-  ConfigCommandResult,
-  ConfigCommandOptions,
-} from "../Command/ConfigCommand";
-import { CopyCommand, CopyCommandOptionsType } from "../Command/CopyCommand";
-import {
-  InitCommand,
-  InitCommandResult,
-  InitCommandOptions,
-} from "../Command/InitCommand";
-import { PruneCommand, PruneCommandOptions } from "../Command/PruneCommand";
-import {
-  RestoreCommand,
-  RestoreCommandOptionsType,
-} from "../Command/RestoreCommand";
-import {
-  SnapshotsCommand,
-  SnapshotsCommandResult,
-  SnapshotsCommandOptions,
-} from "../Command/SnapshotsCommand";
-import {
-  StartServerCommand,
-  StartServerCommandOptions,
-} from "../Command/StartServerCommand";
+import { ConfigCommand } from "../Command/ConfigCommand";
+import { CopyCommand } from "../Command/CopyCommand";
+import { InitCommand } from "../Command/InitCommand";
+import { PruneCommand } from "../Command/PruneCommand";
+import { RestoreCommand } from "../Command/RestoreCommand";
+import { SnapshotsCommand } from "../Command/SnapshotsCommand";
+import { StartServerCommand } from "../Command/StartServerCommand";
 import { AppError } from "../Error/AppError";
 import { Streams } from "../utils/stream";
 import { Writable } from "stream";
 
-export enum CommandEnum {
-  config = "config",
-  init = "init",
-  snapshots = "snapshots",
-  prune = "prune",
-  backup = "backup",
-  restore = "restore",
-  copy = "copy",
-  cleanCache = "clean-cache",
-  startServer = "start-server",
-}
-
-export type OptionsMap = {
-  [CommandEnum.config]: ConfigCommandOptions;
-  [CommandEnum.init]: InitCommandOptions;
-  [CommandEnum.snapshots]: SnapshotsCommandOptions;
-  [CommandEnum.prune]: PruneCommandOptions;
-  [CommandEnum.backup]: BackupCommandOptions;
-  [CommandEnum.restore]: RestoreCommandOptionsType;
-  [CommandEnum.copy]: CopyCommandOptionsType;
-  [CommandEnum.cleanCache]: CleanCacheActionOptions;
-  [CommandEnum.startServer]: StartServerCommandOptions;
+export const datatruckCommandMap = {
+  config: ConfigCommand,
+  init: InitCommand,
+  snapshots: SnapshotsCommand,
+  prune: PruneCommand,
+  backup: BackupCommand,
+  restore: RestoreCommand,
+  copy: CopyCommand,
+  cleanCache: CleanCacheCommand,
+  startServer: StartServerCommand,
 };
 
-export type LogMap = {
-  [CommandEnum.config]: ConfigCommandResult;
-  [CommandEnum.init]: InitCommandResult;
-  [CommandEnum.snapshots]: SnapshotsCommandResult;
-  [CommandEnum.backup]: BackupCommandResult;
-};
+export type DatatruckCommandMap = typeof datatruckCommandMap;
 
-export function CommandFactory<TCommand extends keyof OptionsMap>(
-  type: TCommand,
+export type InferDatatruckCommandOptions<T extends keyof DatatruckCommandMap> =
+  InstanceType<DatatruckCommandMap[T]>["inputOptions"];
+
+export type InferDatatruckCommandResult<
+  T extends keyof DatatruckCommandMap,
+  R = Awaited<ReturnType<InstanceType<DatatruckCommandMap[T]>["exec"]>>,
+> = "result" extends keyof R ? R["result"] : undefined;
+
+export function createCommand<T extends keyof DatatruckCommandMap>(
+  name: T,
   globalOptions: GlobalOptions<true>,
-  options: OptionsMap[TCommand],
+  options: InferDatatruckCommandOptions<T>,
   streams?: Partial<Streams>,
   configPath?: string,
 ) {
-  const constructor = CommandConstructorFactory(type);
+  const constructor = datatruckCommandMap[name];
+  if (!constructor) throw new AppError(`Invalid command name: ${name}`);
   return new constructor(globalOptions, options as any, streams, configPath);
 }
 
-export async function exec<TCommand extends keyof OptionsMap>(
-  type: TCommand,
-  globalOptions: GlobalOptions<true>,
-  options: OptionsMap[TCommand],
-  streams?: Partial<Streams>,
-) {
-  return await CommandFactory(type, globalOptions, options, streams).onExec();
-}
-
-export function createActionInterface(globalOptions: GlobalOptions<true>): {
-  [K in keyof OptionsMap as `${K}`]: (
-    options: OptionsMap[K],
-  ) => Promise<K extends keyof LogMap ? LogMap[K] : never>;
+export function createCommands(globalOptions: GlobalOptions<true>): {
+  [K in keyof DatatruckCommandMap as `${K}`]: (
+    options: InferDatatruckCommandOptions<K>,
+  ) => Promise<InferDatatruckCommandResult<K>>;
 } {
   const object: Record<string, any> = {};
-  for (const type of Object.values(CommandEnum)) {
-    object[type] = async (options: any) => {
+  for (const name in datatruckCommandMap) {
+    object[name as any] = async (options: any) => {
       let stdoutData = "";
       const stdout = new Writable({
         write(chunk, encoding, callback) {
@@ -105,12 +65,13 @@ export function createActionInterface(globalOptions: GlobalOptions<true>): {
         !stdout.closed &&
         new Promise<void>((resolve) => stdout.end().on("close", resolve));
       try {
-        const exitCode = await exec(
-          type as CommandEnum,
+        const command = createCommand(
+          name as any,
           { ...globalOptions, outputFormat: "json", verbose: 1 },
           options,
           { stdout },
         );
+        const { exitCode } = await command.exec();
         if (exitCode !== 0) throw new Error(`Invalid exit code: ${exitCode}`);
         await end();
         return JSON.parse(stdoutData);
@@ -120,28 +81,4 @@ export function createActionInterface(globalOptions: GlobalOptions<true>): {
     };
   }
   return object as any;
-}
-
-export function CommandConstructorFactory(type: CommandEnum) {
-  if (type === CommandEnum.config) {
-    return ConfigCommand;
-  } else if (type === CommandEnum.init) {
-    return InitCommand;
-  } else if (type === CommandEnum.snapshots) {
-    return SnapshotsCommand;
-  } else if (type === CommandEnum.prune) {
-    return PruneCommand;
-  } else if (type === CommandEnum.backup) {
-    return BackupCommand;
-  } else if (type === CommandEnum.restore) {
-    return RestoreCommand;
-  } else if (type === CommandEnum.copy) {
-    return CopyCommand;
-  } else if (type === CommandEnum.cleanCache) {
-    return CleanCacheCommand;
-  } else if (type === CommandEnum.startServer) {
-    return StartServerCommand;
-  } else {
-    throw new AppError(`Invalid command type: ${type}`);
-  }
 }

@@ -9,10 +9,10 @@ export class CleanCacheCommand extends CommandAbstract<
   CleanCacheCommandOptions<false>,
   CleanCacheCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({});
+  override optionsConfig() {
+    return this.castOptionsConfig({});
   }
-  override async onExec() {
+  override async exec() {
     const cleanCache = new CleanCacheAction({
       verbose: !!this.globalOptions.verbose,
     });
@@ -38,6 +38,8 @@ export class CleanCacheCommand extends CommandAbstract<
     if (this.globalOptions.outputFormat)
       dataFormat.log(this.globalOptions.outputFormat);
 
-    return result.errors.length ? 1 : 0;
+    const exitCode = result.errors.length ? 1 : 0;
+
+    return { exitCode };
   }
 }

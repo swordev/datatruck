@@ -9,10 +9,10 @@ export class StartServerCommand extends CommandAbstract<
   StartServerCommandOptions<false>,
   StartServerCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({});
+  override optionsConfig() {
+    return this.castOptionsConfig({});
   }
-  override async onExec() {
+  override async exec() {
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const verbose = !!this.globalOptions.verbose;
     const log = config.server?.log ?? true;
@@ -50,6 +50,6 @@ export class StartServerCommand extends CommandAbstract<
     process.on("SIGINT", () => process.exit(1));
     process.on("SIGTERM", () => process.exit(1));
     await new Promise<void>(() => setInterval(() => {}, 60_000));
-    return 0;
+    return { exitCode: 0 };
   }
 }

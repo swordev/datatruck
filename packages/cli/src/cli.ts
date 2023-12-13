@@ -2,13 +2,13 @@ import { ConfigAction } from "./Action/ConfigAction";
 import { GlobalOptions } from "./Command/CommandAbstract";
 import { AppError } from "./Error/AppError";
 import {
-  CommandEnum,
-  CommandFactory,
-  OptionsMap,
+  DatatruckCommandMap,
+  InferDatatruckCommandOptions,
+  createCommand,
 } from "./Factory/CommandFactory";
 import globalData from "./globalData";
 import { DataFormatType } from "./utils/DataFormat";
-import { OptionsType, showCursorCommand } from "./utils/cli";
+import { OptionsConfig, showCursorCommand } from "./utils/cli";
 import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
 import { snakeCase } from "./utils/string";
@@ -33,11 +33,11 @@ function getGlobalOptions() {
   };
 }
 
-function makeCommand(command: CommandEnum) {
+function makeCommand(command: keyof DatatruckCommandMap) {
   const programCommand = program.command(command);
 
-  const instance = CommandFactory(command, getGlobalOptions(), null as any);
-  const options = instance.onOptions() as OptionsType<any, any>;
+  const instance = createCommand(command, getGlobalOptions(), null as any);
+  const options = instance.optionsConfig() as OptionsConfig<any, any>;
 
   for (const key in options) {
     const option = options[key];
@@ -54,7 +54,7 @@ function makeCommand(command: CommandEnum) {
   return programCommand.action(makeCommandAction(command));
 }
 
-function makeCommandAction<T>(command: CommandEnum) {
+function makeCommandAction<T>(command: keyof DatatruckCommandMap) {
   return async function (options: T) {
     let exitCode = 1;
     const globalOptions = getGlobalOptions();
@@ -70,7 +70,7 @@ function makeCommandAction<T>(command: CommandEnum) {
           ? config.data.tempDir
           : join(dirname(config.path), config.data.tempDir);
 
-      exitCode = await CommandFactory(
+      const response = await createCommand(
         command,
         {
           ...globalOptions,
@@ -79,7 +79,9 @@ function makeCommandAction<T>(command: CommandEnum) {
         options as any,
         {},
         globalOptions.config,
-      ).onExec();
+      ).exec();
+
+      exitCode = response.exitCode;
     } catch (e) {
       const error = e as Error;
       if (globalOptions.verbose) {
@@ -123,19 +125,19 @@ program.option(
   "table" as DataFormatType,
 );
 
-makeCommand(CommandEnum.startServer).alias("start");
-makeCommand(CommandEnum.config).alias("c");
-makeCommand(CommandEnum.init).alias("i");
-makeCommand(CommandEnum.snapshots).alias("s");
-makeCommand(CommandEnum.prune).alias("p");
-makeCommand(CommandEnum.backup).alias("b");
-makeCommand(CommandEnum.restore).alias("r");
-makeCommand(CommandEnum.copy).alias("cp");
-makeCommand(CommandEnum.cleanCache).alias("cc");
+makeCommand("startServer").alias("start");
+makeCommand("config").alias("c");
+makeCommand("init").alias("i");
+makeCommand("snapshots").alias("s");
+makeCommand("prune").alias("p");
+makeCommand("backup").alias("b");
+makeCommand("restore").alias("r");
+makeCommand("copy").alias("cp");
+makeCommand("cleanCache").alias("cc");
 
-export function buildArgs<TCommand extends keyof OptionsMap>(
-  input: TCommand,
-  options: OptionsMap[TCommand],
+export function buildArgs<T extends keyof DatatruckCommandMap>(
+  input: T,
+  options: InferDatatruckCommandOptions<T>,
 ) {
   const optionsArray = Object.keys(options).flatMap((name) => [
     `--${snakeCase(name, "-")}`,
@@ -166,9 +168,9 @@ export function parseArgs(args: string[]) {
   });
 }
 
-export async function exec<TCommand extends keyof OptionsMap>(
-  input: TCommand,
-  options: OptionsMap[TCommand],
+export async function exec<T extends keyof DatatruckCommandMap>(
+  input: T,
+  options: InferDatatruckCommandOptions<T>,
 ) {
   const argv = buildArgs(input, options);
   return parseArgs(argv);

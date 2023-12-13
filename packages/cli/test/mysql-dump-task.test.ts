@@ -1,4 +1,4 @@
-import { createActionInterface } from "../src/Factory/CommandFactory";
+import { createCommands } from "../src/Factory/CommandFactory";
 import { createMysqlCli } from "../src/utils/mysql";
 import { parseStringList } from "../src/utils/string";
 import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";
@@ -105,7 +105,7 @@ describe(
             ],
           });
 
-          const dtt = createActionInterface({ config, verbose });
+          const dtt = createCommands({ config, verbose });
           await dtt.init({});
           await dtt.backup({});
           const snapshots = await dtt.snapshots({});

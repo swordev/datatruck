@@ -4,7 +4,7 @@ import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
 import { parseStringList } from "../utils/string";
-import { If, Unwrap } from "../utils/ts";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type InitCommandOptions<TResolved = false> = {
@@ -12,14 +12,12 @@ export type InitCommandOptions<TResolved = false> = {
   repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
 };
 
-export type InitCommandResult = Unwrap<InitAction["exec"]>;
-
 export class InitCommand extends CommandAbstract<
   InitCommandOptions<false>,
   InitCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       repository: {
         description: "Filter by repository names",
         option: "-r,--repository <values>",
@@ -32,7 +30,7 @@ export class InitCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const init = new InitAction(config, {
@@ -40,10 +38,10 @@ export class InitCommand extends CommandAbstract<
       repositoryTypes: this.options.repositoryType,
       verbose: verbose > 0,
     });
-    const response: InitCommandResult = await init.exec();
+    const result = await init.exec();
     const dataFormat = new DataFormat({
       streams: this.streams,
-      json: response,
+      json: result,
       table: {
         headers: [
           { value: "", width: 3 },
@@ -53,7 +51,7 @@ export class InitCommand extends CommandAbstract<
           { value: "Error", width: 50 },
         ],
         rows: () =>
-          response.map((item) => [
+          result.map((item) => [
             renderResult(item.error),
             item.repositoryName,
             item.repositoryType,
@@ -66,6 +64,6 @@ export class InitCommand extends CommandAbstract<
     if (this.globalOptions.outputFormat)
       dataFormat.log(this.globalOptions.outputFormat);
 
-    return 0;
+    return { result, exitCode: 0 };
   }
 }

@@ -1,4 +1,4 @@
-import { createActionInterface } from "../src/Factory/CommandFactory";
+import { createCommands } from "../src/Factory/CommandFactory";
 import { scriptTaskCode } from "../src/Task/ScriptTask";
 import { parseStringList } from "../src/utils/string";
 import { mkTmpDir } from "../src/utils/temp";
@@ -66,7 +66,7 @@ describe(
           ],
         });
 
-        const dtt = createActionInterface({ config, verbose });
+        const dtt = createCommands({ config, verbose });
         await dtt.init({});
         await dtt.backup({});
         const [snapshot] = await dtt.snapshots({ last: "1" });
@@ -148,7 +148,7 @@ describe(
           ],
         });
 
-        const dtt = createActionInterface({ config, verbose });
+        const dtt = createCommands({ config, verbose });
         await dtt.init({});
         await dtt.backup({});
         const [snapshot] = await dtt.snapshots({ last: "1" });

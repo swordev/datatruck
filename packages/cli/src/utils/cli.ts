@@ -72,8 +72,8 @@ export function renderResult(
       ? chalk.red("Χ")
       : "Χ"
     : color
-    ? chalk.green("✓")
-    : "✓";
+      ? chalk.green("✓")
+      : "✓";
 }
 
 export function renderError(
@@ -101,7 +101,7 @@ export function renderObject(object: Record<string, any>, color?: boolean) {
   return values.join(` `);
 }
 
-export type OptionsType<T1, T2 extends { [K in keyof T1]: unknown }> = {
+export type OptionsConfig<T1, T2 extends { [K in keyof T1]: unknown }> = {
   [K in keyof Required<T1>]: {
     option: string;
     description: string;
@@ -113,7 +113,7 @@ export type OptionsType<T1, T2 extends { [K in keyof T1]: unknown }> = {
 
 export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
   object: T1,
-  options: OptionsType<T1, T2>,
+  options: OptionsConfig<T1, T2>,
 ) {
   const result: T2 = {} as any;
   for (const key in options) {
@@ -129,7 +129,7 @@ export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
 }
 
 export function stringifyOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
-  options: OptionsType<T1, T2>,
+  options: OptionsConfig<T1, T2>,
   object: any,
 ) {
   const result: string[] = [];

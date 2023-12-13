@@ -26,8 +26,8 @@ export class PruneCommand extends CommandAbstract<
   PruneCommandOptions<false>,
   PruneCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       dryRun: {
         description: "",
         option: "--dry-run",
@@ -120,7 +120,7 @@ export class PruneCommand extends CommandAbstract<
     });
   }
 
-  override async onExec() {
+  override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
 
@@ -144,10 +144,10 @@ export class PruneCommand extends CommandAbstract<
       returnsAll: this.options.showAll,
     });
 
-    const pruneResult = await prune.exec();
+    const result = await prune.exec();
     const dataFormat = new DataFormat({
       streams: this.streams,
-      json: pruneResult,
+      json: result,
       table: {
         headers: [
           { value: "Id.", width: (this.options.longId ? 32 : 8) + 2 },
@@ -158,7 +158,7 @@ export class PruneCommand extends CommandAbstract<
           { value: "Exclusion reasons" },
         ],
         rows: () =>
-          pruneResult.snapshots.map((item) => [
+          result.snapshots.map((item) => [
             this.options.longId ? item.id : item.id.slice(0, 8),
             item.date.replace("T", " ").replace("Z", ""),
             item.packageName,
@@ -174,11 +174,11 @@ export class PruneCommand extends CommandAbstract<
 
     if (!this.options.confirm && !this.options.dryRun) {
       const answer = await confirm(
-        `Delete ${pruneResult.prune}/${pruneResult.total} snapshots?`,
+        `Delete ${result.prune}/${result.total} snapshots?`,
       );
-      if (answer) await prune.confirm(pruneResult.snapshots);
+      if (answer) await prune.confirm(result.snapshots);
     }
 
-    return 0;
+    return { result, exitCode: 0 };
   }
 }

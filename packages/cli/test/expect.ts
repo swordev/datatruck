@@ -1,5 +1,5 @@
-import { RestoreCommandOptionsType } from "../src/Command/RestoreCommand";
-import { createActionInterface } from "../src/Factory/CommandFactory";
+import { RestoreCommandOptions } from "../src/Command/RestoreCommand";
+import { createCommands } from "../src/Factory/CommandFactory";
 import "./toEqualMessage";
 import {
   FileChangerResult,
@@ -18,7 +18,7 @@ export async function runBackups(
   changes: FileChanges[],
 ) {
   const backups: Backup[] = [];
-  const dtt = createActionInterface({ config });
+  const dtt = createCommands({ config });
   let index = 0;
   for (const change of changes) {
     const files = await fileChanger.update(change);
@@ -39,9 +39,9 @@ export async function runRestores(
   config: string,
   fileChanger: FileChangerResult,
   backups: Backup[],
-  options?: Omit<RestoreCommandOptionsType, "id">,
+  options?: Omit<RestoreCommandOptions, "id">,
 ) {
-  const dtt = createActionInterface({ config });
+  const dtt = createCommands({ config });
   let index = 0;
   for (const { id, files } of backups) {
     console.log(`Running restore ${index + 1}/${backups.length}`);

@@ -1,8 +1,6 @@
-import { RestoreCommand } from "../src/Command/RestoreCommand";
-import { createActionInterface } from "../src/Factory/CommandFactory";
-import { existsDir, existsFile } from "../src/utils/fs";
+import { createCommands } from "../src/Factory/CommandFactory";
+import { existsFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
-import { mkTmpDir } from "../src/utils/temp";
 import { runBackups, runRestores } from "./expect";
 import { fileChanges } from "./fileChanges";
 import {
@@ -53,7 +51,7 @@ describe(
         ],
       });
 
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       const config2 = await dtt.config({});
 
       expect(config2.data.packages[0].name).toBe("main/files");
@@ -87,7 +85,7 @@ describe(
           },
         ],
       });
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       await dtt.init({});
       await writeFile(`${fileChanger.path}/file4`, "f4");
       const backupFiles = await runBackups(config, fileChanger, [
@@ -113,7 +111,7 @@ describe(
           },
         ],
       });
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       await dtt.init({});
       const backupFiles = await runBackups(config, fileChanger, [
         {
@@ -153,7 +151,7 @@ describe(
           },
         ],
       });
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       await fileChanger.update({ f: "test" });
       await dtt.init({});
       await dtt.backup({});
@@ -167,7 +165,7 @@ describe(
         repositories: [repo],
         packages: [],
       });
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       expect(await dtt.init({})).toMatchObject([
         {
           error: null,
@@ -191,7 +189,7 @@ describe(
         ],
       });
 
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       await dtt.init({});
 
       const backups = await runBackups(config, fileChanger, fileChanges(type));
@@ -230,7 +228,7 @@ describe(
           ],
         });
 
-        const dtt = createActionInterface({ config });
+        const dtt = createCommands({ config });
         await dtt.init({});
 
         const backups = await runBackups(
@@ -267,7 +265,7 @@ describe(
         },
       };
 
-      const dtt = createActionInterface({ config });
+      const dtt = createCommands({ config });
       await dtt.init({});
       await runBackups(config, fileChanger, [changes]);
 

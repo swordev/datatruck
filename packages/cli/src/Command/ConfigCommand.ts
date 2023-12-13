@@ -3,7 +3,7 @@ import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { filterPackages } from "../utils/datatruck/config";
 import { parseStringList } from "../utils/string";
-import { If, Unwrap } from "../utils/ts";
+import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type ConfigCommandOptions<TResolved = false> = {
@@ -13,14 +13,12 @@ export type ConfigCommandOptions<TResolved = false> = {
   repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
 };
 
-export type ConfigCommandResult = Unwrap<ConfigAction["exec"]>;
-
 export class ConfigCommand extends CommandAbstract<
   ConfigCommandOptions<false>,
   ConfigCommandOptions<true>
 > {
-  override onOptions() {
-    return this.returnsOptions({
+  override optionsConfig() {
+    return this.castOptionsConfig({
       package: {
         description: "Filter by package names",
         option: "-p,--package <values>",
@@ -43,7 +41,7 @@ export class ConfigCommand extends CommandAbstract<
       },
     });
   }
-  override async onExec() {
+  override async exec() {
     const result = await ConfigAction.fromGlobalOptionsWithPath(
       this.globalOptions,
     );
@@ -86,6 +84,6 @@ export class ConfigCommand extends CommandAbstract<
         },
       });
 
-    return 0;
+    return { result, exitCode: 0 };
   }
 }

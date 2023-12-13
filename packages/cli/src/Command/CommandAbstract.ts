@@ -1,6 +1,6 @@
 import { Config } from "../Config/Config";
 import { DataFormatType } from "../utils/DataFormat";
-import { OptionsType, parseOptions } from "../utils/cli";
+import { OptionsConfig, parseOptions } from "../utils/cli";
 import { ProgressMode } from "../utils/progress";
 import { Streams, createStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";
@@ -35,16 +35,18 @@ export abstract class CommandAbstract<
   readonly streams: Streams;
   constructor(
     readonly globalOptions: GlobalOptions<true>,
-    options: TUnresolvedOptions,
+    readonly inputOptions: TUnresolvedOptions,
     streams: Partial<Streams> = {},
     readonly configPath?: string,
   ) {
-    this.options = parseOptions(options, this.onOptions());
+    this.options = parseOptions(inputOptions, this.optionsConfig());
     this.streams = createStreams(streams);
   }
-  abstract onOptions(): OptionsType<TUnresolvedOptions, TOptions>;
-  protected returnsOptions(options: OptionsType<TUnresolvedOptions, TOptions>) {
+  abstract optionsConfig(): OptionsConfig<TUnresolvedOptions, TOptions>;
+  protected castOptionsConfig(
+    options: OptionsConfig<TUnresolvedOptions, TOptions>,
+  ) {
     return options;
   }
-  abstract onExec(): Promise<number>;
+  abstract exec(): Promise<{ exitCode: number; result?: any }>;
 }
