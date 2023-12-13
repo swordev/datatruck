@@ -1,8 +1,8 @@
 import { BackupCommandOptions } from "../../Command/BackupCommand";
 import { CopyCommandOptionsType } from "../../Command/CopyCommand";
-import { datatruckCommandMap } from "../../Factory/CommandFactory";
 import { stringifyOptions } from "../cli";
 import { exec } from "../process";
+import { datatruckCommandMap } from "./command";
 import { Cron } from "croner";
 
 export type CronAction =

@@ -1,5 +1,5 @@
-import { createCommands } from "../src/Factory/CommandFactory";
 import { scriptTaskCode } from "../src/Task/ScriptTask";
+import { createCommands } from "../src/utils/datatruck/command";
 import { parseStringList } from "../src/utils/string";
 import { mkTmpDir } from "../src/utils/temp";
 import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";

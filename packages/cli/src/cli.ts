@@ -1,14 +1,14 @@
 import { ConfigAction } from "./Action/ConfigAction";
 import { GlobalOptions } from "./Command/CommandAbstract";
 import { AppError } from "./Error/AppError";
+import globalData from "./globalData";
+import { DataFormatType } from "./utils/DataFormat";
+import { OptionsConfig, showCursorCommand } from "./utils/cli";
 import {
   DatatruckCommandMap,
   InferDatatruckCommandOptions,
   createCommand,
-} from "./Factory/CommandFactory";
-import globalData from "./globalData";
-import { DataFormatType } from "./utils/DataFormat";
-import { OptionsConfig, showCursorCommand } from "./utils/cli";
+} from "./utils/datatruck/command";
 import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
 import { snakeCase } from "./utils/string";

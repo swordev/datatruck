@@ -1,4 +1,4 @@
-import { createCommands } from "../src/Factory/CommandFactory";
+import { createCommands } from "../src/utils/datatruck/command";
 import { createMysqlCli } from "../src/utils/mysql";
 import { parseStringList } from "../src/utils/string";
 import { makeConfig, makeRepositoryConfig, testRepositoryTypes } from "./util";

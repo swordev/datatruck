@@ -1,15 +1,15 @@
-import { BackupCommand } from "../Command/BackupCommand";
-import { CleanCacheCommand } from "../Command/CleanCacheCommand";
-import { GlobalOptions } from "../Command/CommandAbstract";
-import { ConfigCommand } from "../Command/ConfigCommand";
-import { CopyCommand } from "../Command/CopyCommand";
-import { InitCommand } from "../Command/InitCommand";
-import { PruneCommand } from "../Command/PruneCommand";
-import { RestoreCommand } from "../Command/RestoreCommand";
-import { SnapshotsCommand } from "../Command/SnapshotsCommand";
-import { StartServerCommand } from "../Command/StartServerCommand";
-import { AppError } from "../Error/AppError";
-import { Streams } from "../utils/stream";
+import { BackupCommand } from "../../Command/BackupCommand";
+import { CleanCacheCommand } from "../../Command/CleanCacheCommand";
+import { GlobalOptions } from "../../Command/CommandAbstract";
+import { ConfigCommand } from "../../Command/ConfigCommand";
+import { CopyCommand } from "../../Command/CopyCommand";
+import { InitCommand } from "../../Command/InitCommand";
+import { PruneCommand } from "../../Command/PruneCommand";
+import { RestoreCommand } from "../../Command/RestoreCommand";
+import { SnapshotsCommand } from "../../Command/SnapshotsCommand";
+import { StartServerCommand } from "../../Command/StartServerCommand";
+import { AppError } from "../../Error/AppError";
+import { Streams } from "../stream";
 import { Writable } from "stream";
 
 export const datatruckCommandMap = {

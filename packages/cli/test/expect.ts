@@ -1,5 +1,5 @@
 import { RestoreCommandOptions } from "../src/Command/RestoreCommand";
-import { createCommands } from "../src/Factory/CommandFactory";
+import { createCommands } from "../src/utils/datatruck/command";
 import "./toEqualMessage";
 import {
   FileChangerResult,

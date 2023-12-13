@@ -1,4 +1,4 @@
-import { createCommands } from "../src/Factory/CommandFactory";
+import { createCommands } from "../src/utils/datatruck/command";
 import { existsFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
 import { runBackups, runRestores } from "./expect";
