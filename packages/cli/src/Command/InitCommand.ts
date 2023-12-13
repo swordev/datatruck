@@ -3,7 +3,6 @@ import { InitAction } from "../Action/InitAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
-import { getErrorProperties } from "../utils/object";
 import { parseStringList } from "../utils/string";
 import { If, Unwrap } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
