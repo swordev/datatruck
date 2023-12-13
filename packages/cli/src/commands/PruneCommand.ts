@@ -1,7 +1,7 @@
-import { ConfigAction } from "../Action/ConfigAction";
-import { PruneAction } from "../Action/PruneAction";
-import { SnapshotGroupByType } from "../Action/SnapshotsAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { ConfigAction } from "../actions/ConfigAction";
+import { PruneAction } from "../actions/PruneAction";
+import { SnapshotGroupByType } from "../actions/SnapshotsAction";
 import { DataFormat } from "../utils/DataFormat";
 import { confirm } from "../utils/cli";
 import { KeepObject } from "../utils/date";

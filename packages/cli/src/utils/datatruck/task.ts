@@ -1,14 +1,14 @@
 import { TaskConfig } from "../../Config/TaskConfig";
-import { GitTask, gitTaskName } from "../../Task/GitTask";
-import { MariadbTask, mariadbTaskName } from "../../Task/MariadbTask";
-import { MssqlTask, mssqlTaskName } from "../../Task/MssqlTask";
-import { MysqlDumpTask, mysqlDumpTaskName } from "../../Task/MysqlDumpTask";
+import { GitTask, gitTaskName } from "../../tasks/GitTask";
+import { MariadbTask, mariadbTaskName } from "../../tasks/MariadbTask";
+import { MssqlTask, mssqlTaskName } from "../../tasks/MssqlTask";
+import { MysqlDumpTask, mysqlDumpTaskName } from "../../tasks/MysqlDumpTask";
 import {
   PostgresqlDumpTask,
   postgresqlDumpTaskName,
-} from "../../Task/PostgresqlDumpTask";
-import { ScriptTask, scriptTaskName } from "../../Task/ScriptTask";
-import type { TaskAbstract } from "../../Task/TaskAbstract";
+} from "../../tasks/PostgresqlDumpTask";
+import { ScriptTask, scriptTaskName } from "../../tasks/ScriptTask";
+import type { TaskAbstract } from "../../tasks/TaskAbstract";
 import { AppError } from "./error";
 
 export function createTask(task: TaskConfig): TaskAbstract {

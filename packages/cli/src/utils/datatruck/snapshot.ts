@@ -1,5 +1,5 @@
-import { SnapshotGroupByType } from "../../Action/SnapshotsAction";
-import { Snapshot } from "../../Repository/RepositoryAbstract";
+import { SnapshotGroupByType } from "../../actions/SnapshotsAction";
+import { Snapshot } from "../../repositories/RepositoryAbstract";
 import { filterByLast, FilterByLastOptions } from "../date";
 import { groupBy } from "../object";
 

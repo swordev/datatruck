@@ -1,6 +1,6 @@
-import { GlobalOptions } from "../Command/CommandAbstract";
 import type { Config } from "../Config/Config";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { GlobalOptions } from "../commands/CommandAbstract";
 import { configSchema } from "../config.schema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
 import { AppError } from "../utils/datatruck/error";

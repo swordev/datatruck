@@ -1,5 +1,5 @@
 import type { Config } from "../Config/Config";
-import { Snapshot } from "../Repository/RepositoryAbstract";
+import { Snapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
 import {

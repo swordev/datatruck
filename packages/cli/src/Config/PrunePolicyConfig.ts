@@ -1,4 +1,4 @@
-import { PruneActionsOptions } from "../Action/PruneAction";
+import { PruneActionsOptions } from "../actions/PruneAction";
 
 export type PrunePolicyConfig = Pick<
   PruneActionsOptions,

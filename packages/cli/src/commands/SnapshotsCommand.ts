@@ -1,6 +1,6 @@
-import { ConfigAction } from "../Action/ConfigAction";
-import { SnapshotsAction } from "../Action/SnapshotsAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { ConfigAction } from "../actions/ConfigAction";
+import { SnapshotsAction } from "../actions/SnapshotsAction";
 import { DataFormat } from "../utils/DataFormat";
 import { formatBytes } from "../utils/bytes";
 import { parseStringList } from "../utils/string";

@@ -1,5 +1,5 @@
-import { BackupCommandOptions } from "../../Command/BackupCommand";
-import { CopyCommandOptionsType } from "../../Command/CopyCommand";
+import { BackupCommandOptions } from "../../commands/BackupCommand";
+import { CopyCommandOptionsType } from "../../commands/CopyCommand";
 import { stringifyOptions } from "../cli";
 import { exec } from "../process";
 import { datatruckCommandMap } from "./command";

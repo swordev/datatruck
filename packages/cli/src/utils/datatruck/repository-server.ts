@@ -1,4 +1,4 @@
-import { ConfigAction } from "../../Action/ConfigAction";
+import { ConfigAction } from "../../actions/ConfigAction";
 import { readRequestData } from "../http";
 import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";

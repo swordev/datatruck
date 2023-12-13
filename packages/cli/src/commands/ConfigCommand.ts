@@ -1,5 +1,5 @@
-import { ConfigAction } from "../Action/ConfigAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { ConfigAction } from "../actions/ConfigAction";
 import { DataFormat } from "../utils/DataFormat";
 import { filterPackages } from "../utils/datatruck/config";
 import { parseStringList } from "../utils/string";

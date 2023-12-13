@@ -1,12 +1,12 @@
-import type { BackupActionOptions } from "../Action/BackupAction";
-import type { InitActionOptions } from "../Action/InitAction";
-import type { RestoreActionOptions } from "../Action/RestoreAction";
+import type { PackageConfig } from "../Config/PackageConfig";
+import type { RepositoryConfig } from "../Config/RepositoryConfig";
+import type { BackupActionOptions } from "../actions/BackupAction";
+import type { InitActionOptions } from "../actions/InitAction";
+import type { RestoreActionOptions } from "../actions/RestoreAction";
 import type {
   ExtendedSnapshot,
   SnapshotsActionOptions,
-} from "../Action/SnapshotsAction";
-import type { PackageConfig } from "../Config/PackageConfig";
-import type { RepositoryConfig } from "../Config/RepositoryConfig";
+} from "../actions/SnapshotsAction";
 import { ensureFreeDiskSpace, type DiskStats } from "../utils/fs";
 import type { Progress } from "../utils/progress";
 

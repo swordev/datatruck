@@ -1,5 +1,5 @@
-import { ConfigAction } from "./Action/ConfigAction";
-import { GlobalOptions } from "./Command/CommandAbstract";
+import { ConfigAction } from "./actions/ConfigAction";
+import { GlobalOptions } from "./commands/CommandAbstract";
 import globalData from "./globalData";
 import { DataFormatType } from "./utils/DataFormat";
 import { OptionsConfig, showCursorCommand } from "./utils/cli";

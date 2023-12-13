@@ -1,5 +1,5 @@
 import { PackageConfig } from "../Config/PackageConfig";
-import { PreSnapshot } from "../Repository/RepositoryAbstract";
+import { PreSnapshot } from "../repositories/RepositoryAbstract";
 import { ProcessEnv } from "../utils/process";
 import { SpawnStep, runSpawnSteps } from "../utils/spawnSteps";
 import { mkTmpDir } from "../utils/temp";

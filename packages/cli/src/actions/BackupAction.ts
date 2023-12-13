@@ -1,7 +1,7 @@
 import type { Config } from "../Config/Config";
 import { PackageConfig } from "../Config/PackageConfig";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
-import { PreSnapshot } from "../Repository/RepositoryAbstract";
+import { PreSnapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
 import {

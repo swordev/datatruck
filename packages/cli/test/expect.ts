@@ -1,4 +1,4 @@
-import { RestoreCommandOptions } from "../src/Command/RestoreCommand";
+import { RestoreCommandOptions } from "../src/commands/RestoreCommand";
 import { createCommands } from "../src/utils/datatruck/command";
 import "./toEqualMessage";
 import {

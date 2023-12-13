@@ -1,15 +1,15 @@
 import {
   DatatruckPackageRepositoryConfig,
   datatruckRepositoryName,
-} from "../Repository/DatatruckRepository";
+} from "../repositories/DatatruckRepository";
 import {
   GitPackageRepositoryConfig,
   gitRepositoryName,
-} from "../Repository/GitRepository";
+} from "../repositories/GitRepository";
 import {
   ResticPackageRepositoryConfig,
   resticRepositoryName,
-} from "../Repository/ResticRepository";
+} from "../repositories/ResticRepository";
 
 export type PackageRepositoryConfig = {
   names?: string[];

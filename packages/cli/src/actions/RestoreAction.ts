@@ -1,7 +1,7 @@
 import type { Config } from "../Config/Config";
 import { PackageConfig } from "../Config/PackageConfig";
-import { Snapshot } from "../Repository/RepositoryAbstract";
-import { TaskAbstract } from "../Task/TaskAbstract";
+import { Snapshot } from "../repositories/RepositoryAbstract";
+import { TaskAbstract } from "../tasks/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderObject, renderResult } from "../utils/cli";
 import {

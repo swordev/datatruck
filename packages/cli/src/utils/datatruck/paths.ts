@@ -1,5 +1,5 @@
 import { PackageConfig } from "../../Config/PackageConfig";
-import { PreSnapshot } from "../../Repository/RepositoryAbstract";
+import { PreSnapshot } from "../../repositories/RepositoryAbstract";
 import { SpawnStep, runSpawnSteps } from "../spawnSteps";
 
 export type ParsePathsOptions = {

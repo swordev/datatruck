@@ -1,49 +1,40 @@
-import { ConfigAction } from "../Action/ConfigAction";
-import { RestoreAction } from "../Action/RestoreAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { BackupAction } from "../actions/BackupAction";
+import { ConfigAction } from "../actions/ConfigAction";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type RestoreCommandOptions<TResolved = false> = {
-  id: string;
+export type BackupCommandOptions<TResolved = false> = {
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
-  packageConfig?: boolean;
   repository?: If<TResolved, string[]>;
   repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
   tag?: If<TResolved, string[]>;
-  initial?: boolean;
+  dryRun?: boolean;
+  date?: string;
+  prune?: boolean;
 };
 
-export class RestoreCommand extends CommandAbstract<
-  RestoreCommandOptions<false>,
-  RestoreCommandOptions<true>
+export class BackupCommand extends CommandAbstract<
+  BackupCommandOptions<false>,
+  BackupCommandOptions<true>
 > {
   override optionsConfig() {
     return this.castOptionsConfig({
-      id: {
-        description: "Filter by snapshot id",
-        option: "-i,--id <id>",
-        required: true,
+      dryRun: {
+        description: "Skip execution",
+        option: "--dryRun",
       },
       package: {
         description: "Filter by package names",
         option: "-p,--package <values>",
         parser: parseStringList,
       },
-      initial: {
-        description: "Initial restoring (disables restore path)",
-        option: "--initial",
-      },
       packageTask: {
         description: "Filter by package task names",
         option: "-pt,--package-task <values>",
         parser: parseStringList,
-      },
-      packageConfig: {
-        description: "Filter by package config",
-        option: "-pc,--package-config",
       },
       repository: {
         description: "Filter by repository names",
@@ -60,30 +51,38 @@ export class RestoreCommand extends CommandAbstract<
         option: "-t,--tag <values>",
         parser: parseStringList,
       },
+      date: {
+        description: "Date time (ISO)",
+        option: "--date <value>",
+      },
+      prune: {
+        description: "Prune backups",
+        option: "--prune",
+      },
     });
   }
   override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
-    const restore = new RestoreAction(config, {
-      snapshotId: this.options.id,
+    const backup = new BackupAction(config, {
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
-      packageConfig: this.options.packageConfig,
       repositoryNames: this.options.repository,
       repositoryTypes: this.options.repositoryType,
       tags: this.options.tag,
+      dryRun: this.options.dryRun,
       verbose: verbose > 0,
-      initial: this.options.initial,
+      date: this.options.date,
       tty: this.globalOptions.tty,
       progress: this.globalOptions.progress,
       streams: this.streams,
+      prune: this.options.prune,
     });
 
-    const result = await restore.exec();
+    const result = await backup.exec();
 
     if (this.globalOptions.outputFormat)
-      restore
+      backup
         .dataFormat(result, { streams: this.streams, verbose })
         .log(this.globalOptions.outputFormat);
 

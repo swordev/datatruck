@@ -1,4 +1,4 @@
-import { CleanCacheAction } from "../Action/CleanCacheAction";
+import { CleanCacheAction } from "../actions/CleanCacheAction";
 import { DataFormat } from "../utils/DataFormat";
 import { formatBytes } from "../utils/bytes";
 import { CommandAbstract } from "./CommandAbstract";

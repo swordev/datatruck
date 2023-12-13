@@ -1,6 +1,6 @@
-import { ConfigAction } from "../Action/ConfigAction";
-import { InitAction } from "../Action/InitAction";
 import { RepositoryConfig } from "../Config/RepositoryConfig";
+import { ConfigAction } from "../actions/ConfigAction";
+import { InitAction } from "../actions/InitAction";
 import { DataFormat } from "../utils/DataFormat";
 import { renderError, renderResult } from "../utils/cli";
 import { parseStringList } from "../utils/string";

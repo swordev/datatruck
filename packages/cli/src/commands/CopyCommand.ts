@@ -1,5 +1,5 @@
-import { ConfigAction } from "../Action/ConfigAction";
-import { CopyAction } from "../Action/CopyAction";
+import { ConfigAction } from "../actions/ConfigAction";
+import { CopyAction } from "../actions/CopyAction";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";

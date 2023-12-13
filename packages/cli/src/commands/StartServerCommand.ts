@@ -1,4 +1,4 @@
-import { ConfigAction } from "../Action/ConfigAction";
+import { ConfigAction } from "../actions/ConfigAction";
 import { createCronServer } from "../utils/datatruck/cron-server";
 import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
 import { CommandAbstract } from "./CommandAbstract";

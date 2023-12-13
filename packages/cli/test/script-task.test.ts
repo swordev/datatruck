@@ -1,4 +1,4 @@
-import { scriptTaskCode } from "../src/Task/ScriptTask";
+import { scriptTaskCode } from "../src/tasks/ScriptTask";
 import { createCommands } from "../src/utils/datatruck/command";
 import { parseStringList } from "../src/utils/string";
 import { mkTmpDir } from "../src/utils/temp";
