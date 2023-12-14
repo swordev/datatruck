@@ -1,4 +1,4 @@
-import { ConfigAction } from "../..";
+import { ConfigAction } from "../../actions/ConfigAction";
 import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptionsType } from "../../commands/CopyCommand";
 import { stringifyOptions } from "../cli";
