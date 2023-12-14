@@ -54,7 +54,10 @@ export function filterByLast<TItem extends { date: string }>(
       last?: string;
     };
   } = {
-    last: { handler: (_, i) => i.toString(), value: options.last },
+    last: {
+      handler: (_, i) => i.toString(),
+      value: options.last,
+    },
     lastMinutely: {
       handler: (d) => d.format("YYYYMMDDHHmm"),
       value: options.lastMinutely,
@@ -80,7 +83,10 @@ export function filterByLast<TItem extends { date: string }>(
   let someFilter = false;
   for (const key in filters) {
     const object = filters[key as keyof typeof options];
-    if (object?.value) {
+    if (
+      object?.value ||
+      (key === "last" && typeof object?.value === "number")
+    ) {
       someFilter = true;
     }
   }
