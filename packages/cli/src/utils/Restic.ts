@@ -1,8 +1,10 @@
 import { fastFolderSizeAsync } from "./fs";
 import { exec, ExecResult, ExecSettingsInterface, ProcessEnv } from "./process";
 import { formatUri, Uri } from "./string";
-import { writeFile, readFile } from "fs/promises";
-import { resolve } from "path";
+import { writeFile, readFile, rm } from "fs/promises";
+import { join, resolve } from "path";
+
+const emptySnapshotTag = "empty-snapshot";
 
 export type ResticRepositoryUri = {
   name?: string;
@@ -169,6 +171,7 @@ export class Restic {
     paths?: string[];
     latest?: number;
     json?: boolean;
+    snapshotIds?: string[];
   }): Promise<
     {
       time: string;
@@ -189,6 +192,7 @@ export class Restic {
         ...(options.json ? ["--json"] : []),
         ...(options.paths?.flatMap((path) => ["--path", path]) ?? []),
         ...(options.latest ? ["--latest", options.latest.toString()] : []),
+        ...(options.snapshotIds || []),
       ],
       {
         stdout: { save: true },
@@ -267,9 +271,10 @@ export class Restic {
       ) {
         if (options.createEmptyDir) {
           const emptyPath = await options.createEmptyDir();
-          await writeFile(`${emptyPath}/.empty`, "");
+          await writeFile(`${emptyPath}/.${emptySnapshotTag}`, "");
           return await this.backup({
             ...options,
+            tags: [...(options.tags || []), emptySnapshotTag],
             cwd: emptyPath,
             allowEmptySnapshot: false,
             paths: ["."],
@@ -327,10 +332,15 @@ export class Restic {
       }
     }
 
+    const snapshots = await this.snapshots({
+      snapshotIds: [options.id],
+      json: true,
+    });
+
     if (typeof progressInterval === "number") progressRutine();
 
     try {
-      return await this.exec(
+      const result = await this.exec(
         ["restore", "--json", options.id, "--target", options.target],
         {
           stderr: {
@@ -347,6 +357,11 @@ export class Restic {
           },
         },
       );
+
+      if (snapshots.at(0)?.tags?.includes(emptySnapshotTag))
+        await rm(join(options.target, `.${emptySnapshotTag}`));
+
+      return result;
     } finally {
       clearTimeout(progressTimeout);
     }
