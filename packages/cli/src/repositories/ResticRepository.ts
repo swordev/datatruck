@@ -382,6 +382,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       options: {
         ids: [data.snapshot.id],
         packageNames: [data.package.name],
+        verbose: data.options.verbose,
       },
     });
 

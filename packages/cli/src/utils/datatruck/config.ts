@@ -21,6 +21,58 @@ export function findPackageOrFail(config: Config, packageName: string) {
   return pkg;
 }
 
+export function findPackageRepositoryConfig(
+  pkg: PackageConfig,
+  repo: RepositoryConfig,
+) {
+  return pkg.repositoryConfigs?.find(
+    (config) =>
+      config.type === repo.type &&
+      (!config.names || config.names.includes(repo.name)),
+  )?.config;
+}
+
+export function filterRepository(
+  repositories: RepositoryConfig[],
+  options: {
+    include?: string[];
+    exclude?: string[];
+    action?: RepositoryConfigEnabledAction;
+  },
+) {
+  return repositories.filter((r) => {
+    if (options.include && !options.include.includes(r.name)) return false;
+    if (options.exclude && options.exclude.includes(r.name)) return false;
+    if (options.action && !filterRepositoryByEnabled(r, options.action))
+      return false;
+    return true;
+  });
+}
+export function sortReposByType<
+  T extends { name: string; type: RepositoryConfig["type"] },
+>(repositories: T[], types?: RepositoryConfig["type"][]): T[] {
+  const groups = repositories.reduce(
+    (group, item) => {
+      if (!group[item.type]) group[item.type] = [];
+      group[item.type].push(item);
+      return group;
+    },
+    {} as Record<RepositoryConfig["type"], typeof repositories>,
+  );
+  const result: typeof repositories = [];
+
+  const sortedTypes = [
+    ...new Set([...(types || []), ...Object.keys(groups)]),
+  ] as RepositoryConfig["type"][];
+
+  for (const type of sortedTypes) {
+    const group = groups[type];
+    if (group)
+      result.push(...group.sort((a, b) => a.name.localeCompare(b.name)));
+  }
+  return result;
+}
+
 export function ensureSameRepositoryType(
   a: RepositoryConfig,
   b: RepositoryConfig,
@@ -34,7 +86,7 @@ export function ensureSameRepositoryType(
   }
 }
 
-export function filterRepository(
+export function filterRepositoryByEnabled(
   repository: RepositoryConfig,
   action?: RepositoryConfigEnabledAction,
 ) {
@@ -62,7 +114,8 @@ export function filterPackages(
       pkg = Object.assign({}, pkg);
       pkg.repositoryNames = (pkg.repositoryNames ?? []).filter((name) => {
         const repo = findRepositoryOrFail(config, name);
-        if (!filterRepository(repo, options?.sourceAction)) return false;
+        if (!filterRepositoryByEnabled(repo, options?.sourceAction))
+          return false;
         return (
           (!options.repositoryNames ||
             options.repositoryNames.includes(name)) &&

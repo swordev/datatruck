@@ -6,4 +6,5 @@ export default defineConfig({
     globalSetup: ["./packages/cli/test/globalSetup.ts"],
     include: ["./packages/*/test/**/*.test.ts"],
   },
+  esbuild: { target: "es2022" },
 });

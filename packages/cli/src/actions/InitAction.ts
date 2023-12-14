@@ -1,4 +1,4 @@
-import { filterRepository } from "../utils/datatruck/config";
+import { filterRepositoryByEnabled } from "../utils/datatruck/config";
 import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { IfRequireKeys } from "../utils/ts";
@@ -24,7 +24,7 @@ export class InitAction<TRequired extends boolean = true> {
     }[] = [];
 
     for (const repoConfig of this.config.repositories) {
-      if (!filterRepository(repoConfig, "init")) continue;
+      if (!filterRepositoryByEnabled(repoConfig, "init")) continue;
       if (
         this.options.repositoryNames &&
         !this.options.repositoryNames.includes(repoConfig.name)
