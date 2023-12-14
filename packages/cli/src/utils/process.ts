@@ -483,7 +483,12 @@ export async function exec(
         });
         rl.on("line", onData);
         rl.on("close", tryFinish);
-      } else if (log[type] || settings[type]?.save || settings[type]?.onData) {
+      } else if (
+        log[type] ||
+        settings[type]?.save ||
+        settings[type]?.onData ||
+        (type === "stderr" && settings[type]?.toExitCode)
+      ) {
         p[type]!.on("data", onData);
       }
     }
