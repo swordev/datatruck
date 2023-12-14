@@ -1,5 +1,4 @@
 import type { BackupActionOptions } from "../actions/BackupAction";
-import type { InitActionOptions } from "../actions/InitAction";
 import type { RestoreActionOptions } from "../actions/RestoreAction";
 import type {
   ExtendedSnapshot,
@@ -26,7 +25,9 @@ export type Snapshot = PreSnapshot & {
 };
 
 export type RepoInitData = {
-  options: InitActionOptions;
+  options: {
+    verbose?: boolean;
+  };
 };
 
 export type RepoFetchSnapshotsData = {

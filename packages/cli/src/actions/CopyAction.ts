@@ -7,7 +7,7 @@ import {
   findRepositoryOrFail,
 } from "../utils/datatruck/config";
 import type { Config } from "../utils/datatruck/config-type";
-import { createRepo } from "../utils/datatruck/repository";
+import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
@@ -145,7 +145,10 @@ export class CopyAction<TRequired extends boolean = true> {
               this.config,
               this.options.repositoryName,
             );
-            const repo = createRepo(sourceRepoConfig);
+            const repo = await createAndInitRepo(
+              sourceRepoConfig,
+              this.options.verbose,
+            );
             let snapshots = await repo.fetchSnapshots({
               options: {
                 ids: this.options.ids,
@@ -201,7 +204,10 @@ export class CopyAction<TRequired extends boolean = true> {
                       this.config,
                       repo2,
                     );
-                    const mirrorRepo = createRepo(mirrorConfig);
+                    const mirrorRepo = await createAndInitRepo(
+                      mirrorConfig,
+                      this.options.verbose,
+                    );
                     ensureSameRepositoryType(sourceRepoConfig, mirrorConfig);
                     const currentCopies = await mirrorRepo.fetchSnapshots({
                       options: {

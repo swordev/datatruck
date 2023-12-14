@@ -1,5 +1,5 @@
 import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
-import { createRepo } from "../utils/datatruck/repository";
+import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { KeepObject, createFilterByLastOptions } from "../utils/date";
 import { groupBy } from "../utils/object";
@@ -42,7 +42,10 @@ export class PruneAction<TRequired extends boolean = true> {
 
     for (const snapshot of snapshots) {
       if (!snapshot.exclusionReasons?.length) {
-        const repo = createRepo(repository[snapshot.repositoryName]);
+        const repo = await createAndInitRepo(
+          repository[snapshot.repositoryName],
+          this.options.verbose,
+        );
         await repo.prune({
           snapshot: snapshot,
           options: { verbose: this.options.verbose },

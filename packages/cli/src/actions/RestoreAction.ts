@@ -8,7 +8,7 @@ import {
   resolvePackage,
 } from "../utils/datatruck/config";
 import type { Config, PackageConfig } from "../utils/datatruck/config-type";
-import { createRepo } from "../utils/datatruck/repository";
+import { createAndInitRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
@@ -120,7 +120,7 @@ export class RestoreAction<TRequired extends boolean = true> {
       this.config,
       snapshot.repositoryName,
     );
-    const repo = createRepo(repoConfig);
+    const repo = await createAndInitRepo(repoConfig, this.options.verbose);
 
     if (this.options.initial) pkg = { ...pkg, restorePath: pkg.path };
 

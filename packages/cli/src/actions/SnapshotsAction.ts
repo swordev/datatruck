@@ -4,7 +4,7 @@ import type {
   Config,
   RepositoryConfigEnabledAction,
 } from "../utils/datatruck/config-type";
-import { createRepo } from "../utils/datatruck/repository";
+import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { IfRequireKeys } from "../utils/ts";
 
@@ -58,7 +58,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
         !this.options.repositoryTypes.includes(repoConfig.type)
       )
         continue;
-      const repo = createRepo(repoConfig);
+      const repo = await createAndInitRepo(repoConfig, this.options.verbose);
       const configPackageNames = this.config.packages.map((pkg) => pkg.name);
 
       const packageNames = this.options.packageConfig

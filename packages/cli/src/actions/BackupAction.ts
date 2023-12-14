@@ -11,7 +11,7 @@ import type {
   PackageConfig,
   RepositoryConfig,
 } from "../utils/datatruck/config-type";
-import { createRepo } from "../utils/datatruck/repository";
+import { createAndInitRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
@@ -113,7 +113,7 @@ export class BackupAction<TRequired extends boolean = true> {
     const pkg = { ...data.pkg, path: data.snapshotPath ?? data.pkg.path };
     ok(pkg.path);
     await ensureExistsDir(pkg.path);
-    const repo = createRepo(repoConfig);
+    const repo = await createAndInitRepo(repoConfig, this.options.verbose);
     if (this.config.minFreeDiskSpace)
       await repo.ensureFreeDiskSpace(
         repoConfig.config,
@@ -145,8 +145,11 @@ export class BackupAction<TRequired extends boolean = true> {
       this.config,
       data.mirrorRepositoryName,
     );
-    const repo = createRepo(repoConfig);
-    const mirrorRepo = createRepo(mirrorRepoConfig);
+    const repo = await createAndInitRepo(repoConfig, this.options.verbose);
+    const mirrorRepo = await createAndInitRepo(
+      mirrorRepoConfig,
+      this.options.verbose,
+    );
     if (this.config.minFreeDiskSpace)
       await mirrorRepo.ensureFreeDiskSpace(
         mirrorRepoConfig.config,
