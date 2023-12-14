@@ -29,6 +29,7 @@ import { dirname, join, normalize, resolve } from "path";
 import { isAbsolute } from "path";
 import { createInterface, Interface } from "readline";
 import { promisify } from "util";
+import { parse as parseYaml } from "yaml";
 
 export const isWSLSystem = release().includes("microsoft-standard-WSL");
 
@@ -102,17 +103,23 @@ export async function writeJSONFile<T = any>(path: string, json: T) {
 
 export const parseFileExtensions = ["json", "js", "ts", "yaml", "yml"];
 
+export function include(path: string) {
+  path = resolve(path);
+  delete require.cache[path];
+  return require(path);
+}
+
 export async function parseFile(path: string, jsKey?: string) {
   if (!isAbsolute(path)) path = join(process.cwd(), path);
   const $require = require;
   if (path.endsWith(".ts")) $require("ts-node").register();
   if (path.endsWith(".yaml") || path.endsWith("yml")) {
     const contents = await readFile(path);
-    return require("yaml").parse(contents.toString());
+    return parseYaml(contents.toString());
   } else if (path.endsWith(".json")) {
-    return require(path);
+    return include(path);
   } else {
-    const object = require(path);
+    const object = include(path);
     const value = jsKey ? object[jsKey] : object;
     return typeof value === "function" ? await value() : value;
   }
@@ -296,6 +303,21 @@ export function isNotFoundError(error: unknown) {
   return (error as NodeJS.ErrnoException).code === "ENOENT";
 }
 
+export async function readTextFile(path: string): Promise<string>;
+export async function readTextFile(
+  path: string,
+  onlyIfExists: true,
+): Promise<string | undefined>;
+export async function readTextFile(path: string, onlyIfExists?: boolean) {
+  let buffer: Buffer | undefined;
+  try {
+    buffer = await readFile(path);
+  } catch (error) {
+    if (onlyIfExists && isNotFoundError(error)) return;
+    throw error;
+  }
+  return buffer.toString();
+}
 export async function cpy(options: {
   input:
     | {

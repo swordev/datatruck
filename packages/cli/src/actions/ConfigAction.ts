@@ -78,12 +78,26 @@ export class ConfigAction<TRequired extends boolean = true> {
     });
     return config;
   }
+  static async findFile(path: string) {
+    return await findFile(
+      path,
+      "datatruck.config",
+      parseFileExtensions,
+      "Config path not found",
+    );
+  }
 
   static async parseFile(path: string): Promise<Config> {
     const config: Config = await parseFile(path, "config");
     ConfigAction.validate(config);
     ConfigAction.check(config);
     return ConfigAction.normalize(config);
+  }
+
+  static async findAndParseFile(inputPath: string): Promise<Config> {
+    const path = await ConfigAction.findFile(inputPath);
+    const data = await ConfigAction.parseFile(path);
+    return data;
   }
 
   static async fromGlobalOptionsWithPath(globalOptions: GlobalOptions<true>) {
@@ -105,12 +119,7 @@ export class ConfigAction<TRequired extends boolean = true> {
   }
 
   async exec() {
-    const path = await findFile(
-      this.options.path,
-      "datatruck.config",
-      parseFileExtensions,
-      "Config path not found",
-    );
+    const path = await ConfigAction.findFile(this.options.path);
     const data = await ConfigAction.parseFile(path);
     return { path, data };
   }

@@ -118,7 +118,8 @@ export function createDatatruckRepositoryServer(
       }
 
       const fileOptions = config.configPath
-        ? (await ConfigAction.parseFile(config.configPath)).server?.repository
+        ? (await ConfigAction.findAndParseFile(config.configPath)).server
+            ?.repository
         : undefined;
 
       const options = fileOptions ?? inOptions;

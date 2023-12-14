@@ -1,7 +1,10 @@
+import { ConfigAction } from "../..";
 import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptionsType } from "../../commands/CopyCommand";
 import { stringifyOptions } from "../cli";
 import { exec } from "../process";
+import { compareJsons } from "../string";
+import { createWatcher } from "../watcher";
 import { datatruckCommandMap } from "./command";
 import { Cron } from "croner";
 
@@ -24,32 +27,23 @@ export type DatatruckCronServerOptions = {
 
 function createJobs(
   actions: CronAction[],
-  currentJobs: Cron[] = [],
   worker: (action: CronAction, index: number) => Promise<void>,
 ) {
   const jobs: Cron[] = [];
   for (const action of actions) {
     const index = actions.indexOf(action);
-    const context = JSON.stringify({
-      index: actions.indexOf(action),
-      data: action,
-    });
-    const job = currentJobs.at(index);
-    if (!job || job.options.context !== context) {
-      job?.stop();
-      jobs.push(
-        Cron(
-          action.schedule,
-          {
-            paused: true,
-            context: JSON.stringify(action),
-            catch: true,
-            protect: true,
-          },
-          () => worker(action, index),
-        ),
-      );
-    }
+    jobs.push(
+      Cron(
+        action.schedule,
+        {
+          paused: true,
+          context: index,
+          catch: true,
+          protect: true,
+        },
+        () => worker(action, index),
+      ),
+    );
   }
   return jobs;
 }
@@ -87,14 +81,38 @@ export function createCronServer(
     }
   };
 
-  const jobs = createJobs(options.actions || [], [], worker);
+  let jobs = createJobs(options.actions || [], worker);
 
-  return {
+  const watcher = createWatcher<{
+    server?: {
+      cron?: typeof options;
+    };
+  }>({
+    onRead: () => ConfigAction.findAndParseFile(config.configPath),
+    onCheck: (prev, current) => compareJsons(prev, current),
+    onError: (error) => {
+      if (config.log) console.error(`< [jobs] update error`, error);
+    },
+    onChange: (data) => {
+      if (config.log) console.info(`[jobs] updated`);
+      handler.stop();
+      const cron = data?.server?.cron;
+      const enabled = cron?.enabled ?? true;
+      jobs = enabled ? createJobs(cron?.actions || [], worker) : [];
+      handler.start();
+    },
+  });
+
+  const handler = {
     start: () => {
       for (const job of jobs) job.resume();
+      watcher.start();
     },
     stop: () => {
+      watcher.stop();
       for (const job of jobs) job.stop();
     },
   };
+
+  return handler;
 }

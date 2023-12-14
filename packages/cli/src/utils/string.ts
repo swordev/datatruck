@@ -122,3 +122,7 @@ export function checkMatch(subject: string | undefined, patterns: string[]) {
 export function undefIfEmpty(input: string) {
   return input.length ? input : undefined;
 }
+
+export function compareJsons(a: any, b: any) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
