@@ -1,5 +1,25 @@
 # @datatruck/cli
 
+## 0.33.0
+
+### Minor Changes
+
+- [`6aeec1d`](https://github.com/swordev/datatruck/commit/6aeec1dbdb24385973741c2e9aad49c1384c5c54) Thanks [@juanrgm](https://github.com/juanrgm)! - Add reports to the copy action
+
+- [`110373d`](https://github.com/swordev/datatruck/commit/110373d7b1f7a848d83b4646251062a8bce57999) Thanks [@juanrgm](https://github.com/juanrgm)! - Allow copy backups between different repository types
+
+- [`5fdd033`](https://github.com/swordev/datatruck/commit/5fdd03329c91277277c6c0cb21d6341b02cc1396) Thanks [@juanrgm](https://github.com/juanrgm)! - Add the `prune` action to the cron config
+
+- [`393163e`](https://github.com/swordev/datatruck/commit/393163eab7039a642eb987b94c2580842a42056a) Thanks [@juanrgm](https://github.com/juanrgm)! - Init repository automatically
+
+- [`8ebd037`](https://github.com/swordev/datatruck/commit/8ebd037d7c32d7707917f53c5ea67e3a40bcf29e) Thanks [@juanrgm](https://github.com/juanrgm)! - Reload cron actions automatically
+
+### Patch Changes
+
+- [`73a2bd2`](https://github.com/swordev/datatruck/commit/73a2bd2c40fcd25d6833b9135c04b271fdcf6594) Thanks [@juanrgm](https://github.com/juanrgm)! - Allow `--keepLast 0`
+
+- [`9290302`](https://github.com/swordev/datatruck/commit/92903029113abdb6cbf5253105882e8e635267b5) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
 ## 0.32.3
 
 ### Patch Changes
