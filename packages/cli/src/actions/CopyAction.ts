@@ -3,7 +3,7 @@ import {
   Snapshot,
 } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { renderError, renderObject, renderResult } from "../utils/cli";
+import { renderError, renderResult, renderListTaskItem } from "../utils/cli";
 import {
   filterRepository,
   findPackageOrFail,
@@ -77,29 +77,22 @@ export class CopyAction<TRequired extends boolean = true> {
       items: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
-      return item.key === "snapshots"
-        ? item.data.snapshots.length
-        : item.key === "copy"
-          ? `${item.data.packageName} ${g(
-              [
-                item.data.snapshotId.slice(0, 8),
-                item.data.mirrorRepositoryName,
-              ].join(" "),
-            )}`
-          : item.key === "summary"
-            ? renderObject(
-                {
-                  errors: item.data.errors,
-                  copied: items.filter(
-                    (i) => i.key === "copy" && !i.error && !i.data.skipped,
-                  ).length,
-                  skipped: items.filter(
-                    (i) => i.key === "copy" && !i.error && i.data.skipped,
-                  ).length,
-                },
-                color,
-              )
-            : "";
+      return renderListTaskItem(item, color, {
+        snapshots: (data) => data.snapshots.length,
+        copy: (data) => [
+          data.packageName,
+          g([data.snapshotId.slice(0, 8), data.mirrorRepositoryName].join(" ")),
+        ],
+        summary: (data) => ({
+          errors: data.errors,
+          copied: items.filter(
+            (i) => i.key === "copy" && !i.error && !i.data.skipped,
+          ).length,
+          skipped: items.filter(
+            (i) => i.key === "copy" && !i.error && i.data.skipped,
+          ).length,
+        }),
+      });
     };
     return new DataFormat({
       streams: options.streams,

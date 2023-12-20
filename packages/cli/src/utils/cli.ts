@@ -1,3 +1,4 @@
+import { Listr3TaskResultEnd } from "./list";
 import chalk from "chalk";
 import { cyan, grey } from "chalk";
 import { createInterface } from "readline";
@@ -92,6 +93,27 @@ export function renderError(
     message = message.split(/\r?\n/).shift() ?? "";
   }
   return chalk.red(message.trim());
+}
+
+export function renderListTaskItem<T extends Record<string, any>>(
+  item: Listr3TaskResultEnd<T>,
+  color: boolean | undefined,
+  config: {
+    [K in Listr3TaskResultEnd<T>["key"]]: (
+      data: Extract<Listr3TaskResultEnd<T>, { key: K }>["data"],
+    ) => string | number | string[] | Record<string, string | number>;
+  },
+) {
+  const result = config[item.key]?.(item.data as any);
+  if (typeof result === "string" || typeof result === "number") {
+    return result.toString();
+  } else if (Array.isArray(result)) {
+    return result.join(" ");
+  } else if (typeof result === "object" && !!result) {
+    return renderObject(result, color);
+  } else {
+    return "";
+  }
 }
 
 export function renderObject(object: Record<string, any>, color?: boolean) {

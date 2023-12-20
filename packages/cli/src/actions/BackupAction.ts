@@ -1,6 +1,6 @@
 import { PreSnapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { renderError, renderObject, renderResult } from "../utils/cli";
+import { renderError, renderListTaskItem, renderResult } from "../utils/cli";
 import {
   filterPackages,
   findRepositoryOrFail,
@@ -185,43 +185,26 @@ export class BackupAction<TRequired extends boolean = true> {
       result: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
-      return item.key === "prune"
-        ? `${item.data.packageName} ${g(
-            `${item.data.pruned}/${item.data.total}`,
-          )}`
-        : item.key === "snapshot"
-          ? item.data.id
-          : item.key === "task"
-            ? `${item.data.packageName} ${g(item.data.taskName)}`
-            : item.key === "backup"
-              ? `${item.data.packageName} ${g(item.data.repositoryName)}`
-              : item.key === "copy"
-                ? `${item.data.packageName} ${g(
-                    item.data.mirrorRepositoryName,
-                  )}`
-                : item.key === "summary"
-                  ? renderObject(
-                      {
-                        errors: item.data.errors,
-                        backups: result.filter(
-                          (r) => !r.error && r.key === "backup",
-                        ).length,
-                        copies: result.filter(
-                          (r) => !r.error && r.key === "copy",
-                        ).length,
-                        prunes: result
-                          .filter((r) => !r.error && r.key === "prune")
-                          .reduce((result, item) => {
-                            if (item.key === "prune")
-                              result += item.data.pruned;
-                            return result;
-                          }, 0),
-                      },
-                      color,
-                    )
-                  : item.key === "report"
-                    ? item.data.type
-                    : "";
+      return renderListTaskItem(item, color, {
+        snapshot: (data) => data.id,
+        task: (data) => [data.packageName, data.taskName],
+        backup: (data) => [data.packageName, g(data.repositoryName)],
+        copy: (data) => [data.packageName, g(data.mirrorRepositoryName)],
+        prune: (data) => [data.packageName, g(`${data.pruned}/${data.total}`)],
+        cleanup: () => "",
+        report: (data) => data.type,
+        summary: (data) => ({
+          errors: data.errors,
+          backups: result.filter((r) => !r.error && r.key === "backup").length,
+          copies: result.filter((r) => !r.error && r.key === "copy").length,
+          prunes: result
+            .filter((r) => !r.error && r.key === "prune")
+            .reduce((result, item) => {
+              if (item.key === "prune") result += item.data.pruned;
+              return result;
+            }, 0),
+        }),
+      });
     };
     return new DataFormat({
       streams: options.streams,

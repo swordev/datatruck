@@ -1,7 +1,7 @@
 import { Snapshot } from "../repositories/RepositoryAbstract";
 import { TaskAbstract } from "../tasks/TaskAbstract";
 import { DataFormat } from "../utils/DataFormat";
-import { renderError, renderObject, renderResult } from "../utils/cli";
+import { renderError, renderListTaskItem, renderResult } from "../utils/cli";
 import {
   findPackageOrFail,
   findRepositoryOrFail,
@@ -176,23 +176,19 @@ export class RestoreAction<TRequired extends boolean = true> {
       result: Listr3TaskResultEnd<Context>[] = [],
     ) => {
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
-      return item.key === "snapshots"
-        ? `${item.data.id.slice(0, 8)} ${g(`${item.data.packages} packages`)}`
-        : item.key === "task"
-          ? `${item.data.packageName} ${g(item.data.taskName)}`
-          : item.key === "restore"
-            ? `${item.data.packageName} ${g(item.data.repositoryName)}`
-            : item.key === "summary"
-              ? renderObject(
-                  {
-                    errors: item.data.errors,
-                    restores: result.filter(
-                      (r) => !r.error && r.key === "restore",
-                    ).length,
-                  },
-                  color,
-                )
-              : "";
+      return renderListTaskItem(item, color, {
+        snapshots: (data) => [
+          data.id.slice(0, 8),
+          g(`${data.packages} packages`),
+        ],
+        task: (data) => [data.packageName, g(data.taskName)],
+        restore: (data) => [data.packageName, g(data.repositoryName)],
+        summary: (data) => ({
+          errors: data.errors,
+          restores: result.filter((r) => !r.error && r.key === "restore")
+            .length,
+        }),
+      });
     };
     return new DataFormat({
       streams: options.streams,
