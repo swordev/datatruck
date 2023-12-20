@@ -70,7 +70,10 @@ type List3TaskResultObject<K, D extends Record<string, any>> = {
   elapsed: number;
   error?: Error;
 };
-type SummaryResult = List3TaskResultObject<"summary", { errors: number }>;
+export type List3SummaryResult = List3TaskResultObject<
+  "summary",
+  { errors: number }
+>;
 
 export type Listr3TaskResult<T extends Listr3Context> = {
   [K in keyof T]: List3TaskResultObject<K, T[K]>;
@@ -78,7 +81,7 @@ export type Listr3TaskResult<T extends Listr3Context> = {
 
 export type Listr3TaskResultEnd<T extends Listr3Context> =
   | Listr3TaskResult<T>
-  | SummaryResult;
+  | List3SummaryResult;
 
 export class Listr3<T extends Listr3Context> extends Listr<
   void,
@@ -195,7 +198,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
     super.add(tasks);
     return this;
   }
-  getSummaryResult(): SummaryResult {
+  getSummaryResult(): List3SummaryResult {
     return {
       key: "summary",
       elapsed: this.execTimer.elapsed(),
@@ -212,7 +215,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
       if (task.isPending()) task.state$ = ListrTaskState.FAILED;
     this["renderer"].end(new Error("Interrupted."));
   }
-  async exec(): Promise<(Listr3TaskResult<T> | SummaryResult)[]> {
+  async exec(): Promise<(Listr3TaskResult<T> | List3SummaryResult)[]> {
     const dispose = onExit(() => {
       this.$options.progressManager?.dispose();
       this.execTimer.reset();

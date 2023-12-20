@@ -11,14 +11,16 @@ import type {
   PackageConfig,
   RepositoryConfig,
 } from "../utils/datatruck/config-type";
+import {
+  ReportListTaskContext,
+  createReportListTasks,
+} from "../utils/datatruck/report-list";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
-import { isReportStep, runReportSteps } from "../utils/reportSteps";
-import { isSpawnStep, runSpawnSteps } from "../utils/spawnSteps";
 import { Streams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -54,8 +56,7 @@ type Context = {
     mirrorRepositoryName: string;
   };
   prune: { packageName: string; total: number; pruned: number };
-  report: { type: string };
-};
+} & ReportListTaskContext;
 
 export class BackupAction<TRequired extends boolean = true> {
   constructor(
@@ -434,60 +435,11 @@ export class BackupAction<TRequired extends boolean = true> {
                     }),
                 );
               }),
-              ...(this.config.reports || []).map((report, index) => {
-                const reportIndex = index + 1;
-                return l.$task({
-                  title: {
-                    initial: `Send report ${reportIndex}`,
-                    started: `Sending report ${reportIndex}`,
-                    completed: `Report sent: ${reportIndex}`,
-                    failed: `Report send failed: ${reportIndex}`,
-                  },
-                  key: "report",
-                  keyIndex: index,
-                  data: { type: report.run.type },
-                  exitOnError: false,
-                  run: async (task) => {
-                    const result = l
-                      .getResult()
-                      .filter((r) => r.key !== "report");
-                    const success = result.every((r) => !r.error);
-                    const enabled =
-                      !report.when ||
-                      (report.when === "success" && success) ||
-                      (report.when === "error" && !success);
-
-                    if (!enabled)
-                      return task.skip(`Report send skipped: ${reportIndex}`);
-                    const message = this.dataFormat(result).format(
-                      report.format ?? "list",
-                    );
-                    if (isSpawnStep(report.run)) {
-                      await runSpawnSteps(report.run, {
-                        data: {
-                          dtt: {
-                            message,
-                            result,
-                            success,
-                          },
-                        },
-                        verbose: this.options.verbose,
-                      });
-                    } else if (isReportStep(report.run)) {
-                      await runReportSteps(report.run, {
-                        data: {
-                          title: "DTT Backup",
-                          message,
-                          success,
-                        },
-                      });
-                    } else {
-                      throw new Error(
-                        `Invalid step type: ${(report.run as any).type}`,
-                      );
-                    }
-                  },
-                });
+              ...createReportListTasks(l, {
+                reports: this.config.reports || [],
+                verbose: this.options.verbose,
+                onMessage: (result, report) =>
+                  this.dataFormat(result).format(report.format ?? "list"),
               }),
             ];
           },
