@@ -1,6 +1,6 @@
 import { ConfigAction } from "../../actions/ConfigAction";
 import { BackupCommandOptions } from "../../commands/BackupCommand";
-import { CopyCommandOptionsType } from "../../commands/CopyCommand";
+import { CopyCommandOptions } from "../../commands/CopyCommand";
 import { stringifyOptions } from "../cli";
 import { exec } from "../process";
 import { compareJsons } from "../string";
@@ -17,7 +17,7 @@ export type CronAction =
   | {
       schedule: string;
       name: "copy";
-      options: CopyCommandOptionsType;
+      options: CopyCommandOptions;
     };
 
 export type DatatruckCronServerOptions = {

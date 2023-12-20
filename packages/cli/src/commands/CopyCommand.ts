@@ -4,7 +4,7 @@ import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type CopyCommandOptionsType<TResolved = false> = {
+export type CopyCommandOptions<TResolved = false> = {
   id?: If<TResolved, string[]>;
   last?: number;
   package?: If<TResolved, string[]>;
@@ -14,8 +14,8 @@ export type CopyCommandOptionsType<TResolved = false> = {
 };
 
 export class CopyCommand extends CommandAbstract<
-  CopyCommandOptionsType<false>,
-  CopyCommandOptionsType<true>
+  CopyCommandOptions<false>,
+  CopyCommandOptions<true>
 > {
   override optionsConfig() {
     return this.castOptionsConfig({
