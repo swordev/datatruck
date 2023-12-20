@@ -89,3 +89,30 @@ export function groupBy<TItem>(
     );
   }
 }
+
+export class StrictMap<K, V> {
+  constructor(readonly serializeKey: (params: K) => string) {}
+  readonly map: Map<string, V | undefined> = new Map();
+  has(key: K): boolean {
+    return this.map.has(this.serializeKey(key));
+  }
+  get(key: K): NonNullable<V> {
+    const stringKey = this.serializeKey(key);
+    const value = this.map.get(stringKey);
+    if (!value) throw new Error(`Map key does not exist: ${stringKey}`);
+    return value;
+  }
+  set(key: K, value: V): void {
+    const stringKey = this.serializeKey(key);
+    if (this.map.has(stringKey))
+      throw new Error(`Map key already exists: ${stringKey}`);
+    this.map.set(stringKey, value);
+  }
+  with(key: K) {
+    return {
+      has: () => this.has(key),
+      get: () => this.get(key),
+      set: (value: V) => this.set(key, value),
+    };
+  }
+}

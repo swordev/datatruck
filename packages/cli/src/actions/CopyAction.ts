@@ -11,12 +11,13 @@ import {
   findRepositoryOrFail,
   sortReposByType,
 } from "../utils/datatruck/config";
-import type { Config } from "../utils/datatruck/config-type";
+import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
-import { ProgressManager, ProgressMode } from "../utils/progress";
+import { StrictMap } from "../utils/object";
+import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { Streams } from "../utils/stream";
 import { ensureFreeDiskTempSpace, useTempDir } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
@@ -122,6 +123,73 @@ export class CopyAction<TRequired extends boolean = true> {
       },
     });
   }
+  protected async fetchSnapshots(repo: RepositoryAbstract<any>) {
+    const snapshots = await repo.fetchSnapshots({
+      options: {
+        ids: this.options.ids,
+        packageNames: this.options.packageNames,
+        packageTaskNames: this.options.packageTaskNames,
+        verbose: this.options.verbose,
+      },
+    });
+    const result = this.options.last
+      ? groupAndFilter(snapshots, ["packageName"], {
+          last: this.options.last,
+        }).map(({ item }) => item)
+      : snapshots;
+
+    if (!result.length) throw new Error("No snapshots found");
+    return result;
+  }
+  protected createSourceRepoMap() {
+    return new StrictMap<
+      [Pick<Snapshot, "id" | "packageName">, Pick<RepositoryConfig, "type">],
+      RepositoryAbstract<any>
+    >(([snapshot, config]) =>
+      [config.type, snapshot.id, snapshot.packageName].join("|"),
+    );
+  }
+  protected async copyCrossRepository(options: {
+    repo: RepositoryAbstract<any>;
+    repoConfig: RepositoryConfig;
+    mirrorRepo: RepositoryAbstract<any>;
+    mirrorConfig: RepositoryConfig;
+    snapshot: Snapshot;
+    onProgress: (p: Progress) => void;
+  }) {
+    const { repo, repoConfig, mirrorRepo, mirrorConfig, snapshot } = options;
+    await using tmp = await useTempDir("copy", "restore");
+    const pkg = findPackageOrFail(this.config, snapshot.packageName);
+    await repo.restore({
+      options: {
+        verbose: this.options.verbose,
+        snapshotId: snapshot.id,
+      },
+      snapshot: { id: snapshot.id, date: snapshot.date },
+      package: { name: snapshot.packageName },
+      packageConfig: findPackageRepositoryConfig(pkg, repoConfig),
+      snapshotPath: tmp.path,
+      onProgress: options.onProgress,
+    });
+    if (this.config.minFreeDiskSpace)
+      await mirrorRepo.ensureFreeDiskSpace(
+        mirrorConfig.config,
+        this.config.minFreeDiskSpace,
+      );
+    await mirrorRepo.backup({
+      options: {
+        verbose: this.options.verbose,
+        tags: snapshot.tags,
+      },
+      snapshot: { id: snapshot.id, date: snapshot.date },
+      package: {
+        name: snapshot.packageName,
+        path: tmp.path,
+      },
+      packageConfig: findPackageRepositoryConfig(pkg, mirrorConfig),
+      onProgress: options.onProgress,
+    });
+  }
   async exec() {
     const { options } = this;
     const pm = new ProgressManager({
@@ -154,21 +222,8 @@ export class CopyAction<TRequired extends boolean = true> {
               repoConfig,
               this.options.verbose,
             );
-            let snapshots = await repo.fetchSnapshots({
-              options: {
-                ids: this.options.ids,
-                packageNames: this.options.packageNames,
-                packageTaskNames: this.options.packageTaskNames,
-                verbose: this.options.verbose,
-              },
-            });
-            if (this.options.last)
-              snapshots = groupAndFilter(snapshots, ["packageName"], {
-                last: this.options.last,
-              }).map(({ item }) => item);
-            data.snapshots = snapshots;
-            task.title = `Snapshots fetched: ${snapshots.length}`;
-            if (!snapshots.length) throw new Error("No snapshots found");
+            data.snapshots = await this.fetchSnapshots(repo);
+            task.title = `Snapshots fetched: ${data.snapshots.length}`;
 
             const repositoryNames2 = sortReposByType(
               filterRepository(this.config.repositories, {
@@ -182,12 +237,9 @@ export class CopyAction<TRequired extends boolean = true> {
             if (!repositoryNames2.length)
               throw new Error("No mirror snapshots found");
 
-            const sourceRepos: Record<
-              string,
-              RepositoryAbstract<any> | undefined
-            > = {};
+            const sourceRepoMap = this.createSourceRepoMap();
 
-            return snapshots.flatMap((snapshot) =>
+            return data.snapshots.flatMap((snapshot) =>
               repositoryNames2.map((repo2) => {
                 const id = snapshot.id.slice(0, 8);
                 const pkgName = snapshot.packageName;
@@ -236,15 +288,12 @@ export class CopyAction<TRequired extends boolean = true> {
                         this.config.minFreeDiskSpace,
                       );
 
-                    const sourceRepoKey = [
-                      mirrorConfig.type,
-                      snapshot.id,
-                      snapshot.packageName,
-                    ].join("|");
-                    const sourceRepo = sourceRepos[sourceRepoKey];
-
-                    if (sourceRepo) {
-                      await sourceRepo.copy({
+                    const sourceRepo = sourceRepoMap.with([
+                      snapshot,
+                      mirrorConfig,
+                    ]);
+                    if (sourceRepo.has()) {
+                      await sourceRepo.get().copy({
                         mirrorRepositoryConfig: mirrorConfig.config,
                         options: { verbose: this.options.verbose },
                         package: { name: snapshot.packageName },
@@ -253,51 +302,16 @@ export class CopyAction<TRequired extends boolean = true> {
                           pm.update(p, (d) => (task.output = d)),
                       });
                     } else {
-                      await using tmp = await useTempDir("copy", "restore");
-                      const pkg = findPackageOrFail(
-                        this.config,
-                        snapshot.packageName,
-                      );
-                      await repo.restore({
-                        options: {
-                          verbose: this.options.verbose,
-                          snapshotId: snapshot.id,
-                        },
-                        snapshot: { id: snapshot.id, date: snapshot.date },
-                        package: { name: snapshot.packageName },
-                        packageConfig: findPackageRepositoryConfig(
-                          pkg,
-                          repoConfig,
-                        ),
-                        snapshotPath: tmp.path,
+                      await this.copyCrossRepository({
+                        mirrorConfig,
+                        mirrorRepo,
+                        repo,
+                        repoConfig,
+                        snapshot,
                         onProgress: (p) =>
                           pm.update(p, (d) => (task.output = d)),
                       });
-                      if (this.config.minFreeDiskSpace)
-                        await mirrorRepo.ensureFreeDiskSpace(
-                          mirrorConfig.config,
-                          this.config.minFreeDiskSpace,
-                        );
-                      await mirrorRepo.backup({
-                        options: {
-                          verbose: this.options.verbose,
-                          tags: snapshot.tags,
-                        },
-                        snapshot: { id: snapshot.id, date: snapshot.date },
-                        package: {
-                          name: snapshot.packageName,
-                          path: tmp.path,
-                        },
-                        packageConfig: findPackageRepositoryConfig(
-                          pkg,
-                          mirrorConfig,
-                        ),
-                        onProgress: (p) => {
-                          pm.update(p, (d) => (task.output = d));
-                        },
-                      });
-
-                      sourceRepos[sourceRepoKey] = mirrorRepo;
+                      sourceRepo.set(mirrorRepo);
                     }
                   },
                 });
