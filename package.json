@@ -52,6 +52,9 @@
   "pnpm": {
     "patchedDependencies": {
       "smartwrap@2.0.2": "patches/smartwrap@2.0.2.patch"
+    },
+    "overrides": {
+      "typescript-json-schema>typescript": "~5.2.0"
     }
   }
 }
