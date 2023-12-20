@@ -24,8 +24,8 @@
     "build:schema": "node ./packages/cli/scripts/gen-schema.mjs",
     "build:ts": "tsc -b tsconfig.build.json --pretty",
     "clean": "tsc -b tsconfig.build.json --clean",
-    "format": "prettier -w .",
-    "format:check": "prettier -c .",
+    "format": "prettier --cache -w .",
+    "format:check": "prettier --cache -c .",
     "start": "node packages/datatruck/lib/bin.js",
     "test": "vitest run",
     "watch": "tsc -b tsconfig.build.json -w"
