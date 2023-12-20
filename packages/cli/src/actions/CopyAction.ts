@@ -18,7 +18,7 @@ import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { ProgressManager, ProgressMode } from "../utils/progress";
 import { Streams } from "../utils/stream";
-import { ensureFreeDiskTempSpace, mkTmpDir, useTempDir } from "../utils/temp";
+import { ensureFreeDiskTempSpace, useTempDir } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import chalk from "chalk";
 
