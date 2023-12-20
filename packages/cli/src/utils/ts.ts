@@ -1,10 +1,10 @@
 export type DeepReadonly<T> = T extends (infer R)[]
   ? DeepReadonlyArray<R>
   : T extends Function
-  ? T
-  : T extends object
-  ? DeepReadonlyObject<T>
-  : T;
+    ? T
+    : T extends object
+      ? DeepReadonlyObject<T>
+      : T;
 
 export interface DeepReadonlyArray<T> extends ReadonlyArray<DeepReadonly<T>> {}
 
@@ -20,13 +20,15 @@ export type IfRequireKeys<TResolved, T1> = TResolved extends true
 export type Unwrap<T> = T extends Promise<infer U>
   ? U
   : T extends (...args: any) => Promise<infer U>
-  ? U
-  : T extends (...args: any) => infer U
-  ? U
-  : T;
+    ? U
+    : T extends (...args: any) => infer U
+      ? U
+      : T;
 
 export type RequiredKeys<T> = {
   [K in keyof Required<T>]: T[K];
 };
 
 export type SimilarObject<T1> = { [K in keyof T1]: unknown };
+
+export {};
