@@ -3,28 +3,37 @@ import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptions } from "../../commands/CopyCommand";
 import { PruneCommandOptions } from "../../commands/PruneCommand";
 import { stringifyOptions } from "../cli";
+import { formatCronScheduleObject } from "../cron";
 import { exec } from "../process";
 import { compareJsons } from "../string";
 import { createWatcher } from "../watcher";
 import { datatruckCommandMap } from "./command";
 import { Cron } from "croner";
 
-export type CronAction =
+export type CronScheduleObject = {
+  minute?: number | { each: number };
+  hour?: number | { each: number };
+  day?: number | { each: number };
+  month?: number | { each: number };
+  weekDay?: number | { each: number };
+};
+
+export type CronAction = {
+  schedule: string | CronScheduleObject;
+} & (
   | {
-      schedule: string;
       name: "backup";
       options: BackupCommandOptions;
     }
   | {
-      schedule: string;
       name: "copy";
       options: CopyCommandOptions;
     }
   | {
-      schedule: string;
       name: "prune";
       options: PruneCommandOptions;
-    };
+    }
+);
 
 export type DatatruckCronServerOptions = {
   enabled?: boolean;
@@ -40,7 +49,9 @@ function createJobs(
     const index = actions.indexOf(action);
     jobs.push(
       Cron(
-        action.schedule,
+        typeof action.schedule === "string"
+          ? action.schedule
+          : formatCronScheduleObject(action.schedule),
         {
           paused: true,
           context: index,
