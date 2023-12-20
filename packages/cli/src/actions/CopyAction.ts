@@ -12,6 +12,10 @@ import {
   sortReposByType,
 } from "../utils/datatruck/config";
 import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
+import {
+  ReportListTaskContext,
+  createReportListTasks,
+} from "../utils/datatruck/report-list";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
@@ -50,7 +54,7 @@ export type Context = {
     mirrorRepositoryName: string;
     skipped: boolean;
   };
-};
+} & ReportListTaskContext;
 
 export class CopyAction<TRequired extends boolean = true> {
   constructor(
@@ -83,6 +87,7 @@ export class CopyAction<TRequired extends boolean = true> {
           data.packageName,
           g([data.snapshotId.slice(0, 8), data.mirrorRepositoryName].join(" ")),
         ],
+        report: (data) => data.type,
         summary: (data) => ({
           errors: data.errors,
           copied: items.filter(
@@ -194,7 +199,7 @@ export class CopyAction<TRequired extends boolean = true> {
     const l = new Listr3<Context>({ progressManager: pm });
 
     return l
-      .add(
+      .add([
         l.$task({
           key: "snapshots",
           data: { snapshots: [] },
@@ -312,7 +317,13 @@ export class CopyAction<TRequired extends boolean = true> {
             );
           },
         }),
-      )
+        ...createReportListTasks(l, {
+          reports: this.config.reports || [],
+          verbose: this.options.verbose,
+          onMessage: (result, report) =>
+            this.dataFormat(result).format(report.format ?? "list"),
+        }),
+      ])
       .exec();
   }
 }
