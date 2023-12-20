@@ -58,15 +58,15 @@ export function groupBy<TItem>(
     typeof keyOrCb === "function"
       ? keyOrCb
       : Array.isArray(keyOrCb)
-      ? (item) => keyOrCb.map((key) => item[key])
-      : (item) => item[keyOrCb] as any;
+        ? (item) => keyOrCb.map((key) => item[key])
+        : (item) => item[keyOrCb] as any;
 
   const stringify = (keys: string[] | string) =>
     typeof keys === "string"
       ? keys
       : keys.length == 1
-      ? keys[0]
-      : JSON.stringify(keys);
+        ? keys[0]
+        : JSON.stringify(keys);
 
   if (single) {
     return items.reduce(

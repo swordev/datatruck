@@ -116,8 +116,8 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
         typeof config.password === "string"
           ? config.password
           : config.password
-          ? (await readFile(config.password.path)).toString()
-          : ""
+            ? (await readFile(config.password.path)).toString()
+            : ""
       }`,
     ];
 
