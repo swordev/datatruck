@@ -7,7 +7,15 @@ import {
   mkdirIfNotExists,
 } from "./fs";
 import { BasicProgress } from "./progress";
-import { cp, readFile, readdir, rename, rm, writeFile } from "fs/promises";
+import {
+  cp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+  stat,
+} from "fs/promises";
 import { join, resolve } from "path";
 
 export function resolvePath(path: string) {
@@ -46,7 +54,7 @@ export abstract class AbstractFs {
       timeout?: number;
       onProgress?: (progress: BasicProgress) => void;
     },
-  ): Promise<void>;
+  ): Promise<{ bytes: number }>;
   abstract fetchDiskStats(source: string): Promise<DiskStats>;
 }
 
@@ -90,6 +98,9 @@ export class LocalFs extends AbstractFs {
     await cp(source, this.resolvePath(target));
   }
   async download(source: string, target: string) {
-    await cp(this.resolvePath(source), target);
+    const path = this.resolvePath(source);
+    const { size: bytes } = await stat(path);
+    await cp(path, target);
+    return { bytes };
   }
 }

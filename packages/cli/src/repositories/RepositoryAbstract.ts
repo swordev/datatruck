@@ -106,7 +106,7 @@ export abstract class RepositoryAbstract<TConfig> {
   abstract init(data: RepoInitData): Promise<void>;
   abstract prune(data: RepoPruneData): Promise<void>;
   abstract fetchSnapshots(data: RepoFetchSnapshotsData): Promise<Snapshot[]>;
-  abstract copy(data: RepoCopyData<TConfig>): Promise<void>;
-  abstract backup(data: RepoBackupData<unknown>): Promise<void>;
+  abstract copy(data: RepoCopyData<TConfig>): Promise<{ bytes: number }>;
+  abstract backup(data: RepoBackupData<unknown>): Promise<{ bytes: number }>;
   abstract restore(data: RepoRestoreData<unknown>): Promise<void>;
 }

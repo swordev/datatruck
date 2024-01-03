@@ -136,6 +136,8 @@ export async function downloadFile(
 ) {
   const timeout = options.timeout ?? 3600 * 1000; // 60m
   const file = createWriteStream(output);
+  let total = 0;
+  let current = 0;
   await new Promise<void>((resolve, reject) => {
     const req = request(
       href(url, options.query),
@@ -150,8 +152,8 @@ export async function downloadFile(
             new Error(`Invalid 'content-length': ${contentLength}`),
           );
 
-        const total = Number(contentLength);
-        let current = 0;
+        total = Number(contentLength);
+        current = 0;
 
         if (res.statusCode === 200) {
           if (options.onProgress) {
@@ -202,6 +204,14 @@ export async function downloadFile(
 
     req.end();
   });
+  const { size: bytes } = await stat(output);
+
+  if (total !== current || total !== bytes)
+    throw new Error(`Invalid download size`, {
+      cause: { total, current, bytes },
+    });
+
+  return { bytes };
 }
 
 export async function uploadFile(

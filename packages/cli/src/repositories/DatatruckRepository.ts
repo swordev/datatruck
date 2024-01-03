@@ -328,6 +328,10 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     // Meta
 
+    const size = Object.values(tarStats).reduce(
+      (total, { size }) => total + size,
+      0,
+    );
     const metaPath = `${snapshotName}/meta.json`;
     const nodePkg = parsePackageFile();
     const meta: MetaData = {
@@ -337,20 +341,19 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
-      size: Object.values(tarStats).reduce(
-        (total, { size }) => total + size,
-        0,
-      ),
+      size,
       tarStats,
     };
     if (data.options.verbose)
       logExec(`Writing metadata into ${fs.resolvePath(metaPath)}`);
     await fs.writeFile(`${snapshotName}/meta.json`, JSON.stringify(meta));
+
+    return {
+      bytes: size,
+    };
   }
 
-  override async copy(
-    data: RepoCopyData<DatatruckRepositoryConfig>,
-  ): Promise<void> {
+  override async copy(data: RepoCopyData<DatatruckRepositoryConfig>) {
     const sourceFs = createFs(this.config.backend);
     const targetFs = createFs(data.mirrorRepositoryConfig.backend);
     const snapshotName = DatatruckRepository.buildSnapshotName(
@@ -376,7 +379,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const entries = await sourceFs.readdir(snapshotName);
 
     const total = entries.length;
-
+    let bytes = 0;
     let current = 0;
     for (const entry of entries) {
       const absolute: ProgressStats = {
@@ -391,7 +394,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       const sourceEntry = `${snapshotName}/${entry}`;
       const targetEntry = `${tmpSnapshotName}/${entry}`;
       if (targetFs.isLocal()) {
-        await sourceFs.download(
+        const downloaded = await sourceFs.download(
           sourceEntry,
           targetFs.resolvePath(targetEntry),
           {
@@ -406,6 +409,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
               }),
           },
         );
+        bytes += downloaded.bytes;
       } else {
         const tempDir = await mkTmpDir(
           datatruckRepositoryName,
@@ -415,7 +419,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         );
         const tempFile = join(tempDir, entry);
         try {
-          await sourceFs.download(sourceEntry, tempFile, {
+          const downloaded = await sourceFs.download(sourceEntry, tempFile, {
             onProgress: (progress) =>
               data.onProgress({
                 absolute,
@@ -426,6 +430,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 },
               }),
           });
+          bytes += downloaded.bytes;
           await targetFs.upload(tempFile, targetEntry);
         } finally {
           await tryRm(tempFile);
@@ -434,6 +439,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     }
 
     await targetFs.rename(tmpSnapshotName, snapshotName);
+
+    return { bytes };
   }
 
   override async restore(

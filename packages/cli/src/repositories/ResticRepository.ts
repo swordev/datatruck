@@ -367,11 +367,12 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
         percent: 100,
       },
     });
+    return {
+      bytes: resticTotalBytes,
+    };
   }
 
-  override async copy(
-    data: RepoCopyData<ResticRepositoryConfig>,
-  ): Promise<void> {
+  override async copy(data: RepoCopyData<ResticRepositoryConfig>) {
     const config = data.mirrorRepositoryConfig;
 
     const [snapshot] = await this.fetchSnapshots({
@@ -394,9 +395,16 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       },
       log: data.options.verbose,
     });
+    let bytes = 0;
     await restic.copy({
       id: snapshot.originalId,
+      onStream(data) {
+        if (data.message_type === "status") {
+          bytes = data.total_bytes;
+        }
+      },
     });
+    return { bytes };
   }
 
   override async restore(data: RepoRestoreData<ResticPackageRepositoryConfig>) {

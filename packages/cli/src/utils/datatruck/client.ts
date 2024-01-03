@@ -84,7 +84,7 @@ export class RemoteFs extends AbstractFs {
       onProgress?: (progress: BasicProgress) => void;
     } = {},
   ) {
-    await downloadFile(`${this.url}/download`, target, {
+    return await downloadFile(`${this.url}/download`, target, {
       ...options,
       headers: this.headers,
       query: { params: JSON.stringify([source]) },

@@ -280,7 +280,7 @@ export class Restic {
 
   async copy(options: {
     id: string;
-    onStream?: (data: ResticBackupStream) => Promise<void>;
+    onStream?: (data: ResticBackupStream) => void
   }) {
     return await this.exec(["copy", "--json", options.id], {
       stderr: {

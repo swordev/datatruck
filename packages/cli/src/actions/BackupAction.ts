@@ -1,5 +1,6 @@
 import { PreSnapshot } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
+import { formatBytes } from "../utils/bytes";
 import { renderError, renderListTaskItem, renderResult } from "../utils/cli";
 import {
   filterPackages,
@@ -49,12 +50,13 @@ export type BackupActionOptions = {
 type Context = {
   snapshot: { id: string };
   task: { taskName: string; packageName: string };
-  backup: { packageName: string; repositoryName: string };
+  backup: { packageName: string; repositoryName: string; bytes: number };
   cleanup: {};
   copy: {
     packageName: string;
     repositoryName: string;
     mirrorRepositoryName: string;
+    bytes: number;
   };
   prune: { packageName: string; total: number; pruned: number };
 } & ReportListTaskContext;
@@ -126,7 +128,7 @@ export class BackupAction<TRequired extends boolean = true> {
         config.type === repoConfig.type &&
         (!config.names || config.names.includes(repoConfig.name)),
     )?.config;
-    await repo.backup({
+    return await repo.backup({
       options: this.options,
       snapshot: data.snapshot,
       package: pkg as any,
@@ -157,7 +159,7 @@ export class BackupAction<TRequired extends boolean = true> {
         mirrorRepoConfig.config,
         this.config.minFreeDiskSpace,
       );
-    await repo.copy({
+    return await repo.copy({
       options: this.options,
       package: data.pkg,
       snapshot: data.snapshot,
@@ -189,8 +191,14 @@ export class BackupAction<TRequired extends boolean = true> {
       return renderListTaskItem(item, color, {
         snapshot: (data) => data.id,
         task: (data) => [data.packageName, data.taskName],
-        backup: (data) => [data.packageName, g(data.repositoryName)],
-        copy: (data) => [data.packageName, g(data.mirrorRepositoryName)],
+        backup: (data) => [
+          data.packageName,
+          g([data.repositoryName, formatBytes(data.bytes)].join(" ")),
+        ],
+        copy: (data) => [
+          data.packageName,
+          g([data.mirrorRepositoryName, formatBytes(data.bytes)].join(" ")),
+        ],
         prune: (data) => [data.packageName, g(`${data.pruned}/${data.total}`)],
         cleanup: () => "",
         report: (data) => data.type,
@@ -315,6 +323,7 @@ export class BackupAction<TRequired extends boolean = true> {
                       data: {
                         packageName: pkg.name,
                         repositoryName: repositoryName,
+                        bytes: 0,
                       },
                       title: {
                         initial: `Create backup: ${pkg.name} (${repositoryName})`,
@@ -324,12 +333,12 @@ export class BackupAction<TRequired extends boolean = true> {
                       },
                       exitOnError: false,
                       runWrapper: gc.cleanupOnFinish.bind(gc),
-                      run: async (task) => {
+                      run: async (task, data) => {
                         const taskSummary = pkg.task
                           ? l.result("task", pkg.name)
                           : undefined;
                         if (taskSummary?.error) throw new Error(`Task failed`);
-                        await this.backup({
+                        const backup = await this.backup({
                           pkg,
                           repositoryName,
                           snapshot,
@@ -337,6 +346,7 @@ export class BackupAction<TRequired extends boolean = true> {
                           onProgress: (p) =>
                             pm.update(p, (t) => (task.output = t)),
                         });
+                        data.bytes = backup.bytes;
                       },
                     }),
                   ),
@@ -362,6 +372,7 @@ export class BackupAction<TRequired extends boolean = true> {
                         packageName: pkg.name,
                         repositoryName: name,
                         mirrorRepositoryName: mirror,
+                        bytes: 0,
                       },
                       title: {
                         initial: `Copy snapshot: ${pkg.name} (${mirror})`,
@@ -371,14 +382,14 @@ export class BackupAction<TRequired extends boolean = true> {
                       },
                       exitOnError: false,
                       runWrapper: gc.cleanup.bind(gc),
-                      run: async (task) => {
+                      run: async (task, data) => {
                         const backupSummary = l.result("backup", [
                           pkg.name,
                           name,
                         ]);
                         if (backupSummary.error)
                           throw new Error(`Backup failed`);
-                        await this.copy({
+                        const copy = await this.copy({
                           repositoryName: name,
                           mirrorRepositoryName: mirror,
                           pkg,
@@ -386,6 +397,7 @@ export class BackupAction<TRequired extends boolean = true> {
                           onProgress: (p) =>
                             pm.update(p, (t) => (task.output = t)),
                         });
+                        data.bytes = copy.bytes;
                       },
                     }),
                   ),

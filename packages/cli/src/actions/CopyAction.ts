@@ -3,6 +3,7 @@ import {
   Snapshot,
 } from "../repositories/RepositoryAbstract";
 import { DataFormat } from "../utils/DataFormat";
+import { formatBytes } from "../utils/bytes";
 import { renderError, renderResult, renderListTaskItem } from "../utils/cli";
 import {
   filterRepository,
@@ -54,6 +55,7 @@ export type Context = {
     repositoryName: string;
     mirrorRepositoryName: string;
     skipped: boolean;
+    bytes: number;
   };
 } & ReportListTaskContext;
 
@@ -86,7 +88,13 @@ export class CopyAction<TRequired extends boolean = true> {
         snapshots: (data) => data.snapshots.length,
         copy: (data) => [
           data.packageName,
-          g([data.snapshotId.slice(0, 8), data.mirrorRepositoryName].join(" ")),
+          g(
+            [
+              data.snapshotId.slice(0, 8),
+              data.mirrorRepositoryName,
+              formatBytes(data.bytes),
+            ].join(" "),
+          ),
         ],
         report: (data) => data.type,
         summary: (data) => ({
@@ -175,7 +183,7 @@ export class CopyAction<TRequired extends boolean = true> {
         mirrorConfig.config,
         this.config.minFreeDiskSpace,
       );
-    await mirrorRepo.backup({
+    return await mirrorRepo.backup({
       options: {
         verbose: this.options.verbose,
         tags: snapshot.tags,
@@ -250,6 +258,7 @@ export class CopyAction<TRequired extends boolean = true> {
                     packageName: snapshot.packageName,
                     repositoryName: repoConfig.name,
                     mirrorRepositoryName: repo2.name,
+                    bytes: 0,
                     skipped: false,
                   },
                   title: {
@@ -292,7 +301,7 @@ export class CopyAction<TRequired extends boolean = true> {
                       mirrorConfig,
                     ]);
                     if (sourceRepo.has()) {
-                      await sourceRepo.get().copy({
+                      const copy = await sourceRepo.get().copy({
                         mirrorRepositoryConfig: mirrorConfig.config,
                         options: { verbose: this.options.verbose },
                         package: { name: snapshot.packageName },
@@ -300,8 +309,9 @@ export class CopyAction<TRequired extends boolean = true> {
                         onProgress: (p) =>
                           pm.update(p, (d) => (task.output = d)),
                       });
+                      data.bytes = copy.bytes;
                     } else {
-                      await this.copyCrossRepository({
+                      const copy = await this.copyCrossRepository({
                         mirrorConfig,
                         mirrorRepo,
                         repo,
@@ -310,6 +320,7 @@ export class CopyAction<TRequired extends boolean = true> {
                         onProgress: (p) =>
                           pm.update(p, (d) => (task.output = d)),
                       });
+                      data.bytes = copy.bytes;
                       sourceRepo.set(mirrorRepo);
                     }
                   },

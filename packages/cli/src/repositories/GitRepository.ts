@@ -251,6 +251,9 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
       await git.exec(["commit", "-m", data.snapshot.id]);
 
     const nodePkg = parsePackageFile();
+    const size =
+      (await fastFolderSizeAsync(tmpPath)) -
+      (await fastFolderSizeAsync(join(tmpPath, ".git")));
     const meta = GitRepository.buildSnapshotTag({
       id: data.snapshot.id,
       shortId: data.snapshot.id.slice(0, 8),
@@ -259,10 +262,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
       package: data.package.name,
       task: data.package.task?.name,
       version: nodePkg.version,
-      size: (
-        (await fastFolderSizeAsync(tmpPath)) -
-        (await fastFolderSizeAsync(join(tmpPath, ".git")))
-      ).toString(),
+      size: size.toString(),
     });
 
     await git.addTag(meta.name, meta.message);
@@ -270,9 +270,14 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     await git.pushTags();
 
     await rm(tmpPath, { recursive: true });
+
+    return {
+      bytes: size,
+    };
   }
-  override copy(data: RepoCopyData<GitRepositoryConfig>): Promise<void> {
+  override async copy(data: RepoCopyData<GitRepositoryConfig>) {
     throw new Error("Method not implemented.");
+    return { bytes: 0 };
   }
   override async restore(data: RepoRestoreData<GitPackageRepositoryConfig>) {
     const restorePath = data.snapshotPath;
