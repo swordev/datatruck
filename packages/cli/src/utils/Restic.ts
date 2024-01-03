@@ -201,15 +201,6 @@ export class Restic {
     return JSON.parse(result.stdout);
   }
 
-  async checkBackupSetPathSupport() {
-    /*const result = await this.exec(["backup", "--set-path"], {
-      onExitCodeError: () => false,
-      stderr: { save: true },
-    });
-    return result.stderr.includes("flag needs an argument");*/
-    return false;
-  }
-
   async backup(options: {
     cwd?: string;
     tags?: string[];

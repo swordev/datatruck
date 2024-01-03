@@ -282,10 +282,6 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       allowEmptySnapshot: true,
       excludeFile: gitignorePath ? [gitignorePath] : undefined,
       parent: lastSnapshot?.id,
-      // https://github.com/restic/restic/pull/3200
-      ...((await restic.checkBackupSetPathSupport()) && {
-        setPaths: [`/datatruck/${data.package.name}`],
-      }),
       tags: [
         ResticRepository.buildSnapshotTag(SnapshotTagEnum.ID, data.snapshot.id),
         ResticRepository.buildSnapshotTag(
