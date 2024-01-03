@@ -36,7 +36,9 @@ jobs:
       - run: pnpm install
       - run: pnpm build
       - name: Setup system config
-        run: git config --global user.email "datatruck@localhost" && git config --global user.name "Datatruck"
+        run: |
+          git config --global user.name Datatruck
+          git config --global user.email datatruck@localhost
       - name: Install system dependencies
         run: sudo apt-get install restic git tar pigz -y
       - name: Update restic
