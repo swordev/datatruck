@@ -26,6 +26,7 @@ import { Streams } from "../utils/stream";
 import { ensureFreeDiskTempSpace, useTempDir } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import chalk from "chalk";
+import { hostname } from "os";
 
 export type CopyActionOptions = {
   ids?: string[];
@@ -318,6 +319,8 @@ export class CopyAction<TRequired extends boolean = true> {
           },
         }),
         ...createReportListTasks(l, {
+          hostname: this.config.hostname ?? hostname(),
+          action: "copy",
           reports: this.config.reports || [],
           verbose: this.options.verbose,
           onMessage: (result, report) =>

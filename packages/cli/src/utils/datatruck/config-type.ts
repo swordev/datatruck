@@ -15,6 +15,7 @@ export { RepositoryConfig, RepositoryConfigEnabledAction, TaskConfig };
 
 export type Config = {
   $schema?: string;
+  hostname?: string;
   tempDir?: string;
   minFreeDiskSpace?: string | number;
   repositories: RepositoryConfig[];

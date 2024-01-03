@@ -29,6 +29,7 @@ import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
+import { hostname } from "os";
 
 export type BackupActionOptions = {
   repositoryNames?: string[];
@@ -419,6 +420,8 @@ export class BackupAction<TRequired extends boolean = true> {
                 );
               }),
               ...createReportListTasks(l, {
+                hostname: this.config.hostname ?? hostname(),
+                action: "backup",
                 reports: this.config.reports || [],
                 verbose: this.options.verbose,
                 onMessage: (result, report) =>

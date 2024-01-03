@@ -8,6 +8,8 @@ export type ReportListTaskContext = { report: { type: string } };
 export function createReportListTasks<T extends ReportListTaskContext>(
   list: Listr3<T>,
   options: {
+    action: string;
+    hostname: string;
     reports: DatatruckReportConfig[];
     onMessage: (
       result: (List3SummaryResult | Listr3TaskResult<T>)[],
@@ -53,7 +55,7 @@ export function createReportListTasks<T extends ReportListTaskContext>(
         } else if (isReportStep(report.run)) {
           await runReportSteps(report.run, {
             data: {
-              title: "DTT Backup",
+              title: `[${options.hostname}] DTT ${options.action}`,
               message,
               success,
             },
