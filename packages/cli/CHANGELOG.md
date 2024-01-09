@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.34.1
+
+### Patch Changes
+
+- [`b292492`](https://github.com/swordev/datatruck/commit/b292492bb6fdfadec41d4e268a78886f0f2479d8) Thanks [@juanrgm](https://github.com/juanrgm)! - Avoid save stderror in memory
+
 ## 0.34.0
 
 ### Minor Changes
