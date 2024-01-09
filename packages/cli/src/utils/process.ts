@@ -469,11 +469,7 @@ export async function exec(
             colorize: log.colorize,
           });
 
-        if (
-          settings[type]?.save ||
-          (type === "stderr" && settings[type]?.toExitCode)
-        )
-          spawnData[type] += data;
+        if (settings[type]?.save) spawnData[type] += data;
 
         if (settings[type]?.onData) settings[type]!.onData!(inData.toString());
       };
@@ -483,12 +479,7 @@ export async function exec(
         });
         rl.on("line", onData);
         rl.on("close", tryFinish);
-      } else if (
-        log[type] ||
-        settings[type]?.save ||
-        settings[type]?.onData ||
-        (type === "stderr" && settings[type]?.toExitCode)
-      ) {
+      } else if (log[type] || settings[type]?.save || settings[type]?.onData) {
         p[type]!.on("data", onData);
       }
     }
