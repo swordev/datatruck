@@ -2,9 +2,9 @@ import { ConfigAction } from "../../actions/ConfigAction";
 import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptions } from "../../commands/CopyCommand";
 import { PruneCommandOptions } from "../../commands/PruneCommand";
+import { AsyncProcess } from "../async-process";
 import { stringifyOptions } from "../cli";
 import { formatCronScheduleObject } from "../cron";
-import { exec } from "../process";
 import { compareJsons } from "../string";
 import { createWatcher } from "../watcher";
 import { datatruckCommandMap } from "./command";
@@ -86,11 +86,10 @@ export function createCronServer(
         action.options,
       );
       const [node, bin] = process.argv;
-      await exec(
+      await AsyncProcess.exec(
         node,
         [bin, "-c", config.configPath, action.name, ...cliOptions],
-        {},
-        { log: config.verbose },
+        { $log: config.verbose },
       );
       if (config.log) console.info(`< [job] ${index} - ${action.name}`);
     } catch (error) {

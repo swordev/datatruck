@@ -1,4 +1,5 @@
-import { ProcessEnv, exec } from "./process";
+import { AsyncProcess } from "./async-process";
+import { ProcessEnv } from "./process";
 import { render } from "./string";
 import { mkTmpDir } from "./temp";
 import { writeFile } from "fs/promises";
@@ -99,27 +100,20 @@ export async function runSpawnSteps<TData extends Record<string, any>>(
           : []),
         ...(step.config.args || []).map((arg) => render(arg.toString(), data)),
       ];
-      await exec(
-        command,
-        args,
-        {
-          cwd: options.cwd,
-          env: {
-            ...process.env,
-            ...options.env,
-            ...step.config.env,
-          },
+      const p = new AsyncProcess(command, args, {
+        cwd: options.cwd,
+        env: {
+          ...process.env,
+          ...options.env,
+          ...step.config.env,
         },
-        {
-          log: options.verbose,
-          ...(options.onLine && {
-            stdout: {
-              parseLines: "skip-empty",
-              onData: (line) => options.onLine!(line),
-            },
-          }),
-        },
-      );
+        $log: options.verbose,
+      });
+      if (options.onLine) {
+        await p.stdout.parseLines(options.onLine);
+      } else {
+        await p.waitForClose();
+      }
     } else {
       throw new Error(`Invalid step type: ${(step as any).type}`);
     }

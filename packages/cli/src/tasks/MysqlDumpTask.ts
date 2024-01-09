@@ -126,7 +126,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
                 sharedPath: tableSharedPath,
                 items: [tableName],
                 database: this.config.database,
-                onSpawn: (p) => (controller.stop = () => p.kill()),
+                controller,
               });
               const files = await readdir(tableSharedPath);
               const schemaFile = `${tableName}.sql`;
@@ -159,7 +159,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
               output: outPath,
               items: [tableName],
               database: this.config.database,
-              onSpawn: (p) => (controller.stop = () => p.kill()),
+              controller,
               ...(concurrency === 1 && {
                 onProgress(progress) {
                   data.onProgress({
@@ -346,7 +346,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
           await sql.importFile({
             path,
             database: database.name,
-            onSpawn: (p) => (controller.stop = () => p.kill()),
+            controller,
           });
         } finally {
           await tempDir?.[Symbol.asyncDispose]();
@@ -400,7 +400,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
             path: csvFile,
             database: database.name,
             table: tableName,
-            onSpawn: (p) => (controller.stop = () => p.kill()),
+            controller,
           });
         } finally {
           await temp[Symbol.asyncDispose]();

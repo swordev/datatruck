@@ -1,7 +1,7 @@
+import { AsyncProcess } from "../utils/async-process";
 import { logExec } from "../utils/cli";
-import { forEachFile, readDir, waitForClose } from "../utils/fs";
+import { forEachFile, readDir } from "../utils/fs";
 import { progressPercent } from "../utils/math";
-import { createProcess, exec } from "../utils/process";
 import { extractTar } from "../utils/tar";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
@@ -146,8 +146,8 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
       total++;
     });
 
-    let p1: ReturnType<typeof createProcess>;
     let lastLineText: string | undefined;
+    const controller = new AbortController();
     const pathRegex = /((Copying|Streaming) .+) to/;
 
     const onData = async (line: string) => {
@@ -158,7 +158,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
         line.includes("[ERROR] InnoDB: Unsupported redo log format.") ||
         line.includes("Error: cannot read redo log header")
       ) {
-        p1!.kill();
+        controller.abort();
       } else {
         const matches = pathRegex.exec(text);
         if (matches) current++;
@@ -182,49 +182,41 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
     );
 
     if (compress) {
-      const p0 = createWriteStream(join(snapshotPath, "db.xb.gz"));
-      p1 = createProcess(command, args, {
+      const fileStream = createWriteStream(join(snapshotPath, "db.xb.gz"));
+      const dumpProcess = new AsyncProcess(command, args, {
         $log: {
           exec: this.verbose,
           stderr: this.verbose,
         },
-        $stderr: {
-          parseLines: true,
-          onData,
-        },
-        $onExitCode: (code) => `Exit code: ${code} - ${lastLineText}`,
+        $controller: controller,
+        $exitCode: (code) => `Exit code: ${code} - ${lastLineText}`,
       });
-      const p2 = createProcess(compress.command, compress.args);
+      const compressProcess = new AsyncProcess(compress.command, compress.args);
 
-      p1.stdout.pipe(p2.stdin, { end: true });
-      p2.stdout.pipe(p0, { end: true });
-
-      await Promise.all([p1, p2, waitForClose(p0)]);
+      await Promise.all([
+        dumpProcess.stdout.pipe(compressProcess.stdin),
+        dumpProcess.stderr.parseLines(onData),
+        compressProcess.stdout.pipe(fileStream),
+      ]);
     } else {
-      p1 = createProcess(command, args, {
+      const dumpProcess = new AsyncProcess(command, args, {
         $log: this.verbose,
-        $stdout: {
-          parseLines: true,
-          onData,
-        },
-        $stderr: {
-          parseLines: true,
-          onData,
-        },
-        $onExitCode: (code) => `Exit code: ${code} - ${lastLineText}`,
+        $controller: controller,
+        $exitCode: (code) => `Exit code: ${code} - ${lastLineText}`,
       });
 
-      await p1;
+      await Promise.all([
+        dumpProcess.stdout.parseLines(onData),
+        dumpProcess.stderr.parseLines(onData),
+      ]);
 
-      await exec(
+      const prepareProcess = new AsyncProcess(
         command,
         [`--prepare`, `--target-dir=${snapshotPath}`],
-        undefined,
-        {
-          log: this.verbose,
-          stderr: { onData: () => {} },
-        },
+        { $log: this.verbose },
       );
+
+      await prepareProcess.waitForClose();
     }
     return { snapshotPath };
   }
@@ -324,35 +316,30 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
 
       const { parallel } = normalizeConfig({ parallel: this.config.parallel });
 
-      const p1 = createProcess(
+      const p1 = new AsyncProcess(
         "mbstream",
         ["-x", "-C", snapshotPath, "-v", "-p", parallel],
-        {
-          $log: this.verbose,
-          $stderr: {
-            parseLines: true,
-            onData(line) {
-              const { text: path } = parseLine(line);
-              data.onProgress({
-                absolute,
-                relative: {
-                  payload: path,
-                  format: "amount",
-                  current: ++currentXbFiles,
-                  total: stats?.xbFiles,
-                  percent: stats?.xbFiles
-                    ? progressPercent(stats.xbFiles, currentXbFiles)
-                    : undefined,
-                },
-              });
-            },
-          },
-        },
+        { $log: this.verbose },
       );
 
-      xbStream.pipe(p1.stdin, { end: true });
-
-      await Promise.all([waitForClose(xbStream), p1]);
+      await Promise.all([
+        p1.stdin.pipe(xbStream),
+        p1.stderr.parseLines((line) => {
+          const { text: path } = parseLine(line);
+          data.onProgress({
+            absolute,
+            relative: {
+              payload: path,
+              format: "amount",
+              current: ++currentXbFiles,
+              total: stats?.xbFiles,
+              percent: stats?.xbFiles
+                ? progressPercent(stats.xbFiles, currentXbFiles)
+                : undefined,
+            },
+          });
+        }),
+      ]);
     }
 
     // Prepare
@@ -367,15 +354,13 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
         absolute,
       });
 
-      await exec(
+      const p = new AsyncProcess(
         this.command,
         [`--prepare`, `--target-dir=${snapshotPath}`],
-        undefined,
-        {
-          log: this.verbose,
-          stderr: { onData: () => {} },
-        },
+        { $log: this.verbose },
       );
+
+      await p.waitForClose();
     }
 
     await reloadFiles();

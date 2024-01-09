@@ -1,7 +1,7 @@
+import { AsyncProcess } from "../utils/async-process";
 import { resolveDatabaseName } from "../utils/datatruck/config";
 import { AppError } from "../utils/datatruck/error";
 import { readDir } from "../utils/fs";
-import { exec } from "../utils/process";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { readFile } from "fs/promises";
@@ -28,7 +28,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
   }
 
   async exec(query: string) {
-    const result = await exec(
+    const stdout = await AsyncProcess.stdout(
       this.command,
       [
         ...(this.config.hostname ? ["-S", this.config.hostname] : []),
@@ -45,18 +45,11 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
         "-Q",
         `SET nocount ON; ${query.replace(/[\n\t]/g, " ")}`,
       ],
-      undefined,
       {
-        log: this.verbose,
-        stderr: {
-          toExitCode: true,
-        },
-        stdout: {
-          save: true,
-        },
+        $log: this.verbose,
       },
     );
-    return result.stdout
+    return stdout
       .split(/\n/g)
       .map((row) => row.split(","))
       .filter((row) => row.length);

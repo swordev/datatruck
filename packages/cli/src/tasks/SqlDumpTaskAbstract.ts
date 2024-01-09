@@ -8,7 +8,6 @@ import {
   readDir,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
-import { exec } from "../utils/process";
 import { mkTmpDir } from "../utils/temp";
 import {
   TaskBackupData,
@@ -90,7 +89,7 @@ export abstract class SqlDumpTaskAbstract<
 
   async fetchValues(query: string) {
     const result = await this.onExecQuery(query);
-    return result.stdout.split(/\r?\n/).reduce((result, value) => {
+    return result.split(/\r?\n/).reduce((result, value) => {
       value = value.trim();
       if (value.length) result.push(value);
       return result;
@@ -100,7 +99,7 @@ export abstract class SqlDumpTaskAbstract<
   abstract onCreateDatabase(database: TargetDatabase): Promise<void>;
   abstract onDatabaseIsEmpty(databaseName: string): Promise<boolean>;
   abstract onFetchTableNames(database: string): Promise<string[]>;
-  abstract onExecQuery(query: string): ReturnType<typeof exec>;
+  abstract onExecQuery(query: string): Promise<string>;
   abstract onExportTables(
     tableNames: string[],
     output: string,

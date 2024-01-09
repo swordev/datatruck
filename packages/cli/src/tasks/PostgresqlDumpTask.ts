@@ -1,10 +1,9 @@
-import { exec } from "../utils/process";
+import { AsyncProcess } from "../utils/async-process";
 import {
   SqlDumpTaskAbstract,
   SqlDumpTaskConfig,
   TargetDatabase,
 } from "./SqlDumpTaskAbstract";
-import { createWriteStream } from "fs";
 import { normalize } from "path";
 
 export const postgresqlDumpTaskName = "postgresql-dump";
@@ -52,7 +51,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
   }
 
   override async onExecQuery(query: string) {
-    return await exec(
+    return await AsyncProcess.stdout(
       "psql",
       [
         ...(await this.buildConnectionArgs()),
@@ -60,16 +59,7 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
         "-c",
         query.replace(/\s{1,}/g, " "),
       ],
-      undefined,
-      {
-        log: this.verbose,
-        stderr: {
-          toExitCode: true,
-        },
-        stdout: {
-          save: true,
-        },
-      },
+      { $log: this.verbose },
     );
   }
 
@@ -92,29 +82,16 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
     output: string,
     onProgress: (progress: { totalBytes: number }) => void,
   ) {
-    const stream = createWriteStream(output);
+    const dumpProcess = new AsyncProcess(
+      "pg_dump",
+      [
+        ...(await this.buildConnectionArgs(this.config.database)),
+        ...(tableNames?.flatMap((v) => ["-t", v]) ?? []),
+      ],
+      { $log: this.verbose },
+    );
 
-    await Promise.all([
-      new Promise<void>((resolve, reject) => {
-        stream.on("close", resolve);
-        stream.on("error", reject);
-      }),
-      exec(
-        "pg_dump",
-        [
-          ...(await this.buildConnectionArgs(this.config.database)),
-          ...(tableNames?.flatMap((v) => ["-t", v]) ?? []),
-        ],
-        null,
-        {
-          pipe: { stream, onWriteProgress: onProgress },
-          stderr: {
-            toExitCode: true,
-          },
-          log: this.verbose,
-        },
-      ),
-    ]);
+    await dumpProcess.stdout.pipe(output, onProgress);
   }
 
   override async onExportStoredPrograms() {
@@ -122,13 +99,10 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
   }
 
   override async onImport(path: string, database: string) {
-    await exec(
+    await AsyncProcess.exec(
       "psql",
       [...(await this.buildConnectionArgs(database)), "-f", normalize(path)],
-      undefined,
-      {
-        log: this.verbose,
-      },
+      { $log: this.verbose },
     );
   }
 }

@@ -1,5 +1,6 @@
+import { AsyncProcess, AsyncProcessOptions } from "./async-process";
 import { fastFolderSizeAsync } from "./fs";
-import { exec, ExecResult, ExecSettingsInterface, ProcessEnv } from "./process";
+import { ProcessEnv } from "./process";
 import { formatUri, Uri } from "./string";
 import { writeFile, readFile, rm } from "fs/promises";
 import { join, resolve } from "path";
@@ -81,45 +82,40 @@ export class Restic {
     )}`;
   }
 
-  async exec(
-    args: string[],
-    settings?: ExecSettingsInterface,
-    options?: { cwd?: string },
-  ) {
-    return await exec(
-      "restic",
-      args,
-      {
-        stdio: ["ignore", "pipe", "pipe"],
-        env: { ...process.env, ...this.options.env },
-        cwd: options?.cwd,
-      },
-      {
-        stderr: { toExitCode: true },
-        log: this.options.log
-          ? {
-              exec: true,
-              stdout: true,
-              stderr: true,
-              colorize: true,
-              allToStderr: true,
-              envNames: [
-                "RESTIC_REPOSITORY",
-                "RESTIC_PASSWORD_FILE",
-                "RESTIC_PASSWORD",
-              ],
-            }
-          : {},
-        ...(settings ?? {}),
-      },
-    );
+  private createProcess(args: string[], options?: AsyncProcessOptions) {
+    return new AsyncProcess("restic", args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, ...this.options.env },
+      $log: this.options.log
+        ? {
+            exec: true,
+            stdout: true,
+            stderr: true,
+            colorize: true,
+            allToStderr: true,
+            envNames: [
+              "RESTIC_REPOSITORY",
+              "RESTIC_PASSWORD_FILE",
+              "RESTIC_PASSWORD",
+            ],
+          }
+        : {},
+      ...(options ?? {}),
+    });
   }
 
+  async exec(args: string[], options?: AsyncProcessOptions) {
+    return await this.createProcess(args, options).waitForClose();
+  }
+  private async stdout(args: string[], options?: AsyncProcessOptions) {
+    return await this.createProcess(args, options).stdout.fetch();
+  }
   async checkRepository() {
-    const result = await this.exec(["cat", "config"], {
-      onExitCodeError: () => false,
-    });
-    return result.exitCode === 0;
+    return (
+      (await this.exec(["cat", "config"], {
+        $exitCode: false,
+      })) === 0
+    );
   }
 
   async forget(options: {
@@ -135,7 +131,7 @@ export class Restic {
     tag?: string[];
     prune?: boolean;
   }) {
-    const result = await this.exec([
+    await this.exec([
       "forget",
       ...(options.keepLast ? ["--keep-last", options.keepLast.toString()] : []),
       ...(options.keepHourly
@@ -163,7 +159,6 @@ export class Restic {
       ...(options.prune ? ["--prune"] : []),
       ...(options.snapshotId ? [options.snapshotId] : []),
     ]);
-    return result.stdout;
   }
 
   async snapshots(options: {
@@ -185,20 +180,15 @@ export class Restic {
       short_id: string;
     }[]
   > {
-    const result = await this.exec(
-      [
-        "snapshots",
-        ...(options.tags?.flatMap((tag) => [`--tag`, tag]) ?? []),
-        ...(options.json ? ["--json"] : []),
-        ...(options.paths?.flatMap((path) => ["--path", path]) ?? []),
-        ...(options.latest ? ["--latest", options.latest.toString()] : []),
-        ...(options.snapshotIds || []),
-      ],
-      {
-        stdout: { save: true },
-      },
-    );
-    return JSON.parse(result.stdout);
+    const json = await this.stdout([
+      "snapshots",
+      ...(options.tags?.flatMap((tag) => [`--tag`, tag]) ?? []),
+      ...(options.json ? ["--json"] : []),
+      ...(options.paths?.flatMap((path) => ["--path", path]) ?? []),
+      ...(options.latest ? ["--latest", options.latest.toString()] : []),
+      ...(options.snapshotIds || []),
+    ]);
+    return JSON.parse(json);
   }
 
   async backup(options: {
@@ -212,9 +202,9 @@ export class Restic {
     allowEmptySnapshot?: boolean;
     onStream?: (data: ResticBackupStream) => void;
     createEmptyDir?: () => Promise<string>;
-  }): Promise<ExecResult> {
-    const exec = async () =>
-      await this.exec(
+  }): Promise<void> {
+    try {
+      const backup = this.createProcess(
         [
           "backup",
           "--json",
@@ -225,34 +215,22 @@ export class Restic {
           ...(options.parent ? ["--parent", options.parent] : []),
           ...options.paths,
         ],
-        {
-          stderr: {
-            toExitCode: true,
-          },
-          stdout: {
-            ...(options.onStream && {
-              onData: (data) => {
-                for (const rawLine of data.split("\n")) {
-                  const line = rawLine.trim();
-                  if (line.startsWith("{") && line.endsWith("}")) {
-                    let parsedLine: ResticBackupStream | undefined;
-                    try {
-                      parsedLine = JSON.parse(line);
-                    } catch (error) {}
-                    if (parsedLine) options.onStream?.(parsedLine);
-                  }
-                }
-              },
-            }),
-          },
-        },
-        {
-          cwd: options.cwd,
-        },
+        { cwd: options.cwd },
       );
 
-    try {
-      return await exec();
+      if (options.onStream) {
+        await backup.stdout.parseLines((line) => {
+          if (line.startsWith("{") && line.endsWith("}")) {
+            let parsedLine: ResticBackupStream | undefined;
+            try {
+              parsedLine = JSON.parse(line);
+            } catch (error) {}
+            if (parsedLine) options.onStream?.(parsedLine);
+          }
+        });
+      } else {
+        await backup.waitForClose();
+      }
     } catch (error) {
       if (
         options.allowEmptySnapshot &&
@@ -280,22 +258,18 @@ export class Restic {
 
   async copy(options: {
     id: string;
-    onStream?: (data: ResticBackupStream) => void
+    onStream?: (data: ResticBackupStream) => void;
   }) {
-    return await this.exec(["copy", "--json", options.id], {
-      stderr: {
-        toExitCode: true,
-      },
-      stdout: {
-        ...(options.onStream && {
-          onData: async (data) => {
-            if (data.startsWith("{") && data.endsWith("}")) {
-              await options.onStream?.(JSON.parse(data));
-            }
-          },
-        }),
-      },
-    });
+    const copy = this.createProcess(["copy", "--json", options.id]);
+    if (options.onStream) {
+      await copy.stdout.parseLines((line) => {
+        if (line.startsWith("{") && line.endsWith("}")) {
+          options.onStream?.(JSON.parse(line));
+        }
+      });
+    } else {
+      await copy.waitForClose();
+    }
   }
 
   async restore(options: {
@@ -305,7 +279,7 @@ export class Restic {
      * @default 30_000
      */
     progressInterval?: number | false;
-    onStream?: (data: ResticBackupStream) => Promise<void>;
+    onStream?: (data: ResticBackupStream) => void;
   }) {
     let progressTimeout: NodeJS.Timeout | undefined;
     const progressInterval = options.progressInterval ?? 30_000;
@@ -331,23 +305,23 @@ export class Restic {
     if (typeof progressInterval === "number") progressRutine();
 
     try {
-      const result = await this.exec(
-        ["restore", "--json", options.id, "--target", options.target],
-        {
-          stderr: {
-            toExitCode: true,
-          },
-          stdout: {
-            ...(options.onStream && {
-              onData: async (data) => {
-                if (data.startsWith("{") && data.endsWith("}")) {
-                  await options.onStream?.(JSON.parse(data));
-                }
-              },
-            }),
-          },
-        },
-      );
+      const result = this.createProcess([
+        "restore",
+        "--json",
+        options.id,
+        "--target",
+        options.target,
+      ]);
+
+      if (options.onStream) {
+        await result.stdout.parseLines((line) => {
+          if (line.startsWith("{") && line.endsWith("}")) {
+            options.onStream?.(JSON.parse(line));
+          }
+        });
+      } else {
+        await result.waitForClose();
+      }
 
       if (snapshots.at(0)?.tags?.includes(emptySnapshotTag))
         await rm(join(options.target, `.${emptySnapshotTag}`));

@@ -425,7 +425,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     await restic.restore({
       id: snapshot.originalId,
       target: restorePath,
-      onStream: async (streamData) => {
+      onStream: (streamData) => {
         if (streamData.message_type === "restore-status") {
           const current = Math.min(streamData.total_bytes, snapshot.size);
           data.onProgress({

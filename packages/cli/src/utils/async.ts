@@ -1,7 +1,6 @@
 import { PromisePool } from "@supercharge/promise-pool";
 
-type ControllerItem = { stop?: () => void };
-type ItemBuffer<T> = Map<T, ControllerItem>;
+type ItemBuffer<T> = Map<T, AbortController>;
 
 export async function runParallel<T>(options: {
   items: T[];
@@ -14,7 +13,7 @@ export async function runParallel<T>(options: {
   onItem: (data: {
     item: T;
     index: number;
-    controller: ControllerItem;
+    controller: AbortController;
   }) => Promise<void> | void;
   onFinished?: () => Promise<void> | void;
 }) {
@@ -24,7 +23,7 @@ export async function runParallel<T>(options: {
   await PromisePool.for(options.items)
     .withConcurrency(options.concurrency)
     .process(async (item, index, pool) => {
-      const controller = {};
+      const controller = new AbortController();
       buffer.set(item, controller);
       try {
         await options.onChange({
@@ -43,7 +42,7 @@ export async function runParallel<T>(options: {
         pool.stop();
         for (const [, $controller] of buffer.entries())
           try {
-            $controller.stop?.();
+            $controller.abort();
           } catch (_) {}
       } finally {
         buffer.delete(item);

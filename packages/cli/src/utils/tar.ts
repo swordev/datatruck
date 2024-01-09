@@ -1,7 +1,7 @@
+import { AsyncProcess } from "./async-process";
 import { logExec } from "./cli";
 import { countFileLines, existsDir } from "./fs";
 import { progressPercent } from "./math";
-import { exec } from "./process";
 import { BasicProgress } from "./progress";
 import { mkdir } from "fs/promises";
 import { cpus, platform } from "os";
@@ -55,30 +55,18 @@ export async function getTarVendor(
   log = false,
 ): Promise<TarVendor | null> {
   if (cache && typeof tarVendor !== "undefined") return tarVendor;
-  const p = await exec(
-    "tar",
-    ["--help"],
-    {},
-    {
-      log,
-      stdout: {
-        save: true,
-      },
-    },
-  );
-
+  const stdout = await AsyncProcess.stdout("tar", ["--help"], { $log: log });
   const find = () => {
-    if (p.stdout.includes("BusyBox")) {
+    if (stdout.includes("BusyBox")) {
       return "busybox";
-    } else if (p.stdout.includes("bsdtar")) {
+    } else if (stdout.includes("bsdtar")) {
       return "bsdtar";
-    } else if (p.stdout.includes("GNU")) {
+    } else if (stdout.includes("GNU")) {
       return "gnu";
     } else {
       return null;
     }
   };
-
   return (tarVendor = find());
 }
 
@@ -90,27 +78,19 @@ export type ListTarOptions = {
 
 export async function listTar(options: ListTarOptions) {
   const vendor = await getTarVendor(true, options.verbose);
-  let total = 0;
-  await exec(
+  const p = new AsyncProcess(
     "tar",
     [
       "-tf",
       toLocalPath(options.input),
       ...(vendor === "bsdtar" ? [] : ["--force-local"]),
     ],
-    {},
-    {
-      log: options.verbose,
-      stdout: {
-        parseLines: "skip-empty",
-        onData: (path) => {
-          options.onEntry?.({ path: normalizeTarPath(path) });
-          total++;
-        },
-      },
-    },
+    { $log: options.verbose },
   );
-  return total;
+
+  return await p.stdout.parseLines((path) => {
+    options.onEntry?.({ path: normalizeTarPath(path) });
+  });
 }
 
 let pigzLib: boolean | undefined;
@@ -118,7 +98,10 @@ let pigzLib: boolean | undefined;
 export async function checkPigzLib(cache = true) {
   if (cache && pigzLib !== undefined) return pigzLib;
   try {
-    return !(await exec("pigz", ["-V"])).exitCode;
+    const exitCode = await AsyncProcess.exec("pigz", ["-V"], {
+      $exitCode: false,
+    });
+    return !exitCode;
   } catch {
     return false;
   }
@@ -175,7 +158,7 @@ export async function createTar(options: CreateTarOptions) {
     });
   };
 
-  await exec(
+  const p = new AsyncProcess(
     "tar",
     [
       "--no-recursion",
@@ -213,23 +196,17 @@ export async function createTar(options: CreateTarOptions) {
         ...process.env,
         ...env,
       },
-    },
-    {
-      log: options.verbose
+      $log: options.verbose
         ? { envNames: Object.keys(env), exec: true, stderr: true, stdout: true }
         : false,
-      ...(vendor === "bsdtar"
-        ? {
-            stderr: options.onEntry
-              ? { toExitCode: true, parseLines: "skip-empty", onData }
-              : { toExitCode: true },
-          }
-        : {
-            stderr: { toExitCode: true },
-            stdout: { parseLines: "skip-empty", onData },
-          }),
     },
   );
+
+  if (options.onEntry) {
+    await p[vendor === "bsdtar" ? "stderr" : "stdout"].parseLines(onData);
+  } else {
+    await p.waitForClose();
+  }
 }
 
 /**
@@ -276,7 +253,8 @@ export async function extractTar(options: ExtractOptions) {
       },
     });
   };
-  await exec(
+
+  const p = new AsyncProcess(
     "tar",
     [
       decompress?.cores === 1 ? "-xzvpf" : "-xvpf",
@@ -293,19 +271,13 @@ export async function extractTar(options: ExtractOptions) {
         decompress.cores > 1 && {
           shell: true,
         }),
-    },
-    {
-      log: options.verbose,
-      ...(vendor === "bsdtar"
-        ? {
-            stderr: options.onEntry
-              ? { toExitCode: true, parseLines: "skip-empty", onData }
-              : { toExitCode: true },
-          }
-        : {
-            stderr: { toExitCode: true },
-            stdout: { parseLines: "skip-empty", onData },
-          }),
+      $log: options.verbose,
     },
   );
+
+  if (options.onEntry) {
+    await p[vendor === "bsdtar" ? "stderr" : "stdout"].parseLines(onData);
+  } else {
+    await p.waitForClose();
+  }
 }

@@ -268,11 +268,19 @@ export async function writeGitIgnoreList(options: {
   return path;
 }
 
-export async function waitForClose(stream: WriteStream | ReadStream) {
+export async function waitForClose(
+  stream:
+    | {
+        on(event: "close", cb: (...args: any[]) => any): any;
+      }
+    | {
+        on(event: "close", cb: (...args: any[]) => any): any;
+        on(event: "error", cb: (...args: any[]) => any): any;
+      },
+) {
   return new Promise<void>((resolve, reject) => {
     stream.on("close", resolve);
-    stream.on("error", reject);
-    return stream;
+    stream.on("error" as any, reject);
   });
 }
 

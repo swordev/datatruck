@@ -1,3 +1,4 @@
+import { AsyncProcess } from "../utils/async-process";
 import { logExec } from "../utils/cli";
 import {
   existsDir,
@@ -6,9 +7,9 @@ import {
   forEachFile,
   mkdirIfNotExists,
   initEmptyDir,
+  waitForClose,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
-import { exec } from "../utils/process";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
@@ -16,7 +17,6 @@ import { createWriteStream } from "fs";
 import { copyFile, rm } from "fs/promises";
 import { isMatch } from "micromatch";
 import { join } from "path";
-import { createInterface } from "readline";
 
 export type GitTaskConfig = {
   command?: string;
@@ -75,14 +75,12 @@ export class GitTask extends TaskAbstract<GitTaskConfig> {
       },
     });
 
-    await exec(
+    await AsyncProcess.exec(
       this.command,
       ["bundle", "create", bundlePath, "--all"],
       {
         cwd: path,
-      },
-      {
-        log: this.verbose,
+        $log: this.verbose,
       },
     );
 
@@ -127,49 +125,36 @@ export class GitTask extends TaskAbstract<GitTaskConfig> {
       if (!option.include) continue;
       option.pathsPath = join(snapshotPath, `repo.${option.name}-paths.txt`);
       const stream = createWriteStream(option.pathsPath);
-      let streamError: Error | undefined;
-      stream.on("error", (e) => (streamError = e));
-      try {
-        await exec(
-          this.command,
-          [
-            "-c",
-            "core.quotepath=off",
-            "ls-files",
-            ...option.argv,
-            "--exclude-standard",
-          ],
-          {
-            cwd: data.package.path,
-          },
-          {
-            log: {
-              exec: this.verbose,
-            },
-            onSpawn: (p) => {
-              const iface = createInterface(p.stdout!, stream);
-              iface.on("close", () => stream.end());
-              iface.on("line", (path) => {
-                path = path.trim();
-                if (!path.length) return;
-                let found = false;
-                if (option.include === true) {
-                  found = true;
-                } else if (option.include) {
-                  found = isMatch(path, option.include);
-                }
-                if (found) {
-                  total++;
-                  stream.write(`${path}\n`);
-                }
-              });
-            },
-          },
-        );
-      } finally {
-        await new Promise((resolve) => stream.end(resolve));
-        if (streamError) throw streamError;
-      }
+      const p = new AsyncProcess(
+        this.command,
+        [
+          "-c",
+          "core.quotepath=off",
+          "ls-files",
+          ...option.argv,
+          "--exclude-standard",
+        ],
+        {
+          cwd: data.package.path,
+          $log: this.verbose,
+        },
+      );
+      await Promise.all([
+        p.stdout.parseLines((path) => {
+          let found = false;
+          if (option.include === true) {
+            found = true;
+          } else if (option.include) {
+            found = isMatch(path, option.include);
+          }
+          if (found) {
+            total++;
+            stream.write(`${path}\n`);
+          }
+        }),
+        p.child.on("close", () => stream.end()),
+        waitForClose(stream),
+      ]);
     }
 
     // Copy
@@ -255,16 +240,10 @@ export class GitTask extends TaskAbstract<GitTaskConfig> {
 
     const bundlePath = join(snapshotPath, "repo.bundle");
 
-    await exec(
-      this.command,
-      ["clone", bundlePath, "."],
-      {
-        cwd: restorePath,
-      },
-      {
-        log: this.verbose,
-      },
-    );
+    await AsyncProcess.exec(this.command, ["clone", bundlePath, "."], {
+      cwd: restorePath,
+      $log: this.verbose,
+    });
 
     await incrementProgress();
 

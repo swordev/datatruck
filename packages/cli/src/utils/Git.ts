@@ -1,5 +1,5 @@
+import { AsyncProcess, AsyncProcessOptions } from "./async-process";
 import { existsDir, isLocalDir, readDir } from "./fs";
-import { exec, ExecSettingsInterface } from "./process";
 
 export class Git {
   constructor(
@@ -9,16 +9,18 @@ export class Git {
     },
   ) {}
 
-  async exec(args: string[], settings?: ExecSettingsInterface, cwd?: boolean) {
-    return await exec(
-      "git",
-      args,
-      { cwd: cwd === false ? undefined : this.options.dir },
-      {
-        log: this.options.log,
-        ...(settings ?? {}),
-      },
-    );
+  private createProcess(args: string[], options: AsyncProcessOptions = {}) {
+    return new AsyncProcess("git", args, {
+      $log: this.options.log,
+      cwd: this.options.dir,
+      ...options,
+    });
+  }
+  async exec(args: string[], options?: AsyncProcessOptions) {
+    return await this.createProcess(args, options).waitForClose();
+  }
+  private async stdout(args: string[], options?: AsyncProcessOptions) {
+    return await this.createProcess(args, options).stdout.fetch();
   }
 
   async canBeInit(repo: string) {
@@ -29,7 +31,7 @@ export class Git {
   }
 
   async clone(options: { repo: string; branch?: string; orphan?: boolean }) {
-    return await this.exec([
+    await this.exec([
       "clone",
       ...(/^\w+\:\/\//.test(options.repo) ? ["--depth=1"] : []),
       ...(options.orphan ? ["--orphan"] : []),
@@ -42,7 +44,7 @@ export class Git {
   }
 
   async checkout(options: { branchName: string; orphan?: boolean }) {
-    return await this.exec([
+    await this.exec([
       "checkout",
       ...(options.orphan ? ["--orphan"] : []),
       options.branchName,
@@ -50,45 +52,41 @@ export class Git {
   }
 
   async checkBranch(options: { name: string; repo?: string }) {
-    const result = await this.exec(
+    const stdout = await this.stdout(
       [
         "ls-remote",
         "--exit-code",
         ...(options.repo ? [options.repo] : ["--heads", "origin"]),
       ],
       {
-        stdout: { save: true },
-        onExitCodeError: () => false,
+        ...(options.repo && {
+          cwd: undefined,
+        }),
+        cwd: options.repo ? undefined : this.options.dir,
+        $exitCode: false,
       },
-      options.repo ? false : true,
     );
-    return result.stdout
+    return stdout
       .split(/\r?\n/g)
       .some((line) => line.endsWith(`refs/heads/${options.name}`));
   }
 
   async removeAll() {
-    return await this.exec(["rm", "--force", "--ignore-unmatch", "*"]);
+    await this.exec(["rm", "--force", "--ignore-unmatch", "*"]);
   }
 
   async haveChanges() {
-    const statusResult = await this.exec(["status", "-s"], {
-      stdout: { save: true },
-    });
-    return !!statusResult.stdout.trim().length;
+    const stdout = await this.stdout(["status", "-s"]);
+    return !!stdout.trim().length;
   }
 
   async fetchCommitId(tag: string) {
-    return (
-      await this.exec(["rev-list", "-n", "1", tag], { stdout: { save: true } })
-    ).stdout?.trim();
+    return (await this.stdout(["rev-list", "-n", "1", tag])).trim();
   }
 
   async getTags(names?: string[]) {
-    const result = await this.exec(["tag", "-n", ...(names ?? [])], {
-      stdout: { save: true },
-    });
-    return result.stdout.split(/\r?\n/).reduce(
+    const stdout = await this.stdout(["tag", "-n", ...(names ?? [])]);
+    return stdout.split(/\r?\n/).reduce(
       (result, value) => {
         value = value.trim();
         if (!value.length) return result;
@@ -115,15 +113,10 @@ export class Git {
   }
 
   async pushTags() {
-    return await this.exec(["push", "--tags"]);
+    await this.exec(["push", "--tags"]);
   }
 
   async push(options: { branchName: string }) {
-    return await this.exec([
-      "push",
-      "--progress",
-      "origin",
-      options.branchName,
-    ]);
+    await this.exec(["push", "--progress", "origin", options.branchName]);
   }
 }

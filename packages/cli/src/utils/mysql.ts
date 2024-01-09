@@ -1,12 +1,11 @@
+import { AsyncProcess } from "./async-process";
 import { logExec } from "./cli";
 import { AppError } from "./datatruck/error";
 import { existsFile, fetchData, mkdirIfNotExists, readPartialFile } from "./fs";
-import { exec, logExecStdout } from "./process";
+import { logStdout } from "./process";
 import { createMatchFilter, undefIfEmpty } from "./string";
 import { mkTmpDir } from "./temp";
-import { ChildProcess } from "child_process";
 import { randomBytes } from "crypto";
-import { createReadStream, createWriteStream } from "fs";
 import { chmod, rm, writeFile } from "fs/promises";
 import { createConnection } from "mysql2/promise";
 import { tmpdir } from "os";
@@ -84,32 +83,6 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     return [`--defaults-file=${await createSqlConfig()}`];
   }
 
-  async function run(
-    query: string,
-    database?: string,
-    extra: string[] = [],
-    onSpawn?: (p: ChildProcess) => void,
-  ) {
-    return await exec(
-      "mysql",
-      [
-        ...(await args()),
-        ...(database ? [database] : []),
-        ...(extra || []),
-        "-e",
-        flatQuery(query),
-        "-N",
-        "--silent",
-      ],
-      undefined,
-      {
-        onSpawn,
-        log: options.verbose,
-        stderr: { toExitCode: true },
-        stdout: { save: true },
-      },
-    );
-  }
   async function fetchAll<T>(query: string, params?: any[]): Promise<T[]> {
     const [rows] = await sql.query(query, params);
     return rows as T[];
@@ -143,61 +116,48 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     database: string;
     items?: string[];
     onlyStoredPrograms?: boolean;
-    onSpawn?: (p: ChildProcess) => void;
+    controller?: AbortController;
     onProgress?: (data: { totalBytes: number }) => void;
   }) {
-    const stream = createWriteStream(input.output);
-
-    return await Promise.all([
-      new Promise<void>((resolve, reject) => {
-        stream.on("close", resolve);
-        stream.on("error", reject);
-      }),
-      await exec(
-        "mysqldump",
-        [
-          ...(await args()),
-          input.database,
-          "--lock-tables=false",
-          "--skip-add-drop-table=false",
-          ...(input.onlyStoredPrograms
-            ? [
-                "--routines",
-                "--events",
-                "--skip-triggers",
-                "--no-create-info",
-                "--no-data",
-                "--no-create-db",
-                "--skip-opt",
-              ]
-            : []),
-          ...(input.items || []),
-        ],
-        null,
-        {
-          stderr: { toExitCode: true },
-          onSpawn: input.onSpawn,
-          pipe: {
-            stream,
-            onWriteProgress: input.onProgress,
-          },
-          log: {
-            exec: options.verbose,
-            stderr: options.verbose,
-            allToStderr: true,
-          },
+    const process = new AsyncProcess(
+      "mysqldump",
+      [
+        ...(await args()),
+        input.database,
+        "--lock-tables=false",
+        "--skip-add-drop-table=false",
+        ...(input.onlyStoredPrograms
+          ? [
+              "--routines",
+              "--events",
+              "--skip-triggers",
+              "--no-create-info",
+              "--no-data",
+              "--no-create-db",
+              "--skip-opt",
+            ]
+          : []),
+        ...(input.items || []),
+      ],
+      {
+        $controller: input.controller,
+        $log: {
+          exec: options.verbose,
+          stderr: options.verbose,
+          allToStderr: true,
         },
-      ),
-    ]);
+      },
+    );
+    await process.stdout.pipe(input.output, input.onProgress);
   }
 
   async function csvDump(input: {
     database: string;
     sharedPath: string;
     items?: string[];
-    onSpawn?: (p: ChildProcess) => void;
+    controller?: AbortController;
   }) {
-    await exec(
+    const process = new AsyncProcess(
       "mysqldump",
       [
         ...(await args()),
@@ -210,25 +170,24 @@ export async function createMysqlCli(options: MysqlCliOptions) {
         input.sharedPath,
         ...(input.items || []),
       ],
-      null,
       {
-        stderr: { toExitCode: true },
-        onSpawn: input.onSpawn,
-        log: {
+        $controller: input.controller,
+        $log: {
           exec: options.verbose,
           stderr: options.verbose,
           allToStderr: true,
         },
       },
     );
+    await process.waitForClose();
   }
 
   async function importFile(input: {
     path: string;
     database: string;
-    onSpawn?: (p: ChildProcess) => void;
+    controller?: AbortController;
   }) {
-    return await exec(
+    const process = new AsyncProcess(
       "mysql",
       [
         ...(await args()),
@@ -239,24 +198,23 @@ export async function createMysqlCli(options: MysqlCliOptions) {
         ].join(",")};`,
         input.database,
       ],
-      null,
       {
-        onSpawn: input.onSpawn,
-        pipe: {
-          stream: createReadStream(input.path),
-          onReadProgress: (data) => {
-            if (options.verbose)
-              logExecStdout({
-                data: JSON.stringify(data),
-                colorize: true,
-                stderr: true,
-                lineSalt: true,
-              });
-          },
-        },
-        stderr: { toExitCode: true },
-        log: options.verbose,
+        $log: options.verbose,
+        $controller: input.controller,
       },
+    );
+
+    await process.stdin.pipe(
+      input.path,
+      options.verbose
+        ? (data) =>
+            logStdout({
+              data: JSON.stringify(data),
+              colorize: true,
+              stderr: true,
+              lineSalt: true,
+            })
+        : undefined,
     );
   }
 
@@ -264,18 +222,32 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     path: string;
     database: string;
     table: string;
-    onSpawn?: (p: ChildProcess) => void;
+    controller?: AbortController;
   }) {
-    return run(
-      `
+    const query = `
       LOAD DATA LOCAL INFILE ${JSON.stringify(input.path.replaceAll("\\", "/"))}
       INTO TABLE ${input.table}
       FIELDS TERMINATED BY '\\t'
-      LINES TERMINATED BY '\\n'`,
-      input.database,
-      ["--local-infile"],
-      input.onSpawn,
+      LINES TERMINATED BY '\\n'
+    `;
+    const process = new AsyncProcess(
+      "mysql",
+      [
+        ...(await args()),
+        input.database,
+        "--local-infile",
+        "-e",
+        flatQuery(query),
+        "-N",
+        "--silent",
+      ],
+      {
+        $controller: input.controller,
+        $log: options.verbose,
+      },
     );
+
+    await process.waitForClose();
   }
 
   async function isDatabaseEmpty(database: string) {
@@ -372,7 +344,6 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     options,
     initSharedDir,
     args,
-    run,
     execute,
     insert,
     changeDatabase,
