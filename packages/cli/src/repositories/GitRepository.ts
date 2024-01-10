@@ -1,4 +1,4 @@
-import { Git } from "../utils/Git";
+import { Git } from "../utils/git";
 import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
