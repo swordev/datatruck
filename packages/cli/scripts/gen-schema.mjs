@@ -6,6 +6,7 @@ const program = programFromConfig("./packages/cli/tsconfig.json");
 const schema = generateSchema(program, "Config", {
   noExtraProps: true,
   ref: true,
+  required: true
 });
 
 const jsonSchema = JSON.stringify(schema, null, 2);
