@@ -1,12 +1,12 @@
 import { logExec } from "./cli";
 import { progressPercent } from "./math";
 import { logStdout, logProcess } from "./process";
+import { waitForClose } from "./stream";
 import { ChildProcess, SpawnOptions, spawn } from "child_process";
 import { ReadStream, createReadStream, createWriteStream, statSync } from "fs";
 import { stat } from "fs/promises";
 import { createInterface } from "readline";
 import { Readable, Writable } from "stream";
-import { waitForClose } from "./stream";
 
 export type AsyncProcessOptions = SpawnOptions & {
   $log?: AsyncProcessLog | boolean;
@@ -255,9 +255,15 @@ export class AsyncProcess {
   private resolveExitCode(inExitCode: number | null): number | Error {
     let exitCode = inExitCode ?? 32;
     if (!exitCode) return exitCode;
+    const lastStdError = this.lastStdError?.toString().trim().slice(0, 255);
     let result = this.options.$exitCode ?? true;
-    let message =
-      inExitCode === null ? "Process killed" : `Process exit code: ${exitCode}`;
+    let message = (
+      inExitCode === null
+        ? [`Process killed: ${this.command}`, lastStdError]
+        : [`Process exit code: ${exitCode} (${this.command})`, lastStdError]
+    )
+      .filter((v) => typeof v === "string" && v.length)
+      .join("|");
     if (typeof result === "function") result = result(exitCode!)!;
     if (typeof result === "string") {
       message = result;
@@ -273,7 +279,7 @@ export class AsyncProcess {
         command: this.command,
         argv: this.argv,
         exitCode,
-        lastStdError: this.lastStdError?.toString().trim().slice(0, 255),
+        lastStdError,
       },
     });
   }
