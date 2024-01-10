@@ -1,5 +1,4 @@
 import { logExec } from "./cli";
-import { waitForClose } from "./fs";
 import { progressPercent } from "./math";
 import { logStdout, logProcess } from "./process";
 import { ChildProcess, SpawnOptions, spawn } from "child_process";
@@ -7,6 +6,7 @@ import { ReadStream, createReadStream, createWriteStream, statSync } from "fs";
 import { stat } from "fs/promises";
 import { createInterface } from "readline";
 import { Readable, Writable } from "stream";
+import { waitForClose } from "./stream";
 
 export type AsyncProcessOptions = SpawnOptions & {
   $log?: AsyncProcessLog | boolean;

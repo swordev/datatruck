@@ -30,6 +30,7 @@ import { isAbsolute } from "path";
 import { createInterface, Interface } from "readline";
 import { promisify } from "util";
 import { parse as parseYaml } from "yaml";
+import { waitForClose } from "./stream";
 
 export const isWSLSystem = release().includes("microsoft-standard-WSL");
 
@@ -268,21 +269,6 @@ export async function writeGitIgnoreList(options: {
   return path;
 }
 
-export async function waitForClose(
-  stream:
-    | {
-        on(event: "close", cb: (...args: any[]) => any): any;
-      }
-    | {
-        on(event: "close", cb: (...args: any[]) => any): any;
-        on(event: "error", cb: (...args: any[]) => any): any;
-      },
-) {
-  return new Promise<void>((resolve, reject) => {
-    stream.on("close", resolve);
-    stream.on("error" as any, reject);
-  });
-}
 
 export async function copyFileWithStreams(source: string, target: string) {
   const r = createReadStream(source);

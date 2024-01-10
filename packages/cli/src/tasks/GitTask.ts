@@ -7,9 +7,9 @@ import {
   forEachFile,
   mkdirIfNotExists,
   initEmptyDir,
-  waitForClose,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
+import { waitForClose } from "../utils/stream";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { ok } from "assert";
