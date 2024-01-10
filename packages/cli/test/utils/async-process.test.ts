@@ -46,7 +46,16 @@ describe("AsyncProcess.waitForClose", () => {
   it("throws error", async () => {
     const p = new AsyncProcess("node", ["-e", "process.exit(3)"]);
     await expect(p.waitForClose()).rejects.toThrowError(
-      new Error("Process exit code: 3"),
+      new Error("Process exit code: 3 (node)"),
+    );
+  });
+  it("throws error with std error", async () => {
+    const p = new AsyncProcess("node", [
+      "-e",
+      "console.log('a'); console.error('b'); process.exit(4)",
+    ]);
+    await expect(p.waitForClose()).rejects.toThrowError(
+      new Error("Process exit code: 4 (node) | b"),
     );
   });
   it("silents the error", async () => {

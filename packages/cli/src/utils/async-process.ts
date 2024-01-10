@@ -263,7 +263,7 @@ export class AsyncProcess {
         : [`Process exit code: ${exitCode} (${this.command})`, lastStdError]
     )
       .filter((v) => typeof v === "string" && v.length)
-      .join("|");
+      .join(" | ");
     if (typeof result === "function") result = result(exitCode!)!;
     if (typeof result === "string") {
       message = result;
