@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.34.2
+
+### Patch Changes
+
+- [`dcb9d37`](https://github.com/swordev/datatruck/commit/dcb9d373916e86e8e9f96bd6f2683e3ed754af5f) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
+- [`17273bd`](https://github.com/swordev/datatruck/commit/17273bdb4730908d5103ecc026999f7f99e3cd39) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix JSON schema
+
 ## 0.34.1
 
 ### Patch Changes
