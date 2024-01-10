@@ -8,7 +8,7 @@ import { PruneCommand } from "../../commands/PruneCommand";
 import { RestoreCommand } from "../../commands/RestoreCommand";
 import { SnapshotsCommand } from "../../commands/SnapshotsCommand";
 import { StartServerCommand } from "../../commands/StartServerCommand";
-import { Streams } from "../stream";
+import { StdStreams } from "../stream";
 import { AppError } from "./error";
 import { Writable } from "stream";
 
@@ -38,7 +38,7 @@ export function createCommand<T extends keyof DatatruckCommandMap>(
   name: T,
   globalOptions: GlobalOptions<true>,
   options: InferDatatruckCommandOptions<T>,
-  streams?: Partial<Streams>,
+  streams?: Partial<StdStreams>,
   configPath?: string,
 ) {
   const constructor = datatruckCommandMap[name];

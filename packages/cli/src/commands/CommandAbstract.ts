@@ -2,7 +2,7 @@ import { DataFormatType } from "../utils/DataFormat";
 import { OptionsConfig, parseOptions } from "../utils/cli";
 import type { Config } from "../utils/datatruck/config-type";
 import { ProgressMode } from "../utils/progress";
-import { Streams, createStreams } from "../utils/stream";
+import { StdStreams, createStdStreams } from "../utils/stream";
 import { If, SimilarObject } from "../utils/ts";
 
 export type GlobalOptions<TResolved = false> = {
@@ -32,15 +32,15 @@ export abstract class CommandAbstract<
   TOptions extends SimilarObject<TUnresolvedOptions>,
 > {
   readonly options: TOptions;
-  readonly streams: Streams;
+  readonly streams: StdStreams;
   constructor(
     readonly globalOptions: GlobalOptions<true>,
     readonly inputOptions: TUnresolvedOptions,
-    streams: Partial<Streams> = {},
+    streams: Partial<StdStreams> = {},
     readonly configPath?: string,
   ) {
     this.options = parseOptions(inputOptions, this.optionsConfig());
-    this.streams = createStreams(streams);
+    this.streams = createStdStreams(streams);
   }
   abstract optionsConfig(): OptionsConfig<TUnresolvedOptions, TOptions>;
   protected castOptionsConfig(

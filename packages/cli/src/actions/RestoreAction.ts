@@ -14,7 +14,7 @@ import { duration } from "../utils/date";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
-import { Streams } from "../utils/stream";
+import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
@@ -33,7 +33,7 @@ export type RestoreActionOptions = {
   initial?: boolean;
   tty?: "auto" | boolean;
   progress?: ProgressMode;
-  streams?: Streams;
+  streams?: StdStreams;
 };
 
 type RestoreSnapshot = Snapshot & {
@@ -159,7 +159,7 @@ export class RestoreAction<TRequired extends boolean = true> {
   dataFormat(
     result: Listr3TaskResultEnd<Context>[],
     options: {
-      streams?: Streams;
+      streams?: StdStreams;
       verbose?: number;
     } = {},
   ) {

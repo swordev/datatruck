@@ -1,5 +1,5 @@
 import { AppError } from "./datatruck/error";
-import { Streams, createStreams } from "./stream";
+import { StdStreams, createStdStreams } from "./stream";
 import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";
 
@@ -26,10 +26,10 @@ const customPrefix = "custom=";
 const tplPrefix = "tpl=";
 
 export class DataFormat {
-  protected streams: Streams;
+  protected streams: StdStreams;
   constructor(
     readonly options: {
-      streams?: Partial<Streams>;
+      streams?: Partial<StdStreams>;
       json: any;
       list?: () => string[];
       table?: {
@@ -38,7 +38,7 @@ export class DataFormat {
       };
     },
   ) {
-    this.streams = createStreams(options.streams);
+    this.streams = createStdStreams(options.streams);
   }
 
   protected getJson() {

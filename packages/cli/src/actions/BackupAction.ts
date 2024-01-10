@@ -22,7 +22,7 @@ import { duration } from "../utils/date";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
-import { Streams } from "../utils/stream";
+import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { PruneAction } from "./PruneAction";
@@ -43,7 +43,7 @@ export type BackupActionOptions = {
   date?: string;
   tty?: "auto" | boolean;
   progress?: ProgressMode;
-  streams?: Streams;
+  streams?: StdStreams;
   prune?: boolean;
 };
 
@@ -171,7 +171,7 @@ export class BackupAction<TRequired extends boolean = true> {
   dataFormat(
     result: Listr3TaskResultEnd<Context>[],
     options: {
-      streams?: Streams;
+      streams?: StdStreams;
       verbose?: number;
     } = {},
   ) {

@@ -23,7 +23,7 @@ import { duration } from "../utils/date";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { StrictMap } from "../utils/object";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
-import { Streams } from "../utils/stream";
+import { StdStreams } from "../utils/stream";
 import { ensureFreeDiskTempSpace, useTempDir } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import chalk from "chalk";
@@ -67,7 +67,7 @@ export class CopyAction<TRequired extends boolean = true> {
   dataFormat(
     result: Listr3TaskResultEnd<Context>[],
     options: {
-      streams?: Streams;
+      streams?: StdStreams;
       verbose?: number;
     } = {},
   ) {

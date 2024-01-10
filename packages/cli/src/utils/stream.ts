@@ -1,11 +1,11 @@
 import { Writable } from "stream";
 
-export type Streams = {
+export type StdStreams = {
   stdout: Writable;
   stderr: Writable;
 };
 
-export function createStreams(options: Partial<Streams> = {}): Streams {
+export function createStdStreams(options: Partial<StdStreams> = {}): StdStreams {
   return {
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,

@@ -1,7 +1,7 @@
 import { Timer, createTimer } from "./date";
 import { onExit } from "./exit";
 import { ProgressManager } from "./progress";
-import { Streams, createStreams } from "./stream";
+import { StdStreams, createStdStreams } from "./stream";
 import {
   Listr,
   ListrGetRendererClassFromValue,
@@ -19,10 +19,10 @@ export class List3Logger<
 > extends ListrLogger<Levels> {
   constructor(
     options: {
-      streams?: Partial<Streams>;
+      streams?: Partial<StdStreams>;
     } = {},
   ) {
-    const streams = createStreams(options.streams);
+    const streams = createStdStreams(options.streams);
     super({
       processOutput: new ProcessOutput(
         streams.stdout as any,
@@ -94,7 +94,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
   protected execTimer: Timer;
   constructor(
     readonly $options: {
-      streams?: Streams;
+      streams?: StdStreams;
       progressManager?: ProgressManager;
     },
   ) {
