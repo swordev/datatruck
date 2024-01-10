@@ -1,5 +1,5 @@
 import { CleanCacheAction } from "../actions/CleanCacheAction";
-import { DataFormat } from "../utils/DataFormat";
+import { DataFormat } from "../utils/data-format";
 import { formatBytes } from "../utils/bytes";
 import { CommandAbstract } from "./CommandAbstract";
 

@@ -1,5 +1,5 @@
 import type { PruneActionsOptions } from "../../actions/PruneAction";
-import type { DataFormatType } from "../DataFormat";
+import type { DataFormatType } from "../data-format";
 import type { ReportStep } from "../reportSteps";
 import type { SpawnStep } from "../spawnSteps";
 import type {

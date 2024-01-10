@@ -1,5 +1,5 @@
 import { PreSnapshot } from "../repositories/RepositoryAbstract";
-import { DataFormat } from "../utils/DataFormat";
+import { DataFormat } from "../utils/data-format";
 import { formatBytes } from "../utils/bytes";
 import { renderError, renderListTaskItem, renderResult } from "../utils/cli";
 import {

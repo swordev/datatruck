@@ -1,4 +1,4 @@
-import { DataFormatType } from "../utils/DataFormat";
+import { DataFormatType } from "../utils/data-format";
 import { OptionsConfig, parseOptions } from "../utils/cli";
 import type { Config } from "../utils/datatruck/config-type";
 import { ProgressMode } from "../utils/progress";

@@ -1,6 +1,6 @@
 import { Snapshot } from "../repositories/RepositoryAbstract";
 import { TaskAbstract } from "../tasks/TaskAbstract";
-import { DataFormat } from "../utils/DataFormat";
+import { DataFormat } from "../utils/data-format";
 import { renderError, renderListTaskItem, renderResult } from "../utils/cli";
 import {
   findPackageOrFail,

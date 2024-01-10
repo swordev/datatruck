@@ -1,7 +1,7 @@
 import { ConfigAction } from "./actions/ConfigAction";
 import { GlobalOptions } from "./commands/CommandAbstract";
 import globalData from "./globalData";
-import { DataFormatType } from "./utils/DataFormat";
+import { DataFormatType } from "./utils/data-format";
 import { OptionsConfig, showCursorCommand } from "./utils/cli";
 import {
   DatatruckCommandMap,
