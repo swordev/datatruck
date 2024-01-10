@@ -1,4 +1,3 @@
-import { ResticRepositoryUri, Restic } from "../utils/restic";
 import { logExec } from "../utils/cli";
 import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
@@ -11,6 +10,7 @@ import {
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { Progress } from "../utils/progress";
+import { ResticRepositoryUri, Restic } from "../utils/restic";
 import { checkMatch, formatUri, makePathPatterns } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import {

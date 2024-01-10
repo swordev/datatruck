@@ -1,4 +1,3 @@
-import { Git } from "../utils/git";
 import { logExec } from "../utils/cli";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
@@ -8,6 +7,7 @@ import {
   mkdirIfNotExists,
   parsePackageFile,
 } from "../utils/fs";
+import { Git } from "../utils/git";
 import { checkMatch, makePathPatterns } from "../utils/string";
 import { mkTmpDir, tmpDir } from "../utils/temp";
 import {

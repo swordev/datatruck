@@ -1,7 +1,7 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { SnapshotsAction } from "../actions/SnapshotsAction";
-import { DataFormat } from "../utils/data-format";
 import { formatBytes } from "../utils/bytes";
+import { DataFormat } from "../utils/data-format";
 import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";

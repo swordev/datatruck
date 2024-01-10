@@ -5,13 +5,14 @@ export type StdStreams = {
   stderr: Writable;
 };
 
-export function createStdStreams(options: Partial<StdStreams> = {}): StdStreams {
+export function createStdStreams(
+  options: Partial<StdStreams> = {},
+): StdStreams {
   return {
     stdout: options.stdout ?? process.stdout,
     stderr: options.stderr ?? process.stderr,
   };
 }
-
 
 export async function waitForClose(
   stream:

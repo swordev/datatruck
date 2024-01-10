@@ -1,6 +1,6 @@
 import { CleanCacheAction } from "../actions/CleanCacheAction";
-import { DataFormat } from "../utils/data-format";
 import { formatBytes } from "../utils/bytes";
+import { DataFormat } from "../utils/data-format";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type CleanCacheCommandOptions<TResolved = false> = {};

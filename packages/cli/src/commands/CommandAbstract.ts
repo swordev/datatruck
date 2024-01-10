@@ -1,5 +1,5 @@
-import { DataFormatType } from "../utils/data-format";
 import { OptionsConfig, parseOptions } from "../utils/cli";
+import { DataFormatType } from "../utils/data-format";
 import type { Config } from "../utils/datatruck/config-type";
 import { ProgressMode } from "../utils/progress";
 import { StdStreams, createStdStreams } from "../utils/stream";

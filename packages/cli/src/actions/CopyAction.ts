@@ -2,9 +2,9 @@ import {
   RepositoryAbstract,
   Snapshot,
 } from "../repositories/RepositoryAbstract";
-import { DataFormat } from "../utils/data-format";
 import { formatBytes } from "../utils/bytes";
 import { renderError, renderResult, renderListTaskItem } from "../utils/cli";
+import { DataFormat } from "../utils/data-format";
 import {
   filterRepository,
   findPackageOrFail,

@@ -2,6 +2,7 @@ import { pkg } from "../pkg";
 import { formatBytes, parseSize } from "./bytes";
 import { progressPercent } from "./math";
 import { Progress } from "./progress";
+import { waitForClose } from "./stream";
 import { endsWith } from "./string";
 import { mkTmpDir } from "./temp";
 import { eachLimit } from "async";
@@ -30,7 +31,6 @@ import { isAbsolute } from "path";
 import { createInterface, Interface } from "readline";
 import { promisify } from "util";
 import { parse as parseYaml } from "yaml";
-import { waitForClose } from "./stream";
 
 export const isWSLSystem = release().includes("microsoft-standard-WSL");
 
@@ -268,7 +268,6 @@ export async function writeGitIgnoreList(options: {
 
   return path;
 }
-
 
 export async function copyFileWithStreams(source: string, target: string) {
   const r = createReadStream(source);

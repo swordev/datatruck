@@ -1,8 +1,8 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { PruneAction } from "../actions/PruneAction";
 import { SnapshotGroupByType } from "../actions/SnapshotsAction";
-import { DataFormat } from "../utils/data-format";
 import { confirm } from "../utils/cli";
+import { DataFormat } from "../utils/data-format";
 import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { KeepObject } from "../utils/date";
 import { parseStringList } from "../utils/string";
