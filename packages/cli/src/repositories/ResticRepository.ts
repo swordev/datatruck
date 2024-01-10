@@ -1,4 +1,4 @@
-import { ResticRepositoryUri, Restic } from "../utils/Restic";
+import { ResticRepositoryUri, Restic } from "../utils/restic";
 import { logExec } from "../utils/cli";
 import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
