@@ -1,6 +1,8 @@
+import { scriptTaskCode } from "../src/tasks/ScriptTask";
 import { createCommands } from "../src/utils/datatruck/command";
-import { existsFile } from "../src/utils/fs";
+import { existsFile, readTextFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
+import { mkTmpDir } from "../src/utils/temp";
 import { runBackups, runRestores } from "./expect";
 import { fileChanges } from "./fileChanges";
 import {
@@ -10,7 +12,7 @@ import {
   FileChanges,
   testRepositoryTypes,
 } from "./util";
-import { readFile, rm, writeFile } from "fs/promises";
+import { readFile, rm, rmdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 
@@ -278,6 +280,36 @@ describe(
       expect(snapshot.size).toBeGreaterThan(0);
       expect(snapshot.repositoryName).toBe(repo.name);
       expect(snapshot.repositoryType).toBe(repo.type);
+    });
+
+    it.each(repositoryTypes)("initial restore of %s", async (type) => {
+      const repo = await makeRepositoryConfig(type);
+      const fileChanger = await createFileChanger();
+      const restorePath = await mkTmpDir("restorePath");
+      const config = await makeConfig({
+        repositories: [repo],
+        packages: [
+          {
+            name: "main/files",
+            path: fileChanger.path,
+            restorePath,
+            repositoryNames: [type],
+          },
+        ],
+      });
+
+      const restoredFile = `${restorePath}/file1`;
+      const dtt = createCommands({ config });
+      const [{ id }] = await runBackups(config, fileChanger, [
+        { file1: "abc" },
+      ]);
+
+      await dtt.restore({ id });
+      await expect(readTextFile(restoredFile)).resolves.toBe("abc");
+      await expect(dtt.restore({ id, initial: true })).rejects.toThrowError();
+      await rm(fileChanger.path, { recursive: true });
+      await dtt.restore({ id, initial: true });
+      await expect(readTextFile(restoredFile)).resolves.toBe("abc");
     });
   },
   {

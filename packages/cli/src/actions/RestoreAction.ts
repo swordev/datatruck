@@ -122,8 +122,6 @@ export class RestoreAction<TRequired extends boolean = true> {
     );
     const repo = await createAndInitRepo(repoConfig, this.options.verbose);
 
-    if (this.options.initial) pkg = { ...pkg, restorePath: pkg.path };
-
     let snapshotPath = pkg.restorePath ?? pkg.path;
 
     await data.gc.cleanupIfFail(async () => {
@@ -263,7 +261,7 @@ export class RestoreAction<TRequired extends boolean = true> {
                 },
                 exitOnError: false,
                 run: async (listTask) => {
-                  const pkg = resolvePackage(
+                  let pkg = resolvePackage(
                     findPackageOrFail(this.config, snapshot.packageName),
                     {
                       snapshotId: options.snapshotId,
@@ -271,6 +269,10 @@ export class RestoreAction<TRequired extends boolean = true> {
                       action: "restore",
                     },
                   );
+
+                  if (this.options.initial)
+                    pkg = { ...pkg, restorePath: pkg.path };
+
                   const gc = new GargabeCollector();
                   const task = pkg.task ? createTask(pkg.task) : undefined;
                   const restore = await this.restore({
