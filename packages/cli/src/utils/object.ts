@@ -108,7 +108,7 @@ export class StrictMap<K, V> {
       throw new Error(`Map key already exists: ${stringKey}`);
     this.map.set(stringKey, value);
   }
-  with(key: K) {
+  withKey(key: K) {
     return {
       has: () => this.has(key),
       get: () => this.get(key),

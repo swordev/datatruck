@@ -304,12 +304,20 @@ export class CopyAction<TRequired extends boolean = true> {
                           this.config.minFreeDiskSpace,
                         );
 
-                    const sourceRepo = sourceRepoMap.with([
-                      snapshot,
-                      mirrorConfig,
+                      const sourceRepo = sourceRepoMap.withKey([
+                        { id: snapshot.id, packageName: snapshot.packageName },
+                        { type: mirrorConfig.type },
                       ]);
-                    if (sourceRepo.has()) {
-                      const copy = await sourceRepo.get().copy({
+
+                      const $sourceRepo =
+                        repoConfig.type === mirrorConfig.type
+                          ? repo
+                          : sourceRepo.has()
+                            ? sourceRepo.get()
+                            : undefined;
+
+                      if ($sourceRepo) {
+                        const copy = await $sourceRepo.copy({
                           mirrorRepositoryConfig: mirrorConfig.config,
                           options: { verbose: this.options.verbose },
                           package: { name: snapshot.packageName },
