@@ -1,3 +1,4 @@
+import { AppError } from "../error";
 import { Listr3, Listr3TaskResult, List3SummaryResult } from "../list";
 import { isReportStep, runReportSteps } from "../reportSteps";
 import { isSpawnStep, runSpawnSteps } from "../spawnSteps";
@@ -61,7 +62,7 @@ export function createReportListTasks<T extends ReportListTaskContext>(
             },
           });
         } else {
-          throw new Error(`Invalid step type: ${(report.run as any).type}`);
+          throw new AppError(`Invalid step type: ${(report.run as any).type}`);
         }
       },
     });

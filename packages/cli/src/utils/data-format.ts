@@ -1,4 +1,4 @@
-import { AppError } from "./datatruck/error";
+import { AppError } from "./error";
 import { StdStreams, createStdStreams } from "./stream";
 import TtyTable, { Header } from "tty-table";
 import { formatWithOptions } from "util";
@@ -67,7 +67,7 @@ export class DataFormat {
   }
 
   protected formatToTable() {
-    if (!this.options.table) throw new Error(`Unsupported format: table`);
+    if (!this.options.table) throw new AppError(`Unsupported format: table`);
     const table = TtyTable(
       this.options.table.headers,
       this.options.table.rows(),
@@ -76,7 +76,7 @@ export class DataFormat {
     return table.render();
   }
   protected formatToList() {
-    if (!this.options.list) throw new Error(`Unsupported format: list`);
+    if (!this.options.list) throw new AppError(`Unsupported format: list`);
     return this.options.list().join("\n");
   }
   log(

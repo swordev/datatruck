@@ -20,6 +20,7 @@ import {
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
+import { AppError } from "../utils/error";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { StrictMap } from "../utils/object";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
@@ -152,7 +153,7 @@ export class CopyAction<TRequired extends boolean = true> {
         }).map(({ item }) => item)
       : snapshots;
 
-    if (!result.length) throw new Error("No snapshots found");
+    if (!result.length) throw new AppError("No snapshots found");
     return result;
   }
   protected createSourceRepoMap() {
@@ -249,7 +250,7 @@ export class CopyAction<TRequired extends boolean = true> {
             );
 
             if (!repositoryNames2.length)
-              throw new Error("No mirror snapshots found");
+              throw new AppError("No mirror snapshots found");
 
             const sourceRepoMap = this.createSourceRepoMap();
 

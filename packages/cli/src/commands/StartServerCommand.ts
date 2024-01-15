@@ -1,6 +1,7 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { createCronServer } from "../utils/datatruck/cron-server";
 import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
+import { AppError } from "../utils/error";
 import { CommandAbstract } from "./CommandAbstract";
 
 export type StartServerCommandOptions<TResolved = false> = {};
@@ -38,7 +39,7 @@ export class StartServerCommand extends CommandAbstract<
 
     if (cronOptions.enabled ?? true) {
       if (typeof this.configPath !== "string")
-        throw new Error(`Config path is required by cron server`);
+        throw new AppError(`Config path is required by cron server`);
       const server = createCronServer(cronOptions, {
         verbose,
         log,

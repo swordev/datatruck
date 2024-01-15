@@ -11,6 +11,7 @@ import type { Config, PackageConfig } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
+import { AppError } from "../utils/error";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
@@ -241,9 +242,10 @@ export class RestoreAction<TRequired extends boolean = true> {
             const { minFreeDiskSpace } = this.config;
             if (minFreeDiskSpace)
               await ensureFreeDiskTempSpace(minFreeDiskSpace);
-            if (!options.snapshotId) throw new Error("Snapshot id is required");
+            if (!options.snapshotId)
+              throw new AppError("Snapshot id is required");
             const snapshots = this.groupSnapshots(await this.findSnapshots());
-            if (!snapshots.length) throw new Error("None snapshot found");
+            if (!snapshots.length) throw new AppError("None snapshot found");
 
             data.id = options.snapshotId;
             data.packages = snapshots.length;

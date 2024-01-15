@@ -1,6 +1,6 @@
 export class AppError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
     this.name = AppError.name;
   }
   static create(message: string, errors: Error[]) {

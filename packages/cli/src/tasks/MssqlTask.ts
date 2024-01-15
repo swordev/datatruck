@@ -1,6 +1,6 @@
 import { AsyncProcess } from "../utils/async-process";
 import { resolveDatabaseName } from "../utils/datatruck/config";
-import { AppError } from "../utils/datatruck/error";
+import { AppError } from "../utils/error";
 import { readDir } from "../utils/fs";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
@@ -70,7 +70,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
     this.verbose = data.options.verbose;
 
     if (data.package.path)
-      throw new Error(`Path is not required: ${data.package.path}`);
+      throw new AppError(`'package.path' is required: ${data.package.path}`);
 
     const snapshotPath = await mkTmpDir(
       mssqlTaskName,

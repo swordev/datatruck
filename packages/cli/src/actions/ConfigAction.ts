@@ -2,7 +2,7 @@ import { GlobalOptions } from "../commands/CommandAbstract";
 import { configSchema } from "../config.schema";
 import { findRepositoryOrFail } from "../utils/datatruck/config";
 import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
-import { AppError } from "../utils/datatruck/error";
+import { AppError } from "../utils/error";
 import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
 import { IfRequireKeys } from "../utils/ts";
 import Ajv from "ajv";

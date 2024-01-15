@@ -1,3 +1,4 @@
+import { AppError } from "./error";
 import { post } from "./http";
 
 export type TelegramStepConfig = {
@@ -59,7 +60,9 @@ export async function runReportSteps(
         .filter(Boolean)
         .join("-");
       if (topic.length < 32)
-        throw new Error(`Topic is less than 32 characters: ${topic}`);
+        throw new AppError(
+          `'step.config.topic' is less than 32 characters: ${topic}`,
+        );
       await post(`https://ntfy.sh/${topic}`, options.data.message, {
         headers: {
           Title: options.data.title,
@@ -67,7 +70,7 @@ export async function runReportSteps(
         },
       });
     } else {
-      throw new Error(`Invalid step type: ${(step as any).type}`);
+      throw new AppError(`Invalid step type: ${(step as any).type}`);
     }
   }
 }

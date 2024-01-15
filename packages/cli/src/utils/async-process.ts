@@ -1,4 +1,5 @@
 import { logExec } from "./cli";
+import { AppError } from "./error";
 import { progressPercent } from "./math";
 import { logStdout, logProcess } from "./process";
 import { waitForClose } from "./stream";
@@ -36,7 +37,7 @@ function ensureDir(cwd: string) {
       isDir = statSync(cwd).isDirectory();
     } catch (error) {}
     if (!isDir)
-      throw new Error(`Current working directory does not exist: ${cwd}`);
+      throw new AppError(`Current working directory does not exist: ${cwd}`);
   }
 }
 
@@ -274,7 +275,7 @@ export class AsyncProcess {
     } else if (result === false) {
       return exitCode;
     }
-    return new Error(message, {
+    return new AppError(message, {
       cause: {
         command: this.command,
         argv: this.argv,

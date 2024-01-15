@@ -1,3 +1,4 @@
+import { AppError } from "./error";
 import { Listr3TaskResultEnd } from "./list";
 import chalk from "chalk";
 import { cyan, grey } from "chalk";
@@ -81,18 +82,16 @@ export function renderError(
   error: Error | null | string | undefined,
   verbose?: number,
 ) {
-  let message: string | null = null;
-  if (typeof error === "string") {
-    message = error;
-  } else if (error) {
-    message = error.message;
-  } else {
+  if (!error) {
     return "";
+  } else if (error instanceof AppError) {
+    return chalk.red(verbose ? error.stack ?? error.message : error.message);
+  } else if (error instanceof Error) {
+    return chalk.red(error.stack ?? error.message);
+  } else {
+    const message = error.split(/\r?\n/).shift() ?? "";
+    return chalk.red(message.trim());
   }
-  if (!verbose) {
-    message = message.split(/\r?\n/).shift() ?? "";
-  }
-  return chalk.red(message.trim());
 }
 
 export function renderListTaskItem<T extends Record<string, any>>(

@@ -11,8 +11,8 @@ import {
   ResticRepository,
   resticRepositoryName,
 } from "../../repositories/ResticRepository";
+import { AppError } from "../error";
 import type { RepositoryConfig } from "./config-type";
-import { AppError } from "./error";
 
 const repoMap = {
   [gitRepositoryName]: GitRepository,

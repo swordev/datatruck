@@ -2,6 +2,7 @@ import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { KeepObject, createFilterByLastOptions } from "../utils/date";
+import { AppError } from "../utils/error";
 import { groupBy } from "../utils/object";
 import { IfRequireKeys } from "../utils/ts";
 import {
@@ -74,12 +75,14 @@ export class PruneAction<TRequired extends boolean = true> {
     );
 
     if (hasIdFilter && hasKeepFilter)
-      throw new Error(`Snapshot id filter can not be used with 'keep' filters`);
+      throw new AppError(
+        `Snapshot id filter can not be used with 'keep' filters`,
+      );
 
     const prunePolicy = !hasIdFilter && !hasKeepFilter;
 
     if (prunePolicy && !this.options.groupBy?.includes("packageName"))
-      throw new Error(`Policy config requires groupBy packageName`);
+      throw new AppError(`Policy config requires groupBy packageName`);
 
     const keepSnapshots = hasKeepFilter
       ? groupAndFilter(snapshots, this.options.groupBy, keepFilter)

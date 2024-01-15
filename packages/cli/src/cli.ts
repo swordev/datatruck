@@ -8,7 +8,7 @@ import {
   InferDatatruckCommandOptions,
   createCommand,
 } from "./utils/datatruck/command";
-import { AppError } from "./utils/datatruck/error";
+import { AppError } from "./utils/error";
 import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
 import { snakeCase } from "./utils/string";

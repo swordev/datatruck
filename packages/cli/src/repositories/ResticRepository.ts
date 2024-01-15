@@ -1,6 +1,6 @@
 import { logExec } from "../utils/cli";
-import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
+import { AppError } from "../utils/error";
 import {
   fastglobToGitIgnore,
   fetchDiskStats,

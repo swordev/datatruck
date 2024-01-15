@@ -8,8 +8,8 @@ import { PruneCommand } from "../../commands/PruneCommand";
 import { RestoreCommand } from "../../commands/RestoreCommand";
 import { SnapshotsCommand } from "../../commands/SnapshotsCommand";
 import { StartServerCommand } from "../../commands/StartServerCommand";
+import { AppError } from "../error";
 import { StdStreams } from "../stream";
-import { AppError } from "./error";
 import { Writable } from "stream";
 
 export const datatruckCommandMap = {

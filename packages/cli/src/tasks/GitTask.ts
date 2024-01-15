@@ -1,5 +1,6 @@
 import { AsyncProcess } from "../utils/async-process";
 import { logExec } from "../utils/cli";
+import { AppError } from "../utils/error";
 import {
   existsDir,
   existsFile,
@@ -51,7 +52,7 @@ export class GitTask extends TaskAbstract<GitTaskConfig> {
   }
 
   override async backup(data: TaskBackupData) {
-    if (!data.package.path) throw new Error(`Path is required`);
+    if (!data.package.path) throw new AppError(`'package.path' is required`);
     const snapshotPath = await mkTmpDir(
       gitTaskName,
       "task",

@@ -1,5 +1,6 @@
 import { pkg } from "../pkg";
 import { formatBytes, parseSize } from "./bytes";
+import { AppError } from "./error";
 import { progressPercent } from "./math";
 import { Progress } from "./progress";
 import { waitForClose } from "./stream";
@@ -69,19 +70,21 @@ export async function mkdirIfNotExists(path: string) {
 }
 
 export async function ensureEmptyDir(path: string) {
-  if (!(await isEmptyDir(path))) throw new Error(`Dir is not empty: ${path}`);
+  if (!(await isEmptyDir(path)))
+    throw new AppError(`Dir is not empty: ${path}`);
 }
 
 export async function ensureSingleFile(path: string) {
   const files = await readDir(path);
   if (files.length !== 1)
-    throw new Error(`Dir has not one file: ${files.length}`);
+    throw new AppError(`Dir has not one file: ${files.length}`);
   const [file] = files;
   return join(path, file);
 }
 
 export async function ensureExistsDir(path: string) {
-  if (!(await existsDir(path))) throw new Error(`Dir is not created: ${path}`);
+  if (!(await existsDir(path)))
+    throw new AppError(`Dir is not created: ${path}`);
 }
 
 export async function safeStat(path: string) {

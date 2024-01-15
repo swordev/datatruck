@@ -1,6 +1,6 @@
 import { AsyncProcess } from "./async-process";
 import { logExec } from "./cli";
-import { AppError } from "./datatruck/error";
+import { AppError } from "./error";
 import { existsFile, fetchData, mkdirIfNotExists, readPartialFile } from "./fs";
 import { logStdout } from "./process";
 import { createMatchFilter, undefIfEmpty } from "./string";

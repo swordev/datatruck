@@ -4,7 +4,7 @@ import {
   ResolveDatabaseNameParams,
   resolveDatabaseName,
 } from "../utils/datatruck/config";
-import { AppError } from "../utils/datatruck/error";
+import { AppError } from "../utils/error";
 import {
   ensureEmptyDir,
   ensureSingleFile,

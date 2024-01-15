@@ -1,3 +1,4 @@
+import { AppError } from "../error";
 import { checkMatch, makePathPatterns, render } from "../string";
 import { tmpDir } from "../temp";
 import type { Config } from "./config-type";
@@ -6,7 +7,6 @@ import type {
   RepositoryConfigEnabledAction,
   RepositoryConfig,
 } from "./config-type";
-import { AppError } from "./error";
 import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(config: Config, repositoryName: string) {
@@ -80,7 +80,7 @@ export function ensureSameRepositoryType(
   if (a.type !== b.type) {
     const names = [a.name, b.name].join(" and ");
     const types = [a.type, b.type].join(" != ");
-    throw new Error(
+    throw new AppError(
       `Incompatible repository types between ${names} (${types})`,
     );
   }

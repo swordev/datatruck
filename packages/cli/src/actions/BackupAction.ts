@@ -19,6 +19,7 @@ import {
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
+import { AppError } from "../utils/error";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
@@ -70,7 +71,7 @@ export class BackupAction<TRequired extends boolean = true> {
   protected prepareSnapshot(): PreSnapshot {
     const date = this.options.date ?? new Date().toISOString();
     if (!dayjs(date, "YYYY-MM-DDTHH:mm:ss.SSS[Z]", true).isValid())
-      throw new Error(`Invalid snapshot date: ${date}`);
+      throw new AppError(`Invalid snapshot date: ${date}`);
     return {
       id: randomUUID().replaceAll("-", ""),
       date,
@@ -337,7 +338,8 @@ export class BackupAction<TRequired extends boolean = true> {
                         const taskSummary = pkg.task
                           ? l.result("task", pkg.name)
                           : undefined;
-                        if (taskSummary?.error) throw new Error(`Task failed`);
+                        if (taskSummary?.error)
+                          throw new AppError(`Task failed`);
                         const backup = await this.backup({
                           pkg,
                           repositoryName,
@@ -388,7 +390,7 @@ export class BackupAction<TRequired extends boolean = true> {
                           name,
                         ]);
                         if (backupSummary.error)
-                          throw new Error(`Backup failed`);
+                          throw new AppError(`Backup failed`);
                         const copy = await this.copy({
                           repositoryName: name,
                           mirrorRepositoryName: mirror,

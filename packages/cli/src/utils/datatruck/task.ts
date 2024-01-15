@@ -8,8 +8,8 @@ import {
 } from "../../tasks/PostgresqlDumpTask";
 import { ScriptTask, scriptTaskName } from "../../tasks/ScriptTask";
 import type { TaskAbstract } from "../../tasks/TaskAbstract";
+import { AppError } from "../error";
 import type { TaskConfig } from "./config-type";
-import { AppError } from "./error";
 
 export function createTask(task: TaskConfig): TaskAbstract {
   if (task.name === gitTaskName) {

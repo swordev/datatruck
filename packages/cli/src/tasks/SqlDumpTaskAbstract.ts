@@ -1,6 +1,6 @@
 import { logExec } from "../utils/cli";
 import { resolveDatabaseName } from "../utils/datatruck/config";
-import { AppError } from "../utils/datatruck/error";
+import { AppError } from "../utils/error";
 import {
   ensureEmptyDir,
   existsDir,
@@ -72,7 +72,7 @@ function parseSqlFile(fileName: string): SqlFile | undefined {
   } else if (type === "database") {
     return { fileName, database: lastName };
   } else {
-    throw new Error(`Invalid sql file type: ${type}`);
+    throw new AppError(`Invalid SQL file type: ${type}`);
   }
 }
 

@@ -1,8 +1,8 @@
 import { logExec } from "../utils/cli";
 import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
-import { AppError } from "../utils/datatruck/error";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
+import { AppError } from "../utils/error";
 import {
   createFileScanner,
   parsePackageFile,
@@ -124,7 +124,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   override async fetchSnapshots(data: RepoFetchSnapshotsData) {
     const fs = createFs(this.config.backend);
     if (!(await fs.existsDir(".")))
-      throw new Error(
+      throw new AppError(
         `Repository (${
           this.repository.name
         }) out path does not exist: ${fs.resolvePath(".")}`,
