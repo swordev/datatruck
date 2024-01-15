@@ -253,8 +253,10 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     stream.writeLine(defaultsPackIndex, ".");
 
     await scanner.start(async (entry) => {
-      let packIndex = configPacks.findIndex((pack) =>
-        match(entry.path, pack.include, pack.exclude),
+      let packIndex = packs.findIndex(
+        (pack) =>
+          pack !== defaultsPack &&
+          match(entry.path, pack.include, pack.exclude),
       );
 
       if (packIndex === -1) packIndex = defaultsPackIndex;
@@ -404,6 +406,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 relative: {
                   description: "Downloading",
                   format: "size",
+                  payload: entry,
                   ...progress,
                 },
               }),
@@ -426,6 +429,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
                 relative: {
                   description: "Downloading",
                   format: "size",
+                  payload: entry,
                   ...progress,
                 },
               }),
