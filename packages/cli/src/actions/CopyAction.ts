@@ -111,6 +111,13 @@ export class CopyAction<TRequired extends boolean = true> {
     return new DataFormat({
       streams: options.streams,
       json: result,
+      list: () =>
+        result.map((item) => {
+          const icon = renderResult(item.error, false);
+          const title = renderTitle(item);
+          const data = renderData(item, false, result);
+          return `${icon} ${title}: ${data}`;
+        }),
       table: {
         headers: [
           { value: "", width: 3 },
@@ -246,96 +253,98 @@ export class CopyAction<TRequired extends boolean = true> {
 
             const sourceRepoMap = this.createSourceRepoMap();
 
-            return data.snapshots.flatMap((snapshot) =>
-              repositoryNames2.map((repo2) => {
-                const id = snapshot.id.slice(0, 8);
-                const pkgName = snapshot.packageName;
-                return l.$task({
-                  key: "copy",
-                  keyIndex: [snapshot.packageName, repo2.name, snapshot.id],
-                  data: {
-                    snapshotId: snapshot.id,
-                    packageName: snapshot.packageName,
-                    repositoryName: repoConfig.name,
-                    mirrorRepositoryName: repo2.name,
-                    bytes: 0,
-                    skipped: false,
-                  },
-                  title: {
-                    initial: `Copy snapshot: ${pkgName} (${id}) » ${repo2.name}`,
-                    started: `Copying snapshot: ${pkgName} (${id}) » ${repo2.name}`,
-                    completed: `Snapshot copied: ${pkgName} (${id}) » ${repo2.name}`,
-                    failed: `Snapshot copy failed: ${pkgName} (${id}) » ${repo2.name}`,
-                  },
-                  exitOnError: false,
-                  run: async (task, data) => {
-                    const mirrorConfig = findRepositoryOrFail(
-                      this.config,
-                      repo2.name,
-                    );
-                    const mirrorRepo = await createAndInitRepo(
-                      mirrorConfig,
-                      this.options.verbose,
-                    );
-                    const currentCopies = await mirrorRepo.fetchSnapshots({
-                      options: {
-                        ids: [snapshot.id],
-                        packageNames: [snapshot.packageName],
-                        verbose: this.options.verbose,
-                      },
-                    });
-                    if (currentCopies.length) {
-                      data.skipped = true;
-                      return task.skip(
-                        `Already exists at ${mirrorConfig.name}: ${pkgName} (${id})`,
+            return [
+              ...data.snapshots.flatMap((snapshot) =>
+                repositoryNames2.map((repo2) => {
+                  const id = snapshot.id.slice(0, 8);
+                  const pkgName = snapshot.packageName;
+                  return l.$task({
+                    key: "copy",
+                    keyIndex: [snapshot.packageName, repo2.name, snapshot.id],
+                    data: {
+                      snapshotId: snapshot.id,
+                      packageName: snapshot.packageName,
+                      repositoryName: repoConfig.name,
+                      mirrorRepositoryName: repo2.name,
+                      bytes: 0,
+                      skipped: false,
+                    },
+                    title: {
+                      initial: `Copy snapshot: ${pkgName} (${id}) » ${repo2.name}`,
+                      started: `Copying snapshot: ${pkgName} (${id}) » ${repo2.name}`,
+                      completed: `Snapshot copied: ${pkgName} (${id}) » ${repo2.name}`,
+                      failed: `Snapshot copy failed: ${pkgName} (${id}) » ${repo2.name}`,
+                    },
+                    exitOnError: false,
+                    run: async (task, data) => {
+                      const mirrorConfig = findRepositoryOrFail(
+                        this.config,
+                        repo2.name,
                       );
-                    }
-                    if (this.config.minFreeDiskSpace)
-                      await mirrorRepo.ensureFreeDiskSpace(
-                        mirrorConfig.config,
-                        this.config.minFreeDiskSpace,
+                      const mirrorRepo = await createAndInitRepo(
+                        mirrorConfig,
+                        this.options.verbose,
                       );
+                      const currentCopies = await mirrorRepo.fetchSnapshots({
+                        options: {
+                          ids: [snapshot.id],
+                          packageNames: [snapshot.packageName],
+                          verbose: this.options.verbose,
+                        },
+                      });
+                      if (currentCopies.length) {
+                        data.skipped = true;
+                        return task.skip(
+                          `Already exists at ${mirrorConfig.name}: ${pkgName} (${id})`,
+                        );
+                      }
+                      if (this.config.minFreeDiskSpace)
+                        await mirrorRepo.ensureFreeDiskSpace(
+                          mirrorConfig.config,
+                          this.config.minFreeDiskSpace,
+                        );
 
                     const sourceRepo = sourceRepoMap.with([
                       snapshot,
                       mirrorConfig,
-                    ]);
+                      ]);
                     if (sourceRepo.has()) {
                       const copy = await sourceRepo.get().copy({
-                        mirrorRepositoryConfig: mirrorConfig.config,
-                        options: { verbose: this.options.verbose },
-                        package: { name: snapshot.packageName },
-                        snapshot,
-                        onProgress: (p) =>
-                          pm.update(p, (d) => (task.output = d)),
-                      });
-                      data.bytes = copy.bytes;
-                    } else {
-                      const copy = await this.copyCrossRepository({
-                        mirrorConfig,
-                        mirrorRepo,
-                        repo,
-                        repoConfig,
-                        snapshot,
-                        onProgress: (p) =>
-                          pm.update(p, (d) => (task.output = d)),
-                      });
-                      data.bytes = copy.bytes;
-                      sourceRepo.set(mirrorRepo);
-                    }
-                  },
-                });
+                          mirrorRepositoryConfig: mirrorConfig.config,
+                          options: { verbose: this.options.verbose },
+                          package: { name: snapshot.packageName },
+                          snapshot,
+                          onProgress: (p) =>
+                            pm.update(p, (d) => (task.output = d)),
+                        });
+                        data.bytes = copy.bytes;
+                      } else {
+                        const copy = await this.copyCrossRepository({
+                          mirrorConfig,
+                          mirrorRepo,
+                          repo,
+                          repoConfig,
+                          snapshot,
+                          onProgress: (p) =>
+                            pm.update(p, (d) => (task.output = d)),
+                        });
+                        data.bytes = copy.bytes;
+                        sourceRepo.set(mirrorRepo);
+                      }
+                    },
+                  });
+                }),
+              ),
+              ...createReportListTasks(l, {
+                hostname: this.config.hostname ?? hostname(),
+                action: "copy",
+                reports: this.config.reports || [],
+                verbose: this.options.verbose,
+                onMessage: (result, report) =>
+                  this.dataFormat(result).format(report.format ?? "list"),
               }),
-            );
+            ];
           },
-        }),
-        ...createReportListTasks(l, {
-          hostname: this.config.hostname ?? hostname(),
-          action: "copy",
-          reports: this.config.reports || [],
-          verbose: this.options.verbose,
-          onMessage: (result, report) =>
-            this.dataFormat(result).format(report.format ?? "list"),
         }),
       ])
       .exec();
