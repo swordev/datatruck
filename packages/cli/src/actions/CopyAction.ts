@@ -318,24 +318,24 @@ export class CopyAction<TRequired extends boolean = true> {
                             : undefined;
 
                       if ($sourceRepo) {
+                        using progress = pm.create(task);
                         const copy = await $sourceRepo.copy({
                           mirrorRepositoryConfig: mirrorConfig.config,
                           options: { verbose: this.options.verbose },
                           package: { name: snapshot.packageName },
                           snapshot,
-                          onProgress: (p) =>
-                            pm.update(p, (d) => (task.output = d)),
+                          onProgress: progress.update,
                         });
                         data.bytes = copy.bytes;
                       } else {
+                        using progress = pm.create(task);
                         const copy = await this.copyCrossRepository({
                           mirrorConfig,
                           mirrorRepo,
                           repo,
                           repoConfig,
                           snapshot,
-                          onProgress: (p) =>
-                            pm.update(p, (d) => (task.output = d)),
+                          onProgress: progress.update,
                         });
                         data.bytes = copy.bytes;
                         sourceRepo.set(mirrorRepo);

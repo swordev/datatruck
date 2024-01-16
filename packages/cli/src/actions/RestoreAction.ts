@@ -277,13 +277,13 @@ export class RestoreAction<TRequired extends boolean = true> {
 
                   const gc = new GargabeCollector();
                   const task = pkg.task ? createTask(pkg.task) : undefined;
+                  using progress = pm.create(listTask);
                   const restore = await this.restore({
                     gc,
                     pkg,
                     task,
                     snapshot: snapshot,
-                    onProgress: (p) =>
-                      pm.update(p, (t) => (listTask.output = t)),
+                    onProgress: progress.update,
                   });
                   if (!task) return await gc.cleanup();
                   return l.$tasks({
@@ -307,13 +307,13 @@ export class RestoreAction<TRequired extends boolean = true> {
                     run: async (listTask) => {
                       const { snapshotPath } = restore;
                       ok(snapshotPath);
+                      using progress = pm.create(listTask);
                       await task!.restore({
                         package: pkg,
                         options,
                         snapshot,
                         snapshotPath,
-                        onProgress: (p) =>
-                          pm.update(p, (t) => (listTask.output = t)),
+                        onProgress: progress.update,
                       });
                     },
                   });

@@ -308,12 +308,12 @@ export class BackupAction<TRequired extends boolean = true> {
                       exitOnError: false,
                       runWrapper: gc.cleanupIfFail.bind(gc),
                       run: async (task) => {
+                        using progress = pm.create(task);
                         taskResult = await createTask(pkg.task!).backup({
                           options,
                           package: pkg,
                           snapshot,
-                          onProgress: (p) =>
-                            pm.update(p, (t) => (task.output = t)),
+                          onProgress: progress.update,
                         });
                       },
                     }),
@@ -340,13 +340,13 @@ export class BackupAction<TRequired extends boolean = true> {
                           : undefined;
                         if (taskSummary?.error)
                           throw new AppError(`Task failed`);
+                        using progress = pm.create(task);
                         const backup = await this.backup({
                           pkg,
                           repositoryName,
                           snapshot,
                           snapshotPath: taskResult?.snapshotPath,
-                          onProgress: (p) =>
-                            pm.update(p, (t) => (task.output = t)),
+                          onProgress: progress.update,
                         });
                         data.bytes = backup.bytes;
                       },
@@ -391,13 +391,13 @@ export class BackupAction<TRequired extends boolean = true> {
                         ]);
                         if (backupSummary.error)
                           throw new AppError(`Backup failed`);
+                        using progress = pm.create(task);
                         const copy = await this.copy({
                           repositoryName: name,
                           mirrorRepositoryName: mirror,
                           pkg,
                           snapshot,
-                          onProgress: (p) =>
-                            pm.update(p, (t) => (task.output = t)),
+                          onProgress: progress.update,
                         });
                         data.bytes = copy.bytes;
                       },

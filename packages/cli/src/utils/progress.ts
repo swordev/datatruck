@@ -33,6 +33,7 @@ export class ProgressManager {
   protected interval: Timer | undefined = createTimer();
   protected intervalMs: number;
   protected keydownListener: ((data: Buffer | undefined) => void) | undefined;
+  protected pendingProgress: Progress | undefined;
   readonly tty: Exclude<ProgressTty, "auto">;
   readonly mode: Exclude<ProgressMode, "auto" | `interval:${number}`>;
   constructor(
@@ -101,16 +102,51 @@ export class ProgressManager {
       this.keydownListener = undefined;
     }
   }
-  update(progress: Progress, cb: (text: string) => void) {
-    if (!this.mode) return;
-    if (this.mode === "interval") {
+  create(
+    input: ((text: string) => void) | { output: string },
+    delay = 1_000,
+  ): Disposable & { update: (progress: Progress) => void } {
+    const update = (progress: Progress, force?: boolean) => {
+      const text = this.renderProgress(progress, force);
+      if (typeof text === "string") {
+        if (typeof input === "function") {
+          input(text);
+        } else {
+          input.output = text;
+        }
+      }
+    };
+    const updatePending = () => {
+      const pendingProgress = this.pendingProgress;
+      if (pendingProgress) {
+        this.pendingProgress = undefined;
+        update(pendingProgress, true);
+      }
+    };
+    const interval = setInterval(updatePending, delay);
+    return {
+      update,
+      [Symbol.dispose]: () => {
+        clearInterval(interval);
+        updatePending();
+      },
+    };
+  }
+  renderProgress(progress: Progress, force = false) {
+    if (!this.mode) {
+      return;
+    } else if (this.mode === "interval") {
       if (this.interval) {
-        if (!this.interval.reset(this.intervalMs)) return;
+        if (!this.interval.reset(this.intervalMs) && !force) {
+          this.pendingProgress = progress;
+          return;
+        }
       } else {
         this.interval = createTimer();
       }
     }
-    cb(renderProgress(progress, this.tty).join("\n"));
+    this.pendingProgress = undefined;
+    return renderProgress(progress, this.tty).join("\n");
   }
 }
 
