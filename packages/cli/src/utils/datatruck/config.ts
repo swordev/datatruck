@@ -11,13 +11,17 @@ import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(config: Config, repositoryName: string) {
   const repo = config.repositories.find((v) => v.name === repositoryName);
-  if (!repo) throw new AppError(`Repository '${repositoryName}' not found`);
+  if (!repo)
+    throw new AppError(
+      `Repository '${repositoryName}' not found in the config`,
+    );
   return repo;
 }
 
 export function findPackageOrFail(config: Config, packageName: string) {
   const pkg = config.packages.find((v) => v.name === packageName);
-  if (!pkg) throw new AppError(`Package '${packageName}' not found`);
+  if (!pkg)
+    throw new AppError(`Package '${packageName}' not found in the config`);
   return pkg;
 }
 

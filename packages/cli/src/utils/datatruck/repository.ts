@@ -21,7 +21,7 @@ const repoMap = {
 };
 
 export function getRepoConstructor(type: keyof typeof repoMap): {
-  new (config: RepositoryConfig): RepositoryAbstract<any>;
+  new (config: RepositoryConfig, verbose?: boolean): RepositoryAbstract<any>;
 } {
   const Constructor = repoMap[type];
   if (!Constructor) throw new AppError(`Invalid repository type: ${type}`);
@@ -30,16 +30,17 @@ export function getRepoConstructor(type: keyof typeof repoMap): {
 
 export function createRepo(
   repository: RepositoryConfig,
+  verbose: boolean | undefined,
 ): RepositoryAbstract<any> {
   const Constructor = getRepoConstructor(repository.type);
-  return new Constructor(repository);
+  return new Constructor(repository, verbose);
 }
 
 export async function createAndInitRepo(
   repository: RepositoryConfig,
-  verbose?: boolean,
+  verbose: boolean | undefined,
 ): Promise<RepositoryAbstract<any>> {
-  const repo = createRepo(repository);
+  const repo = createRepo(repository, verbose);
   await repo.init({ options: { verbose } });
   return repo;
 }

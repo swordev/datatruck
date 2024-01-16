@@ -91,7 +91,10 @@ export type SnapshotTagObject = {
 
 export abstract class RepositoryAbstract<TConfig> {
   readonly config: TConfig;
-  constructor(readonly repository: RepositoryConfig) {
+  constructor(
+    readonly repository: RepositoryConfig,
+    readonly verbose: boolean,
+  ) {
     this.config = repository.config as never;
   }
   abstract getSource(): string;

@@ -1,3 +1,4 @@
+import { logExec } from "../cli";
 import { DiskStats } from "../fs";
 import { downloadFile, fetchJson, post, uploadFile } from "../http";
 import { BasicProgress } from "../progress";
@@ -7,7 +8,7 @@ import { headerKey } from "./repository-server";
 export class RemoteFs extends AbstractFs {
   protected url: string;
   protected headers: Record<string, string>;
-  constructor(readonly options: FsOptions) {
+  constructor(readonly options: FsOptions & { verbose?: boolean }) {
     super(options);
     const url = new URL(options.backend);
     this.headers = {
@@ -66,9 +67,11 @@ export class RemoteFs extends AbstractFs {
     await this.fetchJson("rmAll", [path]);
   }
   async fetchDiskStats(path: string): Promise<DiskStats> {
+    if (this.options.verbose) logExec("fs.fetchDiskStats", [path]);
     return await this.fetchJson("fetchDiskStats", [path]);
   }
   async upload(source: string, target: string) {
+    if (this.options.verbose) logExec("fs.upload", [source, target]);
     await uploadFile(`${this.url}/upload`, source, {
       headers: this.headers,
       query: {
@@ -84,6 +87,7 @@ export class RemoteFs extends AbstractFs {
       onProgress?: (progress: BasicProgress) => void;
     } = {},
   ) {
+    if (this.options.verbose) logExec("fs.download", [source, target]);
     return await downloadFile(`${this.url}/download`, target, {
       ...options,
       headers: this.headers,
@@ -96,8 +100,11 @@ export function isRemoteBackend(backend: string) {
   return backend.startsWith("http:") || backend.startsWith("https:");
 }
 
-export function createFs(backend: string): AbstractFs {
+export function createFs(
+  backend: string,
+  verbose: boolean | undefined,
+): AbstractFs {
   return isRemoteBackend(backend)
-    ? new RemoteFs({ backend })
+    ? new RemoteFs({ backend, verbose })
     : new LocalFs({ backend });
 }

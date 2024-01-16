@@ -35,7 +35,7 @@ export class InitAction<TRequired extends boolean = true> {
         !this.options.repositoryTypes.includes(repoConfig.type)
       )
         continue;
-      const repo = createRepo(repoConfig);
+      const repo = createRepo(repoConfig, this.options.verbose);
       let initError: Error | null = null;
 
       try {
