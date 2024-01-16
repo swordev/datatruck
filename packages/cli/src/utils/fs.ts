@@ -2,14 +2,14 @@ import { pkg } from "../pkg";
 import { formatBytes, parseSize } from "./bytes";
 import { AppError } from "./error";
 import { progressPercent } from "./math";
-import { Progress } from "./progress";
+import { Progress, ProgressStats } from "./progress";
 import { waitForClose } from "./stream";
 import { endsWith } from "./string";
 import { mkTmpDir } from "./temp";
 import { eachLimit } from "async";
 import fastFolderSize from "fast-folder-size";
 import FastGlob, { Entry, Options } from "fast-glob";
-import { createReadStream, Dirent, ReadStream, Stats } from "fs";
+import { createReadStream, Dirent, Stats } from "fs";
 import { createWriteStream, WriteStream } from "fs";
 import {
   cp,
@@ -471,6 +471,11 @@ type ProgressObject = {
   total: number;
   current: number;
   update: (description: string, path?: string, increment?: boolean) => void;
+  updateRelative: (
+    description: string,
+    path: string,
+    stats: ProgressStats,
+  ) => void;
 };
 
 export function createProgress(options: {
@@ -480,9 +485,25 @@ export function createProgress(options: {
     disposed: false,
     total: 0,
     current: 0,
+    updateRelative(description, path, stats) {
+      if (progress.disposed) return;
+      options.onProgress({
+        relative: {
+          ...stats,
+          description,
+          payload: path,
+        },
+        absolute: {
+          total: progress.total,
+          current: progress.current,
+          percent: progressPercent(progress.total, progress.current),
+        },
+      });
+    },
     update: (description, path, increment = true) => {
       if (progress.disposed) return;
       if (path && increment) progress.current++;
+      if (path === "." || path === "./") return;
       options.onProgress({
         relative: {
           description,

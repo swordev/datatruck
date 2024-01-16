@@ -501,7 +501,14 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
             entry,
           );
           tempEntry = `${tempDir}/${entry}`;
-          await fs.download(sourceEntry, tempEntry);
+          await fs.download(sourceEntry, tempEntry, {
+            onProgress: (stats) => {
+              progress.updateRelative("Downloading", entry, {
+                ...stats,
+                format: "size",
+              });
+            },
+          });
         }
         const stats = tarStats[entry];
         if (data.options.verbose)
