@@ -43,7 +43,10 @@ export type MetaData = {
   tags: string[];
   version: string;
   size: number;
-  tarStats?: Record<string, { files: number; size: number; checksum: string }>;
+  tarStats?: Record<
+    string,
+    { files: number; size: number; checksum: string } | undefined
+  >;
 };
 
 export type DatatruckRepositoryConfig = {
@@ -294,11 +297,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       const includeList = stream.path(packIndex);
 
       if (includeList) {
-        tarStats[packBasename] = {
+        const stats = (tarStats[packBasename] = {
           files: stream.lines(packIndex)!,
           size: 0,
           checksum: "",
-        };
+        });
         const tarPath = join(outPath, packBasename);
 
         await createTar({
@@ -315,8 +318,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         });
 
         scanner.progress("Fetching tar stats", basename(tarPath), false);
-        tarStats[packBasename].checksum = await calcFileHash(tarPath, "sha1");
-        tarStats[packBasename].size = (await stat(tarPath)).size;
+        stats.checksum = await calcFileHash(tarPath, "sha1");
+        stats.size = (await stat(tarPath)).size;
         if (!fs.isLocal()) {
           scanner.progress("Uploading tar", basename(tarPath), false);
           await fs.upload(tarPath, `${snapshotName}/${packBasename}`);
@@ -331,7 +334,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     // Meta
 
     const size = Object.values(tarStats).reduce(
-      (total, { size }) => total + size,
+      (total, stat) => total + stat!.size,
       0,
     );
     const metaPath = `${snapshotName}/meta.json`;
@@ -477,7 +480,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       (v) => v.endsWith(".tar") || v.endsWith(".tar.gz"),
     );
     const tarStats = meta?.tarStats || {};
-    for (const file in tarStats) progress.total += tarStats[file].files;
+    for (const file in tarStats) progress.total += tarStats[file]!.files;
     progress.update(`Scanned files: ${progress.total}`);
 
     if (data.options.verbose) logExec(`Unpacking files to ${restorePath}`);
@@ -497,8 +500,11 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
           tempEntry = `${tempDir}/${entry}`;
           await fs.download(sourceEntry, tempEntry);
         }
+        const stats = tarStats[entry];
+        if (data.options.verbose)
+          logExec(`Stats of '${entry}' is not available`);
         await extractTar({
-          total: tarStats[entry].files,
+          total: stats?.files,
           input: tempEntry ?? fs.resolvePath(sourceEntry),
           output: restorePath,
           decompress: entry.endsWith(".tar.gz"),
