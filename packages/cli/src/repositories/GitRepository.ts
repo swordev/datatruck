@@ -101,7 +101,11 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
         branchName,
         orphan: true,
       });
-      await git.exec(["commit", "-m", "Initial commit", "--allow-empty"]);
+      await git.commit("Initial commit", {
+        allowEmpty: true,
+        userName: "datatruck",
+        userEmail: "datatruck@localhost",
+      });
       await git.push({ branchName });
     }
   }
@@ -247,8 +251,12 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
 
     await git.exec(["add", "--verbose", "."]);
 
-    if (await git.haveChanges())
-      await git.exec(["commit", "-m", data.snapshot.id]);
+    if (await git.haveChanges()) {
+      await git.commit(data.snapshot.id, {
+        userName: "datatruck",
+        userEmail: "datatruck@localhost",
+      });
+    }
 
     const nodePkg = parsePackageFile();
     const size =

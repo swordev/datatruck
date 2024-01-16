@@ -84,6 +84,24 @@ export class Git {
     return (await this.stdout(["rev-list", "-n", "1", tag])).trim();
   }
 
+  async commit(
+    description: string,
+    options: {
+      allowEmpty?: boolean;
+      userName?: string;
+      userEmail?: string;
+    } = {},
+  ) {
+    await this.exec([
+      ...(options.userName ? ["-c", `user.name='${options.userName}'`] : []),
+      ...(options.userEmail ? ["-c", `user.email='${options.userEmail}'`] : []),
+      "commit",
+      "-m",
+      description,
+      ...(options.allowEmpty ? ["--allow-empty"] : []),
+    ]);
+  }
+
   async getTags(names?: string[]) {
     const stdout = await this.stdout(["tag", "-n", ...(names ?? [])]);
     return stdout.split(/\r?\n/).reduce(
