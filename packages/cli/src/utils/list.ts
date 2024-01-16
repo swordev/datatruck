@@ -2,6 +2,7 @@ import { Timer, createTimer } from "./date";
 import { onExit } from "./exit";
 import { ProgressManager } from "./progress";
 import { StdStreams, createStdStreams } from "./stream";
+import { GargabeCollector } from "./temp";
 import {
   Listr,
   ListrGetRendererClassFromValue,
@@ -48,7 +49,6 @@ type Listr3Task<T extends Listr3Context, K extends keyof T> = {
         failed?: string;
         completed?: string;
       };
-  runWrapper?: (cb: () => any) => any;
   run: (
     task: ListrTaskWrapper<any, any, any>,
     data: T[K],
@@ -96,6 +96,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
     readonly $options: {
       streams?: StdStreams;
       progressManager?: ProgressManager;
+      gargabeCollector?: GargabeCollector;
     },
   ) {
     const logger = new List3Logger();
@@ -164,11 +165,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
         const timer = createTimer();
         if (title)
           try {
-            const runResult = item.runWrapper
-              ? await item.runWrapper(
-                  async () => await item.run(task, result.data as any),
-                )
-              : await item.run(task, result.data as any);
+            const runResult = await item.run(task, result.data as any);
             if (title.completed) task.title = title.completed;
             return Array.isArray(runResult)
               ? task.newListr(runResult)
@@ -229,6 +226,7 @@ export class Listr3<T extends Listr3Context> extends Listr<
     } catch (error) {
       throw error;
     } finally {
+      await this.$options.gargabeCollector?.dispose();
       dispose();
     }
   }

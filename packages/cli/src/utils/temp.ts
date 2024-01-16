@@ -39,12 +39,14 @@ export function tmpDir(...keys: [string, ...string[]]) {
     sessionTmpDir(),
     [...keys, id].map(encodeURIComponent).join("-"),
   );
-  for (const listener of listeners) listener.paths.push(path);
+  if (collectors.size) {
+    const lastListener = [...collectors.values()].at(collectors.size - 1);
+    if (lastListener) lastListener.paths.add(path);
+  }
   return path;
 }
 
-type Listener = { paths: string[] };
-const listeners = new Set<Listener>();
+export const collectors = new Set<GargabeCollector>();
 
 export async function mkTmpDir(...keys: [string, ...string[]]) {
   const path = tmpDir(...keys);
@@ -77,49 +79,48 @@ export function useTempFile(path: string): AsyncDisposable & { path: string } {
   };
 }
 
-export class CleanupListener {
-  readonly paths: string[] = [];
-  stop() {
-    listeners.delete(this);
+export class GargabeCollector {
+  readonly paths: Set<string> = new Set();
+  readonly children: Set<GargabeCollector> = new Set();
+  constructor(protected parent?: GargabeCollector) {
+    collectors.add(this);
+  }
+  pending() {
+    if (this.paths.size) return true;
+    for (const child of this.children) if (child.pending()) return true;
+    return false;
+  }
+  async cleanup() {
+    for (const path of this.paths) {
+      try {
+        await rmTmpDir(path);
+        this.paths.delete(path);
+      } catch (_) {}
+    }
+    for (const child of this.children) await child.cleanup();
   }
   async dispose() {
-    this.stop();
-    await rmTmpDir(this.paths);
+    await this.cleanup();
+    collectors.delete(this);
   }
-}
-
-export class GargabeCollector {
-  protected listeners: Set<CleanupListener> = new Set();
-  get pending() {
-    return this.listeners.size > 0;
-  }
-  async cleanup(cb?: () => any) {
+  async disposeIfFail<T>(cb: () => Promise<T>): Promise<T> {
     try {
-      await cb?.();
-    } finally {
-      for (const listener of this.listeners) {
-        this.listeners.delete(listener);
-        await listener.dispose();
-      }
-    }
-  }
-  async cleanupOnFinish(cb: () => any) {
-    const cleanup = new CleanupListener();
-    try {
-      await cb();
-    } finally {
-      cleanup.dispose();
-    }
-  }
-  async cleanupIfFail(cb: () => any) {
-    const cleanup = new CleanupListener();
-    try {
-      await cb();
+      return await cb();
     } catch (error) {
-      await cleanup.dispose();
+      await this.dispose();
       throw error;
     }
-    this.listeners.add(cleanup);
-    return cleanup;
+  }
+  disposeOnFinish() {
+    return {
+      [Symbol.asyncDispose]: async () => {
+        return this.dispose();
+      },
+    };
+  }
+  create() {
+    const gc = new GargabeCollector();
+    this.children.add(gc);
+    return gc;
   }
 }

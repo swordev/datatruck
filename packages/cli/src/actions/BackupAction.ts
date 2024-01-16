@@ -251,6 +251,7 @@ export class BackupAction<TRequired extends boolean = true> {
   }
   async exec() {
     const { options } = this;
+    const gc = new GargabeCollector();
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
@@ -259,6 +260,7 @@ export class BackupAction<TRequired extends boolean = true> {
     const l = new Listr3<Context>({
       streams: this.options.streams,
       progressManager: pm,
+      gargabeCollector: gc,
     });
     return l
       .add([
@@ -283,7 +285,6 @@ export class BackupAction<TRequired extends boolean = true> {
             return [
               ...packages.flatMap((pkg) => {
                 let taskResult: { snapshotPath?: string } | undefined = {};
-                const gc = new GargabeCollector();
                 const repositories = this.getRepositoryNames(
                   pkg.repositoryNames ?? [],
                 );
@@ -293,6 +294,7 @@ export class BackupAction<TRequired extends boolean = true> {
                     mirrors.map((mirror) => ({ name, mirror })),
                   );
 
+                const taskGc = gc.create();
                 return l.$tasks(
                   !!pkg.task &&
                     l.$task({
@@ -306,14 +308,15 @@ export class BackupAction<TRequired extends boolean = true> {
                         completed: `Task executed: ${pkg.name} (${pkg.task.name})`,
                       },
                       exitOnError: false,
-                      runWrapper: gc.cleanupIfFail.bind(gc),
                       run: async (task) => {
-                        using progress = pm.create(task);
-                        taskResult = await createTask(pkg.task!).backup({
-                          options,
-                          package: pkg,
-                          snapshot,
-                          onProgress: progress.update,
+                        await taskGc.disposeIfFail(async () => {
+                          using progress = pm.create(task);
+                          taskResult = await createTask(pkg.task!).backup({
+                            options,
+                            package: pkg,
+                            snapshot,
+                            onProgress: progress.update,
+                          });
                         });
                       },
                     }),
@@ -333,8 +336,8 @@ export class BackupAction<TRequired extends boolean = true> {
                         failed: `Backup create failed: ${pkg.name} (${repositoryName})`,
                       },
                       exitOnError: false,
-                      runWrapper: gc.cleanupOnFinish.bind(gc),
                       run: async (task, data) => {
+                        await using _ = gc.create().disposeOnFinish();
                         const taskSummary = pkg.task
                           ? l.result("task", pkg.name)
                           : undefined;
@@ -363,8 +366,8 @@ export class BackupAction<TRequired extends boolean = true> {
                       failed: "Task files clean failed",
                     },
                     exitOnError: false,
-                    enabled: gc.pending,
-                    run: () => gc.cleanup(),
+                    enabled: taskGc.pending(),
+                    run: () => taskGc.dispose(),
                   }),
                   ...mirrorRepositories.map(({ name, mirror }) =>
                     l.$task({
@@ -383,8 +386,8 @@ export class BackupAction<TRequired extends boolean = true> {
                         failed: `Snapshot copy failed: ${pkg.name} (${mirror})`,
                       },
                       exitOnError: false,
-                      runWrapper: gc.cleanup.bind(gc),
                       run: async (task, data) => {
+                        await using _ = gc.create().disposeOnFinish();
                         const backupSummary = l.result("backup", [
                           pkg.name,
                           name,

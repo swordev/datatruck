@@ -113,7 +113,6 @@ export class RestoreAction<TRequired extends boolean = true> {
     pkg: PackageConfig;
     task: TaskAbstract | undefined;
     snapshot: RestoreSnapshot;
-    gc: GargabeCollector;
     onProgress: (progress: Progress) => void;
   }) {
     let { snapshot, pkg, task } = data;
@@ -125,33 +124,28 @@ export class RestoreAction<TRequired extends boolean = true> {
 
     let snapshotPath = pkg.restorePath ?? pkg.path;
 
-    await data.gc.cleanupIfFail(async () => {
-      if (task) {
-        const taskResult = await task.prepareRestore({
-          options: this.options,
-          package: pkg,
-          snapshot,
-        });
-        snapshotPath = taskResult?.snapshotPath;
-      }
-      await initEmptyDir(snapshotPath);
-      if (this.config.minFreeDiskSpace)
-        await ensureFreeDiskSpace(
-          [snapshotPath!],
-          this.config.minFreeDiskSpace,
-        );
-      await repo.restore({
+    if (task) {
+      const taskResult = await task.prepareRestore({
         options: this.options,
-        snapshot: data.snapshot,
         package: pkg,
-        snapshotPath: snapshotPath!,
-        packageConfig: pkg.repositoryConfigs?.find(
-          (config) =>
-            config.type === repoConfig.type &&
-            (!config.names || config.names.includes(repoConfig.name)),
-        )?.config,
-        onProgress: data.onProgress,
+        snapshot,
       });
+      snapshotPath = taskResult?.snapshotPath;
+    }
+    await initEmptyDir(snapshotPath);
+    if (this.config.minFreeDiskSpace)
+      await ensureFreeDiskSpace([snapshotPath!], this.config.minFreeDiskSpace);
+    await repo.restore({
+      options: this.options,
+      snapshot: data.snapshot,
+      package: pkg,
+      snapshotPath: snapshotPath!,
+      packageConfig: pkg.repositoryConfigs?.find(
+        (config) =>
+          config.type === repoConfig.type &&
+          (!config.names || config.names.includes(repoConfig.name)),
+      )?.config,
+      onProgress: data.onProgress,
     });
     return { snapshotPath };
   }
@@ -213,6 +207,7 @@ export class RestoreAction<TRequired extends boolean = true> {
   }
   async exec() {
     const { options } = this;
+    const gc = new GargabeCollector();
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: options.tty,
@@ -222,6 +217,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     const l = new Listr3<Context>({
       streams: options.streams,
       progressManager: pm,
+      gargabeCollector: gc,
     });
 
     return l
@@ -275,17 +271,18 @@ export class RestoreAction<TRequired extends boolean = true> {
                   if (this.options.initial)
                     pkg = { ...pkg, restorePath: pkg.path };
 
-                  const gc = new GargabeCollector();
                   const task = pkg.task ? createTask(pkg.task) : undefined;
                   using progress = pm.create(listTask);
-                  const restore = await this.restore({
-                    gc,
-                    pkg,
-                    task,
-                    snapshot: snapshot,
-                    onProgress: progress.update,
-                  });
-                  if (!task) return await gc.cleanup();
+                  const restoreGc = gc.create();
+                  const restore = await restoreGc.disposeIfFail(() =>
+                    this.restore({
+                      pkg,
+                      task,
+                      snapshot: snapshot,
+                      onProgress: progress.update,
+                    }),
+                  );
+                  if (!task) return await restoreGc.dispose();
                   return l.$tasks({
                     key: "task",
                     keyIndex: pkg.name,
@@ -303,8 +300,8 @@ export class RestoreAction<TRequired extends boolean = true> {
                       })`,
                     },
                     exitOnError: false,
-                    runWrapper: gc.cleanup.bind(gc),
                     run: async (listTask) => {
+                      await using _ = restoreGc.disposeOnFinish();
                       const { snapshotPath } = restore;
                       ok(snapshotPath);
                       using progress = pm.create(listTask);
