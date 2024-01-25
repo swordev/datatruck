@@ -75,8 +75,9 @@ export async function createMysqlCli(options: MysqlCliOptions) {
       `user = "${options.username}"`,
       `password = "${password}"`,
     ];
-    await writeFile((sqlConfigPath = join(dir, "mysql.conf")), data.join("\n"));
-    return sqlConfigPath;
+    const path = join(dir, "mysql.conf");
+    await writeFile(path, data.join("\n"));
+    return (sqlConfigPath = path);
   }
 
   async function args() {
