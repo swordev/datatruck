@@ -1,5 +1,6 @@
 import { GitTask, gitTaskName } from "../../tasks/GitTask";
 import { MariadbTask, mariadbTaskName } from "../../tasks/MariadbTask";
+import { MongoDumpTask, mongodumpTaskName } from "../../tasks/MongoDumpTask";
 import { MssqlTask, mssqlTaskName } from "../../tasks/MssqlTask";
 import { MysqlDumpTask, mysqlDumpTaskName } from "../../tasks/MysqlDumpTask";
 import {
@@ -22,6 +23,8 @@ export function createTask(task: TaskConfig): TaskAbstract {
     return new PostgresqlDumpTask(task.config ?? {});
   } else if (task.name === mssqlTaskName) {
     return new MssqlTask(task.config ?? {});
+  } else if (task.name === mongodumpTaskName) {
+    return new MongoDumpTask(task.config ?? {});
   } else if (task.name === scriptTaskName) {
     return new ScriptTask(task.config ?? {});
   } else {

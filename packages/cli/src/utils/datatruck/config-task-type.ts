@@ -3,6 +3,10 @@ import type {
   MariadbTaskConfig,
   mariadbTaskName,
 } from "../../tasks/MariadbTask";
+import {
+  MongoDumpTaskConfig,
+  mongodumpTaskName,
+} from "../../tasks/MongoDumpTask";
 import type { MssqlTaskConfig, mssqlTaskName } from "../../tasks/MssqlTask";
 import type {
   MysqlDumpTaskConfig,
@@ -39,6 +43,11 @@ export type PostgresqlDumpTaskConfigItem = {
   config: PostgresqlDumpTaskConfig;
 };
 
+export type MongodumpTaskConfigItem = {
+  name: typeof mongodumpTaskName;
+  config: MongoDumpTaskConfig;
+};
+
 export type ScriptTaskConfigItem = {
   name: typeof scriptTaskName;
   config: ScriptTaskConfig;
@@ -50,4 +59,5 @@ export type TaskConfig =
   | MssqlTaskConfigItem
   | MysqlDumpTaskConfigItem
   | PostgresqlDumpTaskConfigItem
+  | MongodumpTaskConfigItem
   | ScriptTaskConfigItem;

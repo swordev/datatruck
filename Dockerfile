@@ -9,6 +9,7 @@ RUN apk add --no-cache \
     mariadb-client \
     mariadb-backup \
     postgresql-client \
+    mongodb-tools \
     python3 \
     tar \
     pigz
