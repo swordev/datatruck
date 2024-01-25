@@ -88,7 +88,13 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
         ...(await this.buildConnectionArgs(this.config.database)),
         ...(tableNames?.flatMap((v) => ["-t", v]) ?? []),
       ],
-      { $log: this.verbose },
+      {
+        $log: {
+          exec: this.verbose,
+          stderr: this.verbose,
+          allToStderr: true,
+        },
+      },
     );
 
     await dumpProcess.stdout.pipe(output, onProgress);
@@ -102,7 +108,13 @@ export class PostgresqlDumpTask extends SqlDumpTaskAbstract<PostgresqlDumpTaskCo
     await AsyncProcess.exec(
       "psql",
       [...(await this.buildConnectionArgs(database)), "-f", normalize(path)],
-      { $log: this.verbose },
+      {
+        $log: {
+          exec: this.verbose,
+          stderr: this.verbose,
+          allToStderr: true,
+        },
+      },
     );
   }
 }
