@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.35.0
+
+### Minor Changes
+
+- [`0577a06`](https://github.com/swordev/datatruck/commit/0577a068f094c9e250f1bd1f99cb4fce3e2ef50b) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `mongo-dump` task (only backup)
+
+### Patch Changes
+
+- [`3959c71`](https://github.com/swordev/datatruck/commit/3959c710f4c0aeeb6adabd56be79fedb3f544d2e) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `mysql-dump` task
+
 ## 0.34.5
 
 ### Patch Changes
