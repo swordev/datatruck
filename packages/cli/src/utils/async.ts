@@ -5,7 +5,7 @@ type ItemBuffer<T> = Map<T, AbortController>;
 export async function runParallel<T>(options: {
   items: T[];
   concurrency: number;
-  onChange: (data: {
+  onChange?: (data: {
     buffer: ItemBuffer<T>;
     processed: number;
     proccesing: number;
@@ -26,7 +26,7 @@ export async function runParallel<T>(options: {
       const controller = new AbortController();
       buffer.set(item, controller);
       try {
-        await options.onChange({
+        await options.onChange?.({
           processed,
           proccesing: buffer.size,
           buffer,
@@ -48,7 +48,7 @@ export async function runParallel<T>(options: {
         buffer.delete(item);
         processed++;
         await options.onFinished?.();
-        await options.onChange({
+        await options.onChange?.({
           processed,
           proccesing: buffer.size,
           buffer,

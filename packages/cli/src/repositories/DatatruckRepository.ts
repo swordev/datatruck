@@ -1,3 +1,4 @@
+import { runParallel } from "../utils/async";
 import { logExec } from "../utils/cli";
 import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
@@ -137,28 +138,31 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const snapshotNames = await fs.readdir(".");
     const filterPkg = createPkgFilter(data.options.packageNames);
     const filterTask = createTaskFilter(data.options.packageTaskNames);
+    const filterId = (shortId: string) =>
+      !data.options.ids ||
+      data.options.ids.some((id) => shortId.startsWith(id.slice(0, 8)));
+    const preSnapshots: { name: string; metaData?: string }[] = snapshotNames
+      .filter((snapshotName) => {
+        const data = DatatruckRepository.parseSnapshotName(snapshotName);
+        return (
+          data && filterPkg(data.packageName) && filterId(data.snapshotShortId)
+        );
+      })
+      .map((name) => ({ name }));
 
-    for (const snapshotName of snapshotNames) {
-      const snapshotNameData =
-        DatatruckRepository.parseSnapshotName(snapshotName);
-      if (!snapshotNameData) continue;
-      if (!filterPkg(snapshotNameData.packageName)) continue;
+    await runParallel({
+      items: preSnapshots,
+      concurrency: 5,
+      async onItem({ item }) {
+        item.metaData = await fs.readFileIfExists(`${item.name}/meta.json`);
+      },
+    });
 
-      if (
-        data.options.ids &&
-        !data.options.ids.some((id) =>
-          snapshotNameData.snapshotShortId.startsWith(id.slice(0, 8)),
-        )
-      )
-        continue;
-
-      const metaData = await fs.readFileIfExists(`${snapshotName}/meta.json`);
+    for (const { name, metaData } of preSnapshots) {
       const meta =
         !!metaData && (await DatatruckRepository.parseMetaData(metaData));
 
-      if (!meta) continue;
-
-      if (!filterTask(meta.task)) continue;
+      if (!meta || !filterTask(meta.task)) continue;
 
       if (
         data.options.ids &&
@@ -172,7 +176,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         continue;
 
       snapshots.push({
-        originalId: snapshotName,
+        originalId: name,
         id: meta.id,
         date: meta.date,
         packageName: meta.package,
