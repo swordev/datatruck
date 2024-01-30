@@ -1,6 +1,7 @@
 import { logExec } from "../utils/cli";
 import { calcFileHash } from "../utils/crypto";
 import { createFs } from "../utils/datatruck/client";
+import { createPkgFilter, createTaskFilter } from "../utils/datatruck/config";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import { AppError } from "../utils/error";
 import {
@@ -12,7 +13,7 @@ import {
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { ProgressStats } from "../utils/progress";
-import { checkMatch, match, makePathPatterns } from "../utils/string";
+import { match } from "../utils/string";
 import {
   extractTar,
   createTar,
@@ -32,7 +33,6 @@ import {
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import { rm, stat } from "fs/promises";
-import { isMatch } from "micromatch";
 import { basename, join, resolve } from "path";
 
 export type MetaData = {
@@ -135,18 +135,14 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     const snapshots: Snapshot[] = [];
     const snapshotNames = await fs.readdir(".");
-    const packagePatterns = makePathPatterns(data.options.packageNames);
-    const taskPatterns = makePathPatterns(data.options.packageTaskNames);
+    const filterPkg = createPkgFilter(data.options.packageNames);
+    const filterTask = createTaskFilter(data.options.packageTaskNames);
 
     for (const snapshotName of snapshotNames) {
       const snapshotNameData =
         DatatruckRepository.parseSnapshotName(snapshotName);
       if (!snapshotNameData) continue;
-      if (
-        packagePatterns &&
-        !isMatch(snapshotNameData.packageName, packagePatterns)
-      )
-        continue;
+      if (!filterPkg(snapshotNameData.packageName)) continue;
 
       if (
         data.options.ids &&
@@ -162,7 +158,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
       if (!meta) continue;
 
-      if (taskPatterns && !checkMatch(meta.task, taskPatterns)) continue;
+      if (!filterTask(meta.task)) continue;
 
       if (
         data.options.ids &&

@@ -1,5 +1,11 @@
 import { AppError } from "../error";
-import { checkMatch, makePathPatterns, render } from "../string";
+import {
+  Filter,
+  createPatternFilter,
+  match,
+  render,
+  splitPatterns,
+} from "../string";
 import { tmpDir } from "../temp";
 import type { Config } from "./config-type";
 import type {
@@ -7,7 +13,6 @@ import type {
   RepositoryConfigEnabledAction,
   RepositoryConfig,
 } from "./config-type";
-import { isMatch } from "micromatch";
 
 export function findRepositoryOrFail(config: Config, repositoryName: string) {
   const repo = config.repositories.find((v) => v.name === repositoryName);
@@ -110,32 +115,30 @@ export function filterPackages(
     sourceAction?: RepositoryConfigEnabledAction;
   },
 ) {
-  const packagePatterns = makePathPatterns(options.packageNames);
-  const taskNamePatterns = makePathPatterns(options.packageTaskNames);
+  const filterRepo = createPatternFilter(options.repositoryNames);
+  const filterRepoType = createPatternFilter(options.repositoryTypes);
+  const filterTask = createTaskFilter(options.packageTaskNames);
+  const filterPkg = createPkgFilter(options.packageNames);
 
   return config.packages
     .map((pkg) => {
       pkg = Object.assign({}, pkg);
       pkg.repositoryNames = (pkg.repositoryNames ?? []).filter((name) => {
         const repo = findRepositoryOrFail(config, name);
-        if (!filterRepositoryByEnabled(repo, options?.sourceAction))
-          return false;
         return (
-          (!options.repositoryNames ||
-            options.repositoryNames.includes(name)) &&
-          (!options.repositoryTypes ||
-            options.repositoryTypes.includes(repo.type))
+          filterRepositoryByEnabled(repo, options?.sourceAction) &&
+          filterRepo(name) &&
+          filterRepoType(repo.type)
         );
       });
       return pkg;
     })
     .filter((pkg) => {
-      if (taskNamePatterns && !checkMatch(pkg.task?.name, taskNamePatterns))
-        return false;
       return (
         (typeof pkg.enabled !== "boolean" || pkg.enabled) &&
         !!pkg.repositoryNames?.length &&
-        (!packagePatterns || isMatch(pkg.name, packagePatterns))
+        filterTask(pkg.task?.name) &&
+        filterPkg(pkg.name)
       );
     });
 }
@@ -250,3 +253,21 @@ export const params = {
   pkgExclude: pkgExcludeParams,
   dbName: dbNameParams,
 };
+
+export function createPkgFilter(patterns: string[] | undefined): Filter {
+  if (patterns === undefined) return () => true;
+  const map = (v: string) => (v[0] === "@" && !v.includes("/") ? `${v}/**` : v);
+  const { include, exclude } = splitPatterns(patterns, map);
+  return (subject: string) => match(subject, include, exclude);
+}
+
+export function createTaskFilter(
+  patterns: string[] | undefined,
+): Filter<string | undefined> {
+  if (patterns === undefined) return () => true;
+  const { include, exclude } = splitPatterns(patterns);
+  return (subject: string | undefined) => {
+    if (!subject?.length) subject = "<empty>";
+    return match(subject, include, exclude);
+  };
+}

@@ -8,6 +8,7 @@ import {
   readDir,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
+import { createPatternFilter } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import {
   TaskBackupData,
@@ -17,7 +18,6 @@ import {
 } from "./TaskAbstract";
 import { ok } from "assert";
 import { mkdir, readFile } from "fs/promises";
-import { isMatch } from "micromatch";
 import { join } from "path";
 
 export type TargetDatabase = {
@@ -120,13 +120,12 @@ export abstract class SqlDumpTaskAbstract<
 
     const config = this.config;
     const allTableNames = await this.onFetchTableNames(this.config.database);
-    const tableNames = allTableNames.filter((tableName) => {
-      if (config.includeTables && !isMatch(tableName, config.includeTables))
-        return false;
-      if (config.excludeTables && isMatch(tableName, config.excludeTables))
-        return false;
-      return true;
-    });
+    const tableNames = allTableNames.filter(
+      createPatternFilter({
+        include: config.includeTables,
+        exclude: config.excludeTables,
+      }),
+    );
 
     ok(typeof snapshotPath === "string");
 

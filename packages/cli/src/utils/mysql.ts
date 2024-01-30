@@ -3,7 +3,7 @@ import { logExec } from "./cli";
 import { AppError } from "./error";
 import { existsFile, fetchData, mkdirIfNotExists, readPartialFile } from "./fs";
 import { logStdout } from "./process";
-import { createMatchFilter, undefIfEmpty } from "./string";
+import { createPatternFilter, undefIfEmpty } from "./string";
 import { mkTmpDir } from "./temp";
 import { randomBytes } from "crypto";
 import { chmod, rm, writeFile } from "fs/promises";
@@ -110,7 +110,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
       )
     )
       .map((r) => r.table_name)
-      .filter(createMatchFilter(include, exclude));
+      .filter(createPatternFilter({ include, exclude }));
   }
   async function dump(input: {
     output: string;

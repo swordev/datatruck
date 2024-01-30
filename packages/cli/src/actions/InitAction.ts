@@ -1,6 +1,7 @@
 import { filterRepositoryByEnabled } from "../utils/datatruck/config";
 import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
+import { createPatternFilter } from "../utils/string";
 import { IfRequireKeys } from "../utils/ts";
 
 export type InitActionOptions = {
@@ -23,18 +24,13 @@ export class InitAction<TRequired extends boolean = true> {
       error: Error | null;
     }[] = [];
 
+    const filterRepo = createPatternFilter(this.options.repositoryNames);
+    const filterRepoType = createPatternFilter(this.options.repositoryTypes);
+
     for (const repoConfig of this.config.repositories) {
       if (!filterRepositoryByEnabled(repoConfig, "init")) continue;
-      if (
-        this.options.repositoryNames &&
-        !this.options.repositoryNames.includes(repoConfig.name)
-      )
-        continue;
-      if (
-        this.options.repositoryTypes &&
-        !this.options.repositoryTypes.includes(repoConfig.type)
-      )
-        continue;
+      if (!filterRepo(repoConfig.name)) continue;
+      if (!filterRepoType(repoConfig.type)) continue;
       const repo = createRepo(repoConfig, this.options.verbose);
       let initError: Error | null = null;
 

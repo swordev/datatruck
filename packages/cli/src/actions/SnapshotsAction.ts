@@ -6,6 +6,7 @@ import type {
 } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
+import { createPatternFilter } from "../utils/string";
 import { IfRequireKeys } from "../utils/ts";
 
 export type SnapshotGroupByType = keyof Pick<
@@ -46,18 +47,12 @@ export class SnapshotsAction<TRequired extends boolean = true> {
   async exec(sourceAction?: RepositoryConfigEnabledAction) {
     if (!sourceAction) sourceAction = "snapshots";
     let result: ExtendedSnapshot[] = [];
+    const filterRepo = createPatternFilter(this.options.repositoryNames);
+    const filterRepoType = createPatternFilter(this.options.repositoryTypes);
     for (const repoConfig of this.config.repositories) {
       if (!filterRepositoryByEnabled(repoConfig, sourceAction)) continue;
-      if (
-        this.options.repositoryNames &&
-        !this.options.repositoryNames.includes(repoConfig.name)
-      )
-        continue;
-      if (
-        this.options.repositoryTypes &&
-        !this.options.repositoryTypes.includes(repoConfig.type)
-      )
-        continue;
+      if (!filterRepo(repoConfig.name)) continue;
+      if (!filterRepoType(repoConfig.type)) continue;
       const repo = await createAndInitRepo(repoConfig, this.options.verbose);
       const configPackageNames = this.config.packages.map((pkg) => pkg.name);
 

@@ -89,14 +89,28 @@ export function formatUri(input: Uri, hidePassword?: boolean) {
   return uri;
 }
 
-export function makePathPatterns(values: string[] | undefined) {
-  return values?.flatMap((v) => {
-    if (v === "*" || v === "**" || v === "<empty>" || v === "!<empty>") {
-      return [v];
+export function splitPatterns(
+  patterns: string[],
+  map?: (pattern: string) => string,
+): {
+  include: string[] | undefined;
+  exclude: string[] | undefined;
+} {
+  const include: string[] = [];
+  const exclude: string[] = [];
+
+  for (const pattern of patterns) {
+    if (pattern.startsWith("!")) {
+      const includePattern = pattern.slice(1);
+      exclude.push(map ? map(includePattern) : includePattern);
     } else {
-      return [v, `${v}/**`];
+      include.push(map ? map(pattern) : pattern);
     }
-  });
+  }
+  return {
+    include: include.length ? include : undefined,
+    exclude: exclude.length ? exclude : undefined,
+  };
 }
 
 export function match(path: string, include?: string[], exclude?: string[]) {
@@ -106,17 +120,26 @@ export function match(path: string, include?: string[], exclude?: string[]) {
   );
 }
 
-export function endsWith(input: string, patterns: string[]) {
-  return patterns.some((pattern) => input.endsWith(pattern));
-}
+export type Filter<V = string> = (subject: V) => boolean;
 
-export function createMatchFilter(include?: string[], exclude?: string[]) {
+export function createPatternFilter(patterns: string[] | undefined): Filter;
+export function createPatternFilter(
+  patterns: { include?: string[]; exclude?: string[] } | undefined,
+): Filter;
+export function createPatternFilter(
+  patterns: string[] | { include?: string[]; exclude?: string[] } | undefined,
+): Filter {
+  if (patterns === undefined) {
+    return () => true;
+  } else if (Array.isArray(patterns)) {
+    patterns = splitPatterns(patterns);
+  }
+  const { include, exclude } = patterns;
   return (input: string) => match(input, include, exclude);
 }
 
-export function checkMatch(subject: string | undefined, patterns: string[]) {
-  if (!subject?.length) subject = "<empty>";
-  return isMatch(subject, patterns);
+export function endsWith(input: string, patterns: string[]) {
+  return patterns.some((pattern) => input.endsWith(pattern));
 }
 
 export function undefIfEmpty(input: string) {

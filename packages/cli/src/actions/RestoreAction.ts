@@ -16,6 +16,7 @@ import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
+import { createPatternFilter } from "../utils/string";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { IfRequireKeys } from "../utils/ts";
 import { SnapshotsAction } from "./SnapshotsAction";
@@ -58,19 +59,12 @@ export class RestoreAction<TRequired extends boolean = true> {
 
   protected async findSnapshots() {
     const result: RestoreSnapshot[] = [];
+    const filterRepo = createPatternFilter(this.options.repositoryNames);
+    const filterRepoType = createPatternFilter(this.options.repositoryTypes);
 
     for (const repository of this.config.repositories) {
-      if (
-        this.options.repositoryNames &&
-        !this.options.repositoryNames.includes(repository.name)
-      )
-        continue;
-
-      if (
-        this.options.repositoryTypes &&
-        !this.options.repositoryTypes.includes(repository.type)
-      )
-        continue;
+      if (!filterRepo(repository.name)) continue;
+      if (!filterRepoType(repository.type)) continue;
 
       const snapshotsAction = new SnapshotsAction<false>(this.config, {
         repositoryNames: [repository.name],

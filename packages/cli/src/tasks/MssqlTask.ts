@@ -2,10 +2,10 @@ import { AsyncProcess } from "../utils/async-process";
 import { resolveDatabaseName } from "../utils/datatruck/config";
 import { AppError } from "../utils/error";
 import { readDir } from "../utils/fs";
+import { createPatternFilter } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
 import { readFile } from "fs/promises";
-import { isMatch } from "micromatch";
 import { join } from "path";
 
 export type MssqlTaskConfig = {
@@ -80,11 +80,10 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
     );
 
     const databaseNames = (await this.fetchDatabaseNames()).filter(
-      (databaseName) =>
-        (!this.config.includeDatabases ||
-          isMatch(databaseName, this.config.includeDatabases)) &&
-        (!this.config.excludeDatabases ||
-          !isMatch(databaseName, this.config.excludeDatabases)),
+      createPatternFilter({
+        include: this.config.includeDatabases,
+        exclude: this.config.excludeDatabases,
+      }),
     );
 
     for (const databaseName of databaseNames) {

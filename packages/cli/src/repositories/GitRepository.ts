@@ -1,4 +1,5 @@
 import { logExec } from "../utils/cli";
+import { createPkgFilter, createTaskFilter } from "../utils/datatruck/config";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import {
   fastFolderSizeAsync,
@@ -8,7 +9,6 @@ import {
   parsePackageFile,
 } from "../utils/fs";
 import { Git } from "../utils/git";
-import { checkMatch, makePathPatterns } from "../utils/string";
 import { mkTmpDir, tmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
@@ -24,7 +24,6 @@ import {
 } from "./RepositoryAbstract";
 import fg from "fast-glob";
 import { copyFile, rm, mkdir } from "fs/promises";
-import { isMatch } from "micromatch";
 import { join, dirname } from "path";
 
 export type GitRepositoryConfig = {
@@ -142,15 +141,15 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
       log: data.options.verbose,
     });
 
-    const pkgPatterns = makePathPatterns(data.options.packageNames);
-    const pkgTaskPatterns = makePathPatterns(data.options.packageTaskNames);
-
     await git.clone({ repo: this.config.repo });
 
     const tagNames = data.options.ids?.map(
       (id) => `${GitRepository.refPrefix}/*/${id}*`,
     ) || [`${GitRepository.refPrefix}/*`];
     const tags = await git.getTags(tagNames);
+
+    const filterPkg = createPkgFilter(data.options.packageNames);
+    const filterTask = createTaskFilter(data.options.packageTaskNames);
 
     return tags
       .reduce((result, tag) => {
@@ -159,11 +158,8 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
           : null;
         if (!parsedTag) return result;
 
-        if (pkgPatterns && !isMatch(parsedTag.package, pkgPatterns))
-          return result;
-
-        if (pkgTaskPatterns && !checkMatch(parsedTag.task, pkgTaskPatterns))
-          return result;
+        if (!filterPkg(parsedTag.package)) return result;
+        if (!filterTask(parsedTag.task)) return result;
 
         if (
           data.options.tags &&

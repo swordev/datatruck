@@ -1,4 +1,5 @@
 import { logExec } from "../utils/cli";
+import { createPkgFilter, createTaskFilter } from "../utils/datatruck/config";
 import { BackupPathsOptions, parseBackupPaths } from "../utils/datatruck/paths";
 import { AppError } from "../utils/error";
 import {
@@ -11,7 +12,7 @@ import {
 import { progressPercent } from "../utils/math";
 import { Progress } from "../utils/progress";
 import { ResticRepositoryUri, Restic } from "../utils/restic";
-import { checkMatch, formatUri, makePathPatterns } from "../utils/string";
+import { formatUri } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import {
   RepositoryAbstract,
@@ -27,7 +28,6 @@ import {
 } from "./RepositoryAbstract";
 import FastGlob from "fast-glob";
 import { writeFile } from "fs/promises";
-import { isMatch } from "micromatch";
 import { join, resolve } from "path";
 
 export type ResticRepositoryConfig = {
@@ -116,8 +116,6 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       env: await this.buildEnv(),
       log: data.options.verbose,
     });
-    const packagePatterns = makePathPatterns(data.options.packageNames);
-    const taskNamePatterns = makePathPatterns(data.options.packageTaskNames);
     const result = await restic.snapshots({
       json: true,
       tags: [
@@ -129,13 +127,14 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
         ) ?? []),
       ],
     });
+    const filterPkg = createPkgFilter(data.options.packageNames);
+    const filterTask = createTaskFilter(data.options.packageTaskNames);
+
     return result.reduce((items, item) => {
       const tag = ResticRepository.parseSnapshotTags(item.tags ?? []);
       if (!tag.id) return items;
-      if (packagePatterns && !isMatch(tag.package, packagePatterns))
-        return items;
-      if (taskNamePatterns && !checkMatch(tag.task, taskNamePatterns))
-        return items;
+      if (!filterPkg(tag.package)) return items;
+      if (!filterTask(tag.task)) return items;
       const itemTags = tag.tags ?? [];
       if (data.options.tags && !itemTags.some((t) => itemTags.includes(t)))
         return items;

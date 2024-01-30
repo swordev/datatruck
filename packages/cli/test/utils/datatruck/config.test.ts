@@ -6,6 +6,8 @@ import {
   resolvePackagePath,
   resolveDatabaseName,
   params,
+  createTaskFilter,
+  createPkgFilter,
 } from "../../../src/utils/datatruck/config";
 import type { Config } from "../../../src/utils/datatruck/config-type";
 import { describe, expect, it } from "vitest";
@@ -331,5 +333,44 @@ describe("resolveDatabaseName", () => {
         database: "a",
       }),
     ).toThrowError();
+  });
+});
+
+describe("createTaskFilter", () => {
+  const subjects = ["", "a", "b", "c/d"];
+  const t = (patterns?: string[]) =>
+    subjects.filter(createTaskFilter(patterns));
+  it("includes empty", () => {
+    expect(t(["*"])).toEqual(["", "a", "b"]);
+    expect(t(["**"])).toEqual(["", "a", "b", "c/d"]);
+    expect(t(["!a"])).toEqual(["", "b", "c/d"]);
+    expect(t(["<empty>"])).toEqual([""]);
+  });
+  it("does not include empty", () => {
+    expect(t(["!<empty>"])).toEqual(["a", "b", "c/d"]);
+  });
+});
+
+describe("createPkgFilter", () => {
+  const subjects = ["a", "@b/x", "@b/y", "c", "@d/z"];
+  const t = (patterns?: string[]) => subjects.filter(createPkgFilter(patterns));
+  it("includes all", () => {
+    expect(t()).toEqual(subjects);
+    expect(t(["**"])).toEqual(subjects);
+  });
+  it("includes non-groups", () => {
+    expect(t(["*"])).toEqual(["a", "c"]);
+  });
+  it("includes group", () => {
+    expect(t(["@b"])).toEqual(["@b/x", "@b/y"]);
+  });
+  it("excludes group", () => {
+    expect(t(["!@b"])).toEqual(["a", "c", "@d/z"]);
+    expect(t(["!@b", "!@d"])).toEqual(["a", "c"]);
+  });
+
+  it("excludes and excludes", () => {
+    expect(t(["!@b", "@d", "!a"])).toEqual(["@d/z"]);
+    expect(t(["!@b", "**", "!a"])).toEqual(["c", "@d/z"]);
   });
 });
