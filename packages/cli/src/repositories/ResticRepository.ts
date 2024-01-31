@@ -58,8 +58,24 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     });
   }
 
-  static buildSnapshotTag(name: SnapshotTagEnum, value: string) {
+  static createSnapshotTag(name: SnapshotTagEnum, value: string) {
     return `${ResticRepository.refPrefix}${name}:${value}`;
+  }
+
+  static createSnapshotTags(object: Omit<SnapshotTagObject, "size">) {
+    const { tags: inTags, ...otherTags } = object;
+    const tags: string[] = [...inTags];
+    for (const key in otherTags) {
+      const value = (object as any)[key];
+      if (value !== undefined) {
+        const tag = ResticRepository.createSnapshotTag(
+          SnapshotTagEnum.SHORT_ID,
+          value,
+        );
+        tags.push(tag);
+      }
+    }
+    return tags;
   }
 
   static parseSnapshotTag(tag: string) {
@@ -75,10 +91,8 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     return null;
   }
 
-  static parseSnapshotTags(tags: string[]) {
-    const result: SnapshotTagObject & {
-      tags: string[];
-    } = {
+  static parseSnapshotTags(tags: string[]): SnapshotTagObject {
+    const result: SnapshotTagObject = {
       tags: [],
     } as any;
     for (const tag of tags) {
@@ -120,7 +134,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       json: true,
       tags: [
         ...(data.options.ids?.map((id) =>
-          ResticRepository.buildSnapshotTag(
+          ResticRepository.createSnapshotTag(
             id.length === 8 ? SnapshotTagEnum.SHORT_ID : SnapshotTagEnum.ID,
             id,
           ),
@@ -243,7 +257,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     )
       throw new AppError(`Tag prefix is not allowed`);
 
-    const packageTag = ResticRepository.buildSnapshotTag(
+    const packageTag = ResticRepository.createSnapshotTag(
       SnapshotTagEnum.PACKAGE,
       data.package.name,
     );
@@ -281,31 +295,15 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       allowEmptySnapshot: true,
       excludeFile: gitignorePath ? [gitignorePath] : undefined,
       parent: lastSnapshot?.id,
-      tags: [
-        ResticRepository.buildSnapshotTag(SnapshotTagEnum.ID, data.snapshot.id),
-        ResticRepository.buildSnapshotTag(
-          SnapshotTagEnum.SHORT_ID,
-          data.snapshot.id.slice(0, 8),
-        ),
-        ResticRepository.buildSnapshotTag(
-          SnapshotTagEnum.DATE,
-          data.snapshot.date,
-        ),
-        ResticRepository.buildSnapshotTag(
-          SnapshotTagEnum.VERSION,
-          nodePkg.version,
-        ),
-        packageTag,
-        ...(data.package.task?.name
-          ? [
-              ResticRepository.buildSnapshotTag(
-                SnapshotTagEnum.TASK,
-                data.package.task?.name,
-              ),
-            ]
-          : []),
-        ...(data.options.tags ?? []),
-      ],
+      tags: ResticRepository.createSnapshotTags({
+        id: data.snapshot.id,
+        shortId: data.snapshot.id.slice(0, 8),
+        date: data.snapshot.date,
+        version: nodePkg.version,
+        package: data.package.name,
+        task: data.package.task?.name,
+        tags: data.options.tags || [],
+      }),
       createEmptyDir: async () =>
         await mkTmpDir(resticRepositoryName, "repo", "backup", "empty-dir"),
       onStream: async (streamData) => {
@@ -352,7 +350,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     if (typeof resticTotalBytes !== "number")
       throw new AppError(`Restic snapshot total bytes is not defined`);
 
-    const sizeTag = ResticRepository.buildSnapshotTag(
+    const sizeTag = ResticRepository.createSnapshotTag(
       SnapshotTagEnum.SIZE,
       resticTotalBytes.toString(),
     );

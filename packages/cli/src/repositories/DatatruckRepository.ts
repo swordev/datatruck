@@ -31,6 +31,7 @@ import {
   Snapshot,
   RepoPruneData,
   RepoCopyData,
+  SnapshotTagObject,
 } from "./RepositoryAbstract";
 import { ok } from "assert";
 import { rm, stat } from "fs/promises";
@@ -73,7 +74,7 @@ export const datatruckRepositoryName = "datatruck";
 export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryConfig> {
   static zipBasenameTpl = `.*.dd.tar.gz`;
 
-  static buildSnapshotName(
+  static createSnapshotName(
     snapshot: { id: string; date: string },
     pkg: { name: string },
   ) {
@@ -96,6 +97,24 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     return { snapshotDate, packageName, snapshotShortId, sourcePath: name };
   }
 
+  static createMeta(
+    input: Omit<SnapshotTagObject, "shortId" | "size"> & {
+      size: number;
+      tarStats: MetaData["tarStats"];
+    },
+  ): MetaData {
+    return {
+      id: input.id,
+      date: input.date,
+      tags: input.tags,
+      package: input.package,
+      task: input.task,
+      version: input.version,
+      size: input.size,
+      tarStats: input.tarStats,
+    };
+  }
+
   static async parseMetaData(data: string): Promise<MetaData> {
     return JSON.parse(data.toString());
   }
@@ -116,7 +135,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
   override async prune(data: RepoPruneData) {
     const fs = createFs(this.config.backend, this.verbose);
-    const snapshotName = DatatruckRepository.buildSnapshotName(data.snapshot, {
+    const snapshotName = DatatruckRepository.createSnapshotName(data.snapshot, {
       name: data.snapshot.packageName,
     });
 
@@ -193,7 +212,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     data: RepoBackupData<DatatruckPackageRepositoryConfig>,
   ) {
     const fs = createFs(this.config.backend, this.verbose);
-    const snapshotName = DatatruckRepository.buildSnapshotName(
+    const snapshotName = DatatruckRepository.createSnapshotName(
       data.snapshot,
       data.package,
     );
@@ -339,7 +358,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     );
     const metaPath = `${snapshotName}/meta.json`;
     const nodePkg = parsePackageFile();
-    const meta: MetaData = {
+    const meta = DatatruckRepository.createMeta({
       id: data.snapshot.id,
       date: data.snapshot.date,
       tags: data.options.tags ?? [],
@@ -348,7 +367,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       version: nodePkg.version,
       size,
       tarStats,
-    };
+    });
+
     if (data.options.verbose)
       logExec(`Writing metadata into ${fs.resolvePath(metaPath)}`);
     await fs.writeFile(`${snapshotName}/meta.json`, JSON.stringify(meta));
@@ -364,7 +384,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       data.mirrorRepositoryConfig.backend,
       this.verbose,
     );
-    const snapshotName = DatatruckRepository.buildSnapshotName(
+    const snapshotName = DatatruckRepository.createSnapshotName(
       data.snapshot,
       data.package,
     );
@@ -468,7 +488,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
 
     if (!snapshot) throw new AppError("Snapshot not found");
 
-    const snapshotName = DatatruckRepository.buildSnapshotName(
+    const snapshotName = DatatruckRepository.createSnapshotName(
       snapshot,
       data.package,
     );

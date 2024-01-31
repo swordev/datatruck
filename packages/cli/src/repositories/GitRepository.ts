@@ -45,16 +45,16 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     if (isLocalDir(config.repo)) return await fetchDiskStats(config.repo);
   }
 
-  static buildSnapshotTagName(
+  static createSnapshotTagName(
     tag: Pick<SnapshotTagObject, SnapshotTagEnum.PACKAGE | SnapshotTagEnum.ID>,
   ) {
     return `${GitRepository.refPrefix}/${tag.package}/${tag.id}`;
   }
 
-  static buildSnapshotTag(tag: SnapshotTagObject) {
+  static createSnapshotTags(tags: SnapshotTagObject) {
     return {
-      name: GitRepository.buildSnapshotTagName(tag),
-      message: JSON.stringify(tag),
+      name: GitRepository.createSnapshotTagName(tags),
+      message: JSON.stringify(tags),
     };
   }
 
@@ -62,11 +62,11 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     return name.startsWith(`${GitRepository.refPrefix}/`);
   }
 
-  static parseSnapshotTag(name: string, message: string) {
-    if (GitRepository.isSnapshotTag(name))
-      return JSON.parse(message) as Omit<SnapshotTagObject, "tags"> & {
-        tags: string[];
-      };
+  static parseSnapshotTags(
+    name: string,
+    message: string,
+  ): SnapshotTagObject | null {
+    if (GitRepository.isSnapshotTag(name)) return JSON.parse(message);
     return null;
   }
 
@@ -154,7 +154,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     return tags
       .reduce((result, tag) => {
         const parsedTag = tag.message
-          ? GitRepository.parseSnapshotTag(tag.name, tag.message)
+          ? GitRepository.parseSnapshotTags(tag.name, tag.message)
           : null;
         if (!parsedTag) return result;
 
@@ -258,7 +258,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     const size =
       (await fastFolderSizeAsync(tmpPath)) -
       (await fastFolderSizeAsync(join(tmpPath, ".git")));
-    const meta = GitRepository.buildSnapshotTag({
+    const meta = GitRepository.createSnapshotTags({
       id: data.snapshot.id,
       shortId: data.snapshot.id.slice(0, 8),
       tags: data.options.tags ?? [],
@@ -286,7 +286,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
   override async restore(data: RepoRestoreData<GitPackageRepositoryConfig>) {
     const restorePath = data.snapshotPath;
 
-    const tagName = GitRepository.buildSnapshotTagName({
+    const tagName = GitRepository.createSnapshotTagName({
       id: data.snapshot.id,
       package: data.package.name,
     });
