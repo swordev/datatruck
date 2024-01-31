@@ -159,6 +159,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
         date: tag.date,
         id: tag.id,
         tags: itemTags,
+        hostname: tag.hostname ?? "",
         size: Number(tag.size) || 0,
       });
       return items;
@@ -297,6 +298,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       parent: lastSnapshot?.id,
       tags: ResticRepository.createSnapshotTags({
         id: data.snapshot.id,
+        hostname: data.hostname,
         shortId: data.snapshot.id.slice(0, 8),
         date: data.snapshot.date,
         version: nodePkg.version,

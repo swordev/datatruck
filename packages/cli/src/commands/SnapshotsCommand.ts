@@ -9,6 +9,7 @@ import { CommandAbstract } from "./CommandAbstract";
 
 export type SnapshotsCommandOptions<TResolved = false> = {
   id?: If<TResolved, string[]>;
+  host?: If<TResolved, string[]>;
   package?: If<TResolved, string[]>;
   packageTask?: If<TResolved, string[]>;
   packageConfig?: boolean;
@@ -50,6 +51,11 @@ export class SnapshotsCommand extends CommandAbstract<
       id: {
         option: "-i,--id <ids>",
         description: "Filter by identifiers",
+        parser: parseStringList,
+      },
+      host: {
+        option: "-h,--host <names>",
+        description: "Filter by hostnames",
         parser: parseStringList,
       },
       last: {
@@ -123,6 +129,7 @@ export class SnapshotsCommand extends CommandAbstract<
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const snapshots = new SnapshotsAction(config, {
       ids: this.options.id,
+      hostnames: this.options.host,
       packageNames: this.options.package,
       packageTaskNames: this.options.packageTask,
       packageConfig: this.options.packageConfig,
@@ -147,6 +154,7 @@ export class SnapshotsCommand extends CommandAbstract<
         headers: [
           { value: "Id.", width: (this.options.longId ? 32 : 8) + 2 },
           { value: "Date", width: 23 + 2 },
+          { value: "Host" },
           { value: "Package" },
           { value: "Task" },
           { value: "Size" },
@@ -157,6 +165,7 @@ export class SnapshotsCommand extends CommandAbstract<
           result.map((item) => [
             this.options.longId ? item.id : item.id.slice(0, 8),
             item.date.replace("T", " ").replace("Z", ""),
+            item.hostname,
             item.packageName,
             item.packageTaskName || "",
             formatBytes(item.size),

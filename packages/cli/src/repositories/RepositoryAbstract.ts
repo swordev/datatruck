@@ -21,6 +21,7 @@ export type Snapshot = PreSnapshot & {
   packageName: string;
   packageTaskName: string | undefined;
   tags: string[];
+  hostname: string;
   size: number;
 };
 
@@ -48,6 +49,7 @@ export type RepoCopyData<TRepositoryConfig> = {
 export type RepoBackupData<TPackageConfig> = {
   options: BackupActionOptions;
   snapshot: PreSnapshot;
+  hostname: string;
   package: Omit<PackageConfig, "path"> & { path: string };
   packageConfig: TPackageConfig | undefined;
   onProgress: (data: Progress) => void;
@@ -76,6 +78,7 @@ export enum SnapshotTagEnum {
   TAGS = "tags",
   VERSION = "version",
   SIZE = "size",
+  HOSTNAME = "hostname",
 }
 
 export type SnapshotTagObject = {
@@ -87,6 +90,7 @@ export type SnapshotTagObject = {
   [SnapshotTagEnum.TAGS]: string[];
   [SnapshotTagEnum.VERSION]: string;
   [SnapshotTagEnum.SIZE]: string;
+  [SnapshotTagEnum.HOSTNAME]: string;
 };
 
 export abstract class RepositoryAbstract<TConfig> {

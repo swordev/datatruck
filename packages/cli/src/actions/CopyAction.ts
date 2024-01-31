@@ -192,6 +192,7 @@ export class CopyAction<TRequired extends boolean = true> {
         this.config.minFreeDiskSpace,
       );
     return await mirrorRepo.backup({
+      hostname: snapshot.hostname,
       options: {
         verbose: this.options.verbose,
         tags: snapshot.tags,

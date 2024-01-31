@@ -173,6 +173,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
           packageName: parsedTag.package,
           packageTaskName: parsedTag.task,
           tags: parsedTag.tags,
+          hostname: parsedTag.hostname ?? "",
           size: Number(parsedTag.size) || 0,
         });
         return result;
@@ -260,6 +261,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
       (await fastFolderSizeAsync(join(tmpPath, ".git")));
     const meta = GitRepository.createSnapshotTags({
       id: data.snapshot.id,
+      hostname: data.hostname,
       shortId: data.snapshot.id.slice(0, 8),
       tags: data.options.tags ?? [],
       date: data.snapshot.date,

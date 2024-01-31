@@ -37,13 +37,7 @@ import { ok } from "assert";
 import { rm, stat } from "fs/promises";
 import { basename, join, resolve } from "path";
 
-export type MetaData = {
-  id: string;
-  date: string;
-  package: string;
-  task: string | undefined;
-  tags: string[];
-  version: string;
+export type MetaData = Omit<SnapshotTagObject, "shortId" | "size"> & {
   size: number;
   tarStats?: Record<
     string,
@@ -95,24 +89,6 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     snapshotDate = `${date}T${time.replace(/-/g, ":")}`;
     packageName = decodeURIComponent(packageName);
     return { snapshotDate, packageName, snapshotShortId, sourcePath: name };
-  }
-
-  static createMeta(
-    input: Omit<SnapshotTagObject, "shortId" | "size"> & {
-      size: number;
-      tarStats: MetaData["tarStats"];
-    },
-  ): MetaData {
-    return {
-      id: input.id,
-      date: input.date,
-      tags: input.tags,
-      package: input.package,
-      task: input.task,
-      version: input.version,
-      size: input.size,
-      tarStats: input.tarStats,
-    };
   }
 
   static async parseMetaData(data: string): Promise<MetaData> {
@@ -201,6 +177,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
         packageName: meta.package,
         packageTaskName: meta.task,
         tags: meta.tags,
+        hostname: meta.hostname ?? "",
         size: meta.size || 0,
       });
     }
@@ -358,8 +335,9 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     );
     const metaPath = `${snapshotName}/meta.json`;
     const nodePkg = parsePackageFile();
-    const meta = DatatruckRepository.createMeta({
+    const meta: MetaData = {
       id: data.snapshot.id,
+      hostname: data.hostname,
       date: data.snapshot.date,
       tags: data.options.tags ?? [],
       package: data.package.name,
@@ -367,7 +345,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
       version: nodePkg.version,
       size,
       tarStats,
-    });
+    };
 
     if (data.options.verbose)
       logExec(`Writing metadata into ${fs.resolvePath(metaPath)}`);

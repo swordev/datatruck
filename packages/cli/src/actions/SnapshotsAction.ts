@@ -15,6 +15,7 @@ export type SnapshotGroupByType = keyof Pick<
 >;
 export type SnapshotsActionOptions = {
   ids?: string[];
+  hostnames?: string[];
   repositoryNames?: string[];
   packageNames?: string[];
   packageTaskNames?: string[];
@@ -47,6 +48,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
   async exec(sourceAction?: RepositoryConfigEnabledAction) {
     if (!sourceAction) sourceAction = "snapshots";
     let result: ExtendedSnapshot[] = [];
+    const filterHost = createPatternFilter(this.options.hostnames);
     const filterRepo = createPatternFilter(this.options.repositoryNames);
     const filterRepoType = createPatternFilter(this.options.repositoryTypes);
     for (const repoConfig of this.config.repositories) {
@@ -69,7 +71,7 @@ export class SnapshotsAction<TRequired extends boolean = true> {
         },
       });
 
-      const extentedItems = snapshots.map(
+      let extentedItems = snapshots.map(
         (ss) =>
           ({
             ...ss,
@@ -78,6 +80,8 @@ export class SnapshotsAction<TRequired extends boolean = true> {
             repositoryType: repoConfig.type,
           }) as ExtendedSnapshot,
       );
+      if (this.options.hostnames)
+        extentedItems = extentedItems.filter((s) => filterHost(s.hostname));
       result.push(...extentedItems);
     }
     result = result.sort((a, b) => b.date.localeCompare(a.date));

@@ -132,6 +132,7 @@ export class BackupAction<TRequired extends boolean = true> {
     return await repo.backup({
       options: this.options,
       snapshot: data.snapshot,
+      hostname: this.config.hostname ?? hostname(),
       package: pkg as any,
       packageConfig,
       onProgress: data.onProgress,
