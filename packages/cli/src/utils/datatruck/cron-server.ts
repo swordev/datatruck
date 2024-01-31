@@ -31,7 +31,7 @@ export type CronAction = {
     }
   | {
       name: "prune";
-      options: PruneCommandOptions;
+      options: Omit<PruneCommandOptions, "confirm">;
     }
 );
 
@@ -83,7 +83,9 @@ export function createCronServer(
       );
       const cliOptions = stringifyOptions(
         command.optionsConfig() as any,
-        action.options,
+        action.name === "prune"
+          ? ({ ...action.options, confirm: true } satisfies PruneCommandOptions)
+          : action.options,
       );
       const [node, bin] = process.argv;
       await AsyncProcess.exec(
