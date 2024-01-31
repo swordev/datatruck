@@ -69,7 +69,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       const value = (object as any)[key];
       if (value !== undefined) {
         const tag = ResticRepository.createSnapshotTag(
-          SnapshotTagEnum.SHORT_ID,
+          key as SnapshotTagEnum,
           value,
         );
         tags.push(tag);
