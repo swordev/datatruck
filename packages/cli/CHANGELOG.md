@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.0
+
+### Minor Changes
+
+- [`45d6f30`](https://github.com/swordev/datatruck/commit/45d6f30ae35a8a376ea6157ec1c51765350ac438) Thanks [@juanrgm](https://github.com/juanrgm)! - Save hostname on backups
+
 ## 0.35.1
 
 ### Patch Changes
