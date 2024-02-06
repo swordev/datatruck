@@ -90,7 +90,13 @@ export function createCronServer(
       const [node, bin] = process.argv;
       await AsyncProcess.exec(
         node,
-        [bin, "-c", config.configPath, action.name, ...cliOptions],
+        [
+          process.env.pm_exec_path ?? bin,
+          "-c",
+          config.configPath,
+          action.name,
+          ...cliOptions,
+        ],
         { $log: config.verbose },
       );
       if (config.log) console.info(`< [job] ${index} - ${action.name}`);
