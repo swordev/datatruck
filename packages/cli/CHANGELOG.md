@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.1
+
+### Patch Changes
+
+- [`87c245c`](https://github.com/swordev/datatruck/commit/87c245c7dd6f2108fead5e976d5561a351583fa1) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix cron process from PM2
+
 ## 0.36.0
 
 ### Minor Changes
