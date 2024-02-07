@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.2
+
+### Patch Changes
+
+- [`08b9ad5`](https://github.com/swordev/datatruck/commit/08b9ad59a1291ff9283645e6975a08ccccf645ad) Thanks [@juanrgm](https://github.com/juanrgm)! - Close MySQL connection
+
 ## 0.36.1
 
 ### Patch Changes
