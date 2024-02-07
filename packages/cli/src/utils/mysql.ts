@@ -342,6 +342,9 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     await sql.changeUser({ database: name });
   }
   return {
+    async [Symbol.asyncDispose]() {
+      await sql.end();
+    },
     options,
     initSharedDir,
     args,

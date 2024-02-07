@@ -72,7 +72,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
     await mkdirIfNotExists(snapshotPath);
     await ensureEmptyDir(snapshotPath);
 
-    const sql = await createMysqlCli({
+    await using sql = await createMysqlCli({
       ...this.config,
       database: undefined,
       verbose: data.options.verbose,
@@ -236,7 +236,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
     };
   }
   override async restore(data: TaskRestoreData) {
-    const sql = await createMysqlCli({
+    await using sql = await createMysqlCli({
       ...this.config,
       database: undefined,
       verbose: data.options.verbose,
