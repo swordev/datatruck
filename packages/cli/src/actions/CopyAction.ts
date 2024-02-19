@@ -4,7 +4,7 @@ import {
 } from "../repositories/RepositoryAbstract";
 import { formatBytes } from "../utils/bytes";
 import { renderError, renderResult, renderListTaskItem } from "../utils/cli";
-import { DataFormat } from "../utils/data-format";
+import { DataFormat, DataFormatType } from "../utils/data-format";
 import {
   filterRepository,
   findPackageOrFail,
@@ -81,9 +81,10 @@ export class CopyAction<TRequired extends boolean = true> {
     };
     const renderData = (
       item: Listr3TaskResultEnd<Context>,
-      color?: boolean,
       items: Listr3TaskResultEnd<Context>[] = [],
+      format: DataFormatType,
     ) => {
+      const color = format !== "list";
       const g = (v: string) => (color ? `${chalk.gray(`(${v})`)}` : `(${v})`);
       return renderListTaskItem(item, color, {
         snapshots: (data) => data.snapshots.length,
@@ -106,6 +107,9 @@ export class CopyAction<TRequired extends boolean = true> {
           skipped: items.filter(
             (i) => i.key === "copy" && !i.error && i.data.skipped,
           ).length,
+          ...(format === "list" && {
+            duration: duration(item.elapsed),
+          }),
         }),
       });
     };
@@ -116,7 +120,7 @@ export class CopyAction<TRequired extends boolean = true> {
         result.map((item) => {
           const icon = renderResult(item.error, false);
           const title = renderTitle(item);
-          const data = renderData(item, false, result);
+          const data = renderData(item, result, "list");
           return `${icon} ${title}: ${data}`;
         }),
       table: {
@@ -131,7 +135,7 @@ export class CopyAction<TRequired extends boolean = true> {
           result.map((item) => [
             renderResult(item.error),
             renderTitle(item, true),
-            renderData(item, true, result),
+            renderData(item, result, "table"),
             duration(item.elapsed),
             renderError(item.error, options.verbose),
           ]),
