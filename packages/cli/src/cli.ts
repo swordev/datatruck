@@ -1,7 +1,7 @@
 import { ConfigAction } from "./actions/ConfigAction";
 import { GlobalOptions } from "./commands/CommandAbstract";
 import globalData from "./globalData";
-import { OptionsConfig, showCursorCommand } from "./utils/cli";
+import { OptionsConfig, showCursorCommand, waitForStdDrain } from "./utils/cli";
 import { DataFormatType } from "./utils/data-format";
 import {
   DatatruckCommandMap,
@@ -94,7 +94,8 @@ function makeCommandAction<T>(command: keyof DatatruckCommandMap) {
         }
       }
     }
-    process.stdout.write("", () => process.exit(exitCode));
+    await waitForStdDrain(5_000);
+    process.exit(exitCode);
   };
 }
 

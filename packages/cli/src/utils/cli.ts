@@ -193,6 +193,25 @@ export function confirm(message: string) {
   });
 }
 
+export async function waitForStdDrain(ms?: number) {
+  await Promise.all(
+    [process.stdout, process.stderr].map(
+      (stream) =>
+        new Promise<void>((resolve) => {
+          {
+            const finish = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            const timeout = ms ? setTimeout(finish, ms) : undefined;
+            const drained = stream.write("", finish);
+            if (drained) finish();
+          }
+        }),
+    ),
+  );
+}
+
 export function colorizeValue(
   value: unknown,
   color?: typeof chalk.ForegroundColor,
