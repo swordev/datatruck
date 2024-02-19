@@ -1,4 +1,5 @@
 import { ConfigAction } from "../actions/ConfigAction";
+import { logJson } from "../utils/cli";
 import { createCronServer } from "../utils/datatruck/cron-server";
 import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
 import { AppError } from "../utils/error";
@@ -26,8 +27,9 @@ export class StartServerCommand extends CommandAbstract<
       });
       const port = repositoryOptions.listen?.port ?? 8888;
       const address = repositoryOptions.listen?.address ?? "127.0.0.1";
-      console.info(
-        `Listening datatruck repository on http://${address}:${port}`,
+      logJson(
+        "datatruck-server",
+        `listening server on http://${address}:${port}`,
       );
       server.on("error", (error) => {
         console.error(`SERVER ERROR`, error);
@@ -36,6 +38,7 @@ export class StartServerCommand extends CommandAbstract<
       server.listen(port, address);
     }
     const cronOptions = config.server?.cron || {};
+    const cronJobs = cronOptions.actions || [];
 
     if (cronOptions.enabled ?? true) {
       if (typeof this.configPath !== "string")
@@ -46,7 +49,9 @@ export class StartServerCommand extends CommandAbstract<
         configPath: this.configPath,
       });
       server.start();
-      console.info(`Cron server started`);
+      logJson("cron-server", `server started`, {
+        jobs: cronJobs.length,
+      });
     }
     process.on("SIGINT", () => process.exit(1));
     process.on("SIGTERM", () => process.exit(1));

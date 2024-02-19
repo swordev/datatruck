@@ -192,3 +192,39 @@ export function confirm(message: string) {
     });
   });
 }
+
+export function colorizeValue(
+  value: unknown,
+  color?: typeof chalk.ForegroundColor,
+) {
+  const json = JSON.stringify(value);
+  return color ? chalk[color](json) : json;
+}
+
+export function colorizeObject(input: Record<string, any>) {
+  const object: Record<string, string> = {};
+
+  for (const key in input) {
+    const value = input[key];
+
+    object[colorizeValue(key)] =
+      typeof value === "object" && !!value && !Array.isArray(value)
+        ? colorizeObject(value)
+        : colorizeValue(value, "green");
+  }
+
+  const values = Object.entries(object)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+
+  return `{ ${values} }`;
+}
+
+export function logJson(ctx: string, msg: string, data?: any) {
+  const json = colorizeObject({
+    ctx,
+    msg,
+    data,
+  });
+  console.log(json);
+}

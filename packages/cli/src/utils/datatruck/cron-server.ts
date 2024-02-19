@@ -3,7 +3,7 @@ import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptions } from "../../commands/CopyCommand";
 import { PruneCommandOptions } from "../../commands/PruneCommand";
 import { AsyncProcess } from "../async-process";
-import { stringifyOptions } from "../cli";
+import { logJson, stringifyOptions } from "../cli";
 import { formatCronScheduleObject } from "../cron";
 import { compareJsons } from "../string";
 import { createWatcher } from "../watcher";
@@ -74,7 +74,7 @@ export function createCronServer(
   },
 ) {
   const worker = async (action: CronAction, index: number) => {
-    if (config.log) console.info(`> [job] ${index} - ${action.name}`);
+    let pid = 0;
     try {
       const Command = datatruckCommandMap[action.name];
       const command = new Command(
@@ -88,7 +88,7 @@ export function createCronServer(
           : action.options,
       );
       const [node, bin] = process.argv;
-      await AsyncProcess.exec(
+      const p = new AsyncProcess(
         node,
         [
           process.env.pm_exec_path ?? bin,
@@ -97,11 +97,17 @@ export function createCronServer(
           action.name,
           ...cliOptions,
         ],
-        { $log: config.verbose },
+        { $log: config.verbose, $exitCode: false },
       );
-      if (config.log) console.info(`< [job] ${index} - ${action.name}`);
+      pid = p.child.pid || 0;
+
+      if (config.log) logJson("cron-server", `${action.name} started`, { pid });
+      const exitCode = await p.waitForClose();
+      if (config.log)
+        logJson("cron-server", `${action.name} finished`, { pid, exitCode });
     } catch (error) {
-      if (config.log) console.error(`< [job] ${index} - ${action.name}`, error);
+      if (config.log) logJson("cron-server", `${action.name} failed`, { pid });
+      console.error(error);
     }
   };
 
@@ -115,10 +121,13 @@ export function createCronServer(
     onRead: () => ConfigAction.findAndParseFile(config.configPath),
     onCheck: (prev, current) => compareJsons(prev, current),
     onError: (error) => {
-      if (config.log) console.error(`< [jobs] update error`, error);
+      if (config.log) {
+        logJson("cron-server", "job update error");
+        console.error(error);
+      }
     },
     onChange: (data) => {
-      if (config.log) console.info(`[jobs] updated`);
+      if (config.log) logJson("cron-server", "jobs updated");
       handler.stop();
       const cron = data?.server?.cron;
       const enabled = cron?.enabled ?? true;

@@ -1,4 +1,5 @@
 import { ConfigAction } from "../../actions/ConfigAction";
+import { logJson } from "../cli";
 import { readRequestData } from "../http";
 import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";
@@ -130,7 +131,12 @@ export function createDatatruckRepositoryServer(
         return res.end();
       }
 
-      if (config.log) console.info(`> [repository] ${repository} - ${req.url}`);
+      if (config.log)
+        logJson("repository-server", "request", {
+          repository,
+          url: req.url,
+        });
+
       const fs = new LocalFs({
         backend: backend.path,
       });
@@ -169,10 +175,19 @@ export function createDatatruckRepositoryServer(
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      if (config.log) console.info(`< [repository] ${repository} - ${action}`);
+      if (config.log)
+        logJson("repository-server", "request finished", {
+          url: req.url,
+        });
       res.end();
     } catch (error) {
-      if (config.log) console.error(`< [repository] ${req.url}`, error);
+      if (config.log) {
+        logJson("repository-server", "request failed", {
+          url: req.url,
+        });
+        console.error(error);
+      }
+
       res.statusCode = 500;
       res.statusMessage = (error as Error).message;
       res.end();
