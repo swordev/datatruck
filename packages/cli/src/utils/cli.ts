@@ -225,11 +225,11 @@ export function colorizeObject(input: Record<string, any>) {
 
   for (const key in input) {
     const value = input[key];
-
-    object[colorizeValue(key)] =
-      typeof value === "object" && !!value && !Array.isArray(value)
-        ? colorizeObject(value)
-        : colorizeValue(value, "green");
+    if (value !== undefined)
+      object[colorizeValue(key)] =
+        typeof value === "object" && !!value && !Array.isArray(value)
+          ? colorizeObject(value)
+          : colorizeValue(value, "green");
   }
 
   const values = Object.entries(object)
