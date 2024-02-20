@@ -7,8 +7,6 @@ import { renderError, renderResult, renderListTaskItem } from "../utils/cli";
 import { DataFormat, DataFormatType } from "../utils/data-format";
 import {
   filterRepository,
-  findPackageOrFail,
-  findPackageRepositoryConfig,
   findRepositoryOrFail,
   sortReposByType,
 } from "../utils/datatruck/config";
@@ -176,9 +174,8 @@ export class CopyAction<TRequired extends boolean = true> {
     snapshot: Snapshot;
     onProgress: (p: Progress) => void;
   }) {
-    const { repo, repoConfig, mirrorRepo, mirrorConfig, snapshot } = options;
+    const { repo, mirrorRepo, mirrorConfig, snapshot } = options;
     await using tmp = await useTempDir("copy", "restore");
-    const pkg = findPackageOrFail(this.config, snapshot.packageName);
     await repo.restore({
       options: {
         verbose: this.options.verbose,
@@ -186,7 +183,7 @@ export class CopyAction<TRequired extends boolean = true> {
       },
       snapshot: { id: snapshot.id, date: snapshot.date },
       package: { name: snapshot.packageName },
-      packageConfig: findPackageRepositoryConfig(pkg, repoConfig),
+      packageConfig: undefined,
       snapshotPath: tmp.path,
       onProgress: options.onProgress,
     });
@@ -206,7 +203,7 @@ export class CopyAction<TRequired extends boolean = true> {
         name: snapshot.packageName,
         path: tmp.path,
       },
-      packageConfig: findPackageRepositoryConfig(pkg, mirrorConfig),
+      packageConfig: undefined,
       onProgress: options.onProgress,
     });
   }

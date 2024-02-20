@@ -63,7 +63,7 @@ export type RepoRestoreData<TPackageConfig> = {
   snapshot: PreSnapshot;
   package: Pick<PackageConfig, "name">;
   snapshotPath: string;
-  packageConfig: TPackageConfig;
+  packageConfig: TPackageConfig | undefined;
   onProgress: (data: Progress) => void;
 };
 
