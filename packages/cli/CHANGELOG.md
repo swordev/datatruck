@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.4
+
+### Patch Changes
+
+- [`6141e32`](https://github.com/swordev/datatruck/commit/6141e32817c5574ec33e5ccc3878188aa8cb5f74) Thanks [@juanrgm](https://github.com/juanrgm)! - Allow copy snapshots without config
+
 ## 0.36.3
 
 ### Patch Changes
