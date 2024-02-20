@@ -41,7 +41,7 @@ export type RepoFetchSnapshotsData = {
 export type RepoCopyData<TRepositoryConfig> = {
   options: BackupActionOptions;
   snapshot: PreSnapshot;
-  package: PackageConfig;
+  package: Pick<PackageConfig, "name">;
   mirrorRepositoryConfig: TRepositoryConfig;
   onProgress: (data: Progress) => void;
 };
@@ -50,7 +50,10 @@ export type RepoBackupData<TPackageConfig> = {
   options: BackupActionOptions;
   snapshot: PreSnapshot;
   hostname: string;
-  package: Omit<PackageConfig, "path"> & { path: string };
+  package: Pick<PackageConfig, "name" | "include" | "exclude"> & {
+    path: NonNullable<PackageConfig["path"]>;
+    task?: Pick<NonNullable<PackageConfig["task"]>, "name">;
+  };
   packageConfig: TPackageConfig | undefined;
   onProgress: (data: Progress) => void;
 };
@@ -58,7 +61,7 @@ export type RepoBackupData<TPackageConfig> = {
 export type RepoRestoreData<TPackageConfig> = {
   options: RestoreActionOptions;
   snapshot: PreSnapshot;
-  package: PackageConfig;
+  package: Pick<PackageConfig, "name">;
   snapshotPath: string;
   packageConfig: TPackageConfig;
   onProgress: (data: Progress) => void;

@@ -29,7 +29,7 @@ export async function parsePaths(
 }
 
 export type BackupPathsOptions = {
-  package: PackageConfig;
+  package: Pick<PackageConfig, "name" | "path" | "include" | "exclude">;
   snapshot: PreSnapshot;
   path: string;
   verbose?: boolean;
