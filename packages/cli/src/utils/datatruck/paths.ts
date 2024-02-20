@@ -21,6 +21,7 @@ export async function parsePaths(
       await runSpawnSteps(value, {
         tempDir: options.tempDir,
         verbose: options.verbose,
+        data: options.data,
         onLine: (path) => paths.push(path),
       });
     }
