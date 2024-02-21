@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.5
+
+### Patch Changes
+
+- [`12c8f19`](https://github.com/swordev/datatruck/commit/12c8f192eda77d6c2b1f937f65d93b57158c5710) Thanks [@juanrgm](https://github.com/juanrgm)! - Catch stream errors on repository server
+
 ## 0.36.4
 
 ### Patch Changes
