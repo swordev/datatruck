@@ -110,13 +110,11 @@ export function createDatatruckRepositoryServer(
   } = {},
 ) {
   return createServer(async (req, res) => {
+    const url = req.url || "";
     try {
-      if (req.url === "/" || req.url === "/favicon.ico") return res.end();
-      const { repository, action, params } = parseUrl(req.url!);
-      if (!repository || !action) {
-        res.statusCode = 404;
-        return res.end();
-      }
+      if (url === "/" || url === "/favicon.ico") return;
+      const { repository, action, params } = parseUrl(url);
+      if (!repository || !action) return res.writeHead(404);
 
       const fileOptions = config.configPath
         ? (await ConfigAction.findAndParseFile(config.configPath)).server
@@ -126,20 +124,13 @@ export function createDatatruckRepositoryServer(
       const options = fileOptions ?? inOptions;
       const backend = findRepositoryBackend(req, repository, options);
 
-      if (!backend) {
-        res.statusCode = 401;
-        return res.end();
-      }
+      if (!backend) return res.writeHead(401);
 
       if (config.log)
-        logJson("repository-server", "request", {
-          repository,
-          url: req.url,
-        });
+        logJson("repository-server", "request", { repository, url });
 
-      const fs = new LocalFs({
-        backend: backend.path,
-      });
+      const fs = new LocalFs({ backend: backend.path });
+
       if (action === "comcheck") {
         res.write(JSON.stringify({ success: true }));
       } else if (action === "upload") {
@@ -175,21 +166,14 @@ export function createDatatruckRepositoryServer(
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      if (config.log)
-        logJson("repository-server", "request finished", {
-          url: req.url,
-        });
-      res.end();
+      if (config.log) logJson("repository-server", "request finished", { url });
     } catch (error) {
       if (config.log) {
-        logJson("repository-server", "request failed", {
-          url: req.url,
-        });
+        logJson("repository-server", "request failed", { url });
         console.error(error);
       }
-
-      res.statusCode = 500;
-      res.statusMessage = (error as Error).message;
+      if (!res.headersSent) res.writeHead(500, (error as Error).message);
+    } finally {
       res.end();
     }
   });
