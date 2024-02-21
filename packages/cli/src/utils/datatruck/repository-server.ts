@@ -5,6 +5,7 @@ import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";
 import { stat } from "fs/promises";
 import { IncomingMessage, createServer } from "http";
+import { pipeline } from "stream/promises";
 
 type User = {
   enabled?: boolean;
@@ -111,6 +112,10 @@ export function createDatatruckRepositoryServer(
 ) {
   return createServer(async (req, res) => {
     const url = req.url || "";
+    let requestError: Error | undefined;
+    let responseError: Error | undefined;
+    req.on("error", (error) => (requestError = error));
+    res.on("error", (error) => (responseError = error));
     try {
       if (url === "/" || url === "/favicon.ico") return;
       const { repository, action, params } = parseUrl(url);
@@ -137,25 +142,14 @@ export function createDatatruckRepositoryServer(
         const [target] = params;
         const path = fs.resolvePath(target);
         const file = createWriteStream(path);
-        req.pipe(file);
-        await new Promise<void>((resolve, reject) => {
-          req.on("error", reject);
-          file.on("error", reject);
-          file.on("close", resolve);
-        });
+        await pipeline(req, file);
       } else if (action === "download") {
         const [target] = params;
         const path = fs.resolvePath(target);
         const file = createReadStream(path);
         const fileStat = await stat(path);
         res.setHeader("Content-Length", fileStat.size);
-        file.pipe(res);
-        await new Promise<void>((resolve, reject) => {
-          req.on("error", reject);
-          file.on("error", reject);
-          res.on("error", reject);
-          res.on("close", resolve);
-        });
+        await pipeline(file, res, { end: false });
       } else if (action === "writeFile") {
         const data = await readRequestData(req);
         const [target] = params;
@@ -174,7 +168,20 @@ export function createDatatruckRepositoryServer(
       }
       if (!res.headersSent) res.writeHead(500, (error as Error).message);
     } finally {
-      res.end();
+      if (requestError) {
+        logJson("repository-server", "request error", { url });
+        console.error(requestError);
+      }
+      if (responseError) {
+        logJson("repository-server", "response error", { url });
+        console.error(responseError);
+      }
+
+      if (requestError || responseError) {
+        res.destroy();
+      } else {
+        res.end();
+      }
     }
   });
 }
