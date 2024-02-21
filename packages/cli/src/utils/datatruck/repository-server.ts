@@ -1,6 +1,7 @@
 import { ConfigAction } from "../../actions/ConfigAction";
 import { logJson } from "../cli";
 import { readRequestData } from "../http";
+import { Counter } from "../math";
 import { LocalFs } from "../virtual-fs";
 import { createReadStream, createWriteStream } from "fs";
 import { stat } from "fs/promises";
@@ -110,14 +111,16 @@ export function createDatatruckRepositoryServer(
     configPath?: string;
   } = {},
 ) {
+  const counter = new Counter();
   return createServer(async (req, res) => {
     const url = req.url || "";
+    if (url === "/" || url === "/favicon.ico") return res.end();
+    const id = counter.next();
     let requestError: Error | undefined;
     let responseError: Error | undefined;
     req.on("error", (error) => (requestError = error));
     res.on("error", (error) => (responseError = error));
     try {
-      if (url === "/" || url === "/favicon.ico") return;
       const { repository, action, params } = parseUrl(url);
       if (!repository || !action) return res.writeHead(404);
 
@@ -132,7 +135,7 @@ export function createDatatruckRepositoryServer(
       if (!backend) return res.writeHead(401);
 
       if (config.log)
-        logJson("repository-server", "request", { repository, url });
+        logJson("repository-server", "request", { id, repository, url });
 
       const fs = new LocalFs({ backend: backend.path });
 
@@ -160,20 +163,20 @@ export function createDatatruckRepositoryServer(
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      if (config.log) logJson("repository-server", "request finished", { url });
+      if (config.log) logJson("repository-server", "request finished", { id });
     } catch (error) {
       if (config.log) {
-        logJson("repository-server", "request failed", { url });
+        logJson("repository-server", "request failed", { id });
         console.error(error);
       }
       if (!res.headersSent) res.writeHead(500, (error as Error).message);
     } finally {
       if (requestError) {
-        logJson("repository-server", "request error", { url });
+        logJson("repository-server", "request error", { id });
         console.error(requestError);
       }
       if (responseError) {
-        logJson("repository-server", "response error", { url });
+        logJson("repository-server", "response error", { id });
         console.error(responseError);
       }
 
