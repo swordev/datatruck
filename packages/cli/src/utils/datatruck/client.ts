@@ -39,54 +39,54 @@ export class RemoteFs extends AbstractFs {
       },
     });
   }
-  async existsDir(path: string) {
+  override async existsDir(path: string): Promise<boolean> {
     return await this.fetchJson("existsDir", [path]);
   }
-  async rename(source: string, target: string) {
+  override async rename(source: string, target: string): Promise<void> {
     return await this.fetchJson("rename", [source, target]);
   }
-  async mkdir(path: string) {
+  override async mkdir(path: string): Promise<void> {
     return await this.fetchJson("mkdir", [path]);
   }
-  async readFile(path: string) {
+  override async readFile(path: string): Promise<string> {
     return await this.fetchJson("readFile", [path]);
   }
-  async readdir(path: string) {
+  override async readdir(path: string): Promise<string[]> {
     return await this.fetchJson("readdir", [path]);
   }
-  async readFileIfExists(path: string): Promise<string | undefined> {
+  override async readFileIfExists(path: string): Promise<string | undefined> {
     return await this.fetchJson("readFileIfExists", [path]);
   }
-  async ensureEmptyDir(path: string): Promise<void> {
+  override async ensureEmptyDir(path: string): Promise<void> {
     return await this.fetchJson("readdir", [path]);
   }
-  async writeFile(path: string, contents: string) {
-    await this.post("writeFile", [path], contents);
+  override async writeFile(path: string, contents: string): Promise<void> {
+    return await this.post("writeFile", [path], contents);
   }
-  async rmAll(path: string) {
-    await this.fetchJson("rmAll", [path]);
+  override async rmAll(path: string): Promise<void> {
+    return await this.fetchJson("rmAll", [path]);
   }
-  async fetchDiskStats(path: string): Promise<DiskStats> {
+  override async fetchDiskStats(path: string): Promise<DiskStats> {
     if (this.options.verbose) logExec("fs.fetchDiskStats", [path]);
     return await this.fetchJson("fetchDiskStats", [path]);
   }
-  async upload(source: string, target: string) {
+  override async upload(source: string, target: string): Promise<void> {
     if (this.options.verbose) logExec("fs.upload", [source, target]);
-    await uploadFile(`${this.url}/upload`, source, {
+    return await uploadFile(`${this.url}/upload`, source, {
       headers: this.headers,
       query: {
         params: JSON.stringify([target]),
       },
     });
   }
-  async download(
+  override async download(
     source: string,
     target: string,
     options: {
       timeout?: number;
       onProgress?: (progress: BasicProgress) => void;
     } = {},
-  ) {
+  ): Promise<{ bytes: number }> {
     if (this.options.verbose) logExec("fs.download", [source, target]);
     return await downloadFile(`${this.url}/download`, target, {
       ...options,
