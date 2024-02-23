@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.6
+
+### Patch Changes
+
+- [`d6c84c3`](https://github.com/swordev/datatruck/commit/d6c84c3c0a7bc3b6c5c111db6f1e7fc73436f52b) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix `Connection aborted` error
+
 ## 0.36.5
 
 ### Patch Changes
