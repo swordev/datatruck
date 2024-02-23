@@ -1,6 +1,6 @@
 import { logExec } from "../cli";
 import { DiskStats } from "../fs";
-import { downloadFile, fetchJson, post, uploadFile } from "../http";
+import { createHref, downloadFile, fetchJson, post, uploadFile } from "../http";
 import { BasicProgress } from "../progress";
 import { AbstractFs, FsOptions, LocalFs } from "../virtual-fs";
 import { headerKey } from "./repository-server";
@@ -24,19 +24,19 @@ export class RemoteFs extends AbstractFs {
     return false;
   }
   protected async fetchJson(name: string, params: any[]) {
-    return await fetchJson(`${this.url}/${name}`, {
+    const url = createHref(`${this.url}/${name}`, {
+      params: JSON.stringify(params),
+    });
+    return await fetchJson(url, {
       headers: this.headers,
-      query: {
-        params: JSON.stringify(params),
-      },
     });
   }
   protected async post(name: string, params: any[], data: string) {
-    return await post(`${this.url}/${name}`, data, {
+    const url = createHref(`${this.url}/${name}`, {
+      params: JSON.stringify(params),
+    });
+    return await post(url, data, {
       headers: this.headers,
-      query: {
-        params: JSON.stringify(params),
-      },
     });
   }
   override async existsDir(path: string): Promise<boolean> {
@@ -61,7 +61,7 @@ export class RemoteFs extends AbstractFs {
     return await this.fetchJson("readdir", [path]);
   }
   override async writeFile(path: string, contents: string): Promise<void> {
-    return await this.post("writeFile", [path], contents);
+    await this.post("writeFile", [path], contents);
   }
   override async rmAll(path: string): Promise<void> {
     return await this.fetchJson("rmAll", [path]);
@@ -72,11 +72,12 @@ export class RemoteFs extends AbstractFs {
   }
   override async upload(source: string, target: string): Promise<void> {
     if (this.options.verbose) logExec("fs.upload", [source, target]);
-    return await uploadFile(`${this.url}/upload`, source, {
+    const url = createHref(`${this.url}/upload`, {
+      params: JSON.stringify([target]),
+    });
+    return await uploadFile(url, source, {
       headers: this.headers,
-      query: {
-        params: JSON.stringify([target]),
-      },
+      checksum: true,
     });
   }
   override async download(
@@ -88,10 +89,12 @@ export class RemoteFs extends AbstractFs {
     } = {},
   ): Promise<{ bytes: number }> {
     if (this.options.verbose) logExec("fs.download", [source, target]);
-    return await downloadFile(`${this.url}/download`, target, {
+    const url = createHref(`${this.url}/download`, {
+      params: JSON.stringify([source]),
+    });
+    return await downloadFile(url, target, {
       ...options,
       headers: this.headers,
-      query: { params: JSON.stringify([source]) },
     });
   }
 }

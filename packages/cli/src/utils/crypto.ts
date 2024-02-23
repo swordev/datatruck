@@ -10,3 +10,13 @@ export function calcFileHash(path: string, algorithm: string) {
       .on("end", () => resolve(hash.digest("hex")));
   });
 }
+
+export async function assertFileChecksum(
+  path: string,
+  checksum: string,
+  algorithm: string,
+) {
+  const fileChecksum = await calcFileHash(path, algorithm);
+  if (fileChecksum !== checksum)
+    throw new Error(`Invalid checksum file: ${checksum} != ${fileChecksum}`);
+}

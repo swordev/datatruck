@@ -1,26 +1,18 @@
+import { assertFileChecksum, calcFileHash } from "./crypto";
 import { progressPercent } from "./math";
-import { BasicProgress, ProgressStats } from "./progress";
-import { createReadStream, createWriteStream } from "fs";
-import { stat, unlink } from "fs/promises";
+import { BasicProgress } from "./progress";
 import {
-  ClientRequest,
-  IncomingMessage,
-  Server,
-  request as requestHttp,
-} from "http";
-import { RequestOptions, request as requestHttps } from "https";
+  ReadStream,
+  WriteStream,
+  createReadStream,
+  createWriteStream,
+} from "fs";
+import { stat, unlink } from "fs/promises";
+import { IncomingMessage, Server, ServerResponse } from "http";
+import { Readable, Transform } from "stream";
+import { pipeline } from "stream/promises";
 
-const request = (
-  url: string,
-  options: RequestOptions,
-  callback?: (res: IncomingMessage) => void,
-): ClientRequest => {
-  return url.startsWith("https://")
-    ? requestHttps(url, options, callback)
-    : requestHttp(url, options, callback);
-};
-
-function href(inUrl: string, query?: Record<string, string>) {
+export function createHref(inUrl: string, query?: Record<string, string>) {
   const url = new URL(inUrl);
   for (const key in query || {}) url.searchParams.set(key, query![key]);
   return url.href;
@@ -47,202 +39,182 @@ export function readRequestData(req: IncomingMessage) {
   });
 }
 
-export type FetchOptions = {
-  headers?: Record<string, string>;
-  query?: Record<string, string>;
-  statusError?: boolean;
+export const safeFetch: typeof fetch = async (...args) => {
+  const res = await fetch(...args);
+  if (res.status !== 200)
+    throw new Error(`Fetch request failed: ${res.status} ${res.statusText}`);
+  return res;
 };
-
-export async function fetch(url: string, options: FetchOptions = {}) {
-  const throwStatusCodeError = options.statusError ?? true;
-  return new Promise<{ data: string | undefined; status: number | undefined }>(
-    (resolve, reject) => {
-      let data: string | undefined;
-      request(
-        href(url, options.query),
-        {
-          method: "GET",
-          headers: options.headers,
-        },
-        (res) => {
-          if (throwStatusCodeError && res.statusCode !== 200)
-            return reject(
-              new Error(`GET failed: ${res.statusCode} ${res.statusMessage}`),
-            );
-          res
-            .on("data", (chunk) => {
-              if (data === undefined) data = "";
-              data += chunk;
-            })
-            .on("error", reject)
-            .on("close", () => {
-              resolve({ data, status: res.statusCode });
-            });
-        },
-      )
-        .on("error", reject)
-        .end();
-    },
-  );
-}
 
 export async function fetchJson<T = any>(
   url: string,
-  options: FetchOptions = {},
+  options: RequestInit = {},
 ): Promise<T | undefined> {
-  const res = await fetch(url, options);
-  if (res.data === undefined) return;
-  return JSON.parse(res.data) as T;
+  const res = await safeFetch(url, options);
+  const data = await res.text();
+  return data.length ? JSON.parse(data) : undefined;
 }
 
 export async function post(
   url: string,
   data: string,
+  options: Omit<RequestInit, "method" | "body"> = {},
+) {
+  return await safeFetch(url, { ...options, method: "POST", body: data });
+}
+
+export function parseContentLength(value: string | undefined) {
+  if (!value || !/^\d+$/.test(value))
+    throw new Error(`Invalid 'content-length': ${value}`);
+  return Number(value);
+}
+
+export async function sendFile(
+  req: IncomingMessage,
+  res: ServerResponse,
+  path: string,
   options: {
-    headers?: Record<string, string>;
-    query?: Record<string, string>;
+    end?: boolean;
+    checksum?: boolean;
   } = {},
 ) {
-  await new Promise<void>((resolve, reject) => {
-    const req = request(
-      href(url, options.query),
-      { method: "POST", headers: options.headers },
-      (res) => {
-        res.on("error", reject);
-        if (res.statusCode !== 200) {
-          reject(
-            new Error(`Post failed: ${res.statusCode} ${res.statusMessage}`),
-          );
-        } else {
-          resolve();
-        }
-      },
-    );
-    req.on("error", reject);
-    req.write(data);
-    req.end();
-  });
+  let file: ReadStream | undefined;
+  try {
+    file = createReadStream(path);
+    const fileStat = await stat(path);
+    res.setHeader("Content-Length", fileStat.size);
+    if (options.checksum)
+      res.setHeader("x-checksum", await calcFileHash(path, "sha1"));
+    file.pipe(res);
+    await new Promise<void>((resolve, reject) => {
+      file!.on("error", reject);
+      req.on("error", reject);
+      res.on("error", reject).on("close", resolve);
+    });
+  } finally {
+    file?.close();
+    if (options.end) res.end();
+  }
+}
+
+export async function recvFile(
+  req: IncomingMessage,
+  res: ServerResponse,
+  path: string,
+  options: {
+    end?: boolean;
+  } = {},
+) {
+  let file: WriteStream | undefined;
+  try {
+    file = createWriteStream(path);
+    req.pipe(file);
+    await new Promise<void>((resolve, reject) => {
+      file!.on("error", reject).on("close", resolve);
+      req.on("error", reject);
+      res.on("error", reject);
+    });
+    const checksum = res.getHeader("x-checksum");
+    if (typeof checksum === "string")
+      await assertFileChecksum(path, checksum, "sha1");
+  } finally {
+    file?.close();
+    if (options.end) res.end();
+  }
 }
 
 export async function downloadFile(
   url: string,
   output: string,
-  options: {
-    headers?: Record<string, string>;
-    query?: Record<string, string>;
+  options: Omit<RequestInit, "signal"> & {
     timeout?: number;
     onProgress?: (progress: BasicProgress) => void;
   } = {},
 ) {
-  const timeout = options.timeout ?? 3600 * 1000; // 60m
+  const { timeout, onProgress, ...fetchOptions } = options;
   const file = createWriteStream(output);
-  let total = 0;
-  await new Promise<void>((resolve, reject) => {
-    const req = request(
-      href(url, options.query),
-      {
-        headers: options.headers,
-      },
-      (res) => {
-        const contentLength = res.headers["content-length"] ?? "";
-
-        if (!/^\d+$/.test(contentLength))
-          return reject(
-            new Error(`Invalid 'content-length': ${contentLength}`),
-          );
-
-        total = Number(contentLength);
-        let current = 0;
-
-        if (res.statusCode === 200) {
-          if (options.onProgress) {
-            res.on("data", (chunk: Buffer) => {
-              current += chunk.byteLength;
-              options.onProgress!({
-                percent: progressPercent(total, current),
-                current,
-                total,
-              });
+  let checksum: string | undefined;
+  const length = { total: 0, current: 0 };
+  let requestError: Error | undefined;
+  try {
+    const res = await safeFetch(url, {
+      ...fetchOptions,
+      signal: AbortSignal.timeout(timeout ?? 3600 * 1000), // 60m
+    });
+    length.total = parseContentLength(
+      res.headers.get("content-length") ?? undefined,
+    );
+    checksum = res.headers.get("x-checksum") ?? undefined;
+    const body = Readable.fromWeb(res.body!);
+    const progress =
+      onProgress &&
+      new Transform({
+        transform(chunk, encoding, callback) {
+          let error: Error | undefined;
+          try {
+            length.current += chunk.byteLength;
+            onProgress({
+              percent: progressPercent(length.total, length.current),
+              current: length.current,
+              total: length.total,
             });
+          } catch (progressError) {
+            error = progressError as Error;
           }
-          res
-            .on("error", async (error) => {
-              try {
-                file.destroy();
-              } catch (_) {}
-              try {
-                await unlink(output);
-              } catch (_) {}
-              reject(error);
-            })
-            .pipe(file);
-          file.on("finish", () => {
-            file.close((error) => {
-              error ? reject(error) : resolve();
-            });
-          });
-        } else {
-          reject(
-            new Error(
-              `Download failed: ${res.statusCode} ${res.statusMessage}`,
-            ),
-          );
-        }
-      },
-    ).on("error", async (error) => {
-      try {
-        await unlink(output);
-      } catch (_) {}
-      reject(error);
-    });
+          callback(error, chunk);
+        },
+      });
 
-    req.setTimeout(timeout, () => {
-      req.destroy();
-      reject(new Error(`Request timeout after ${timeout / 1000}s`));
-    });
+    if (progress) {
+      await pipeline(body, progress, file);
+    } else {
+      await pipeline(body, file);
+    }
 
-    req.end();
-  });
-  const { size: bytes } = await stat(output);
+    const { size: fileLength } = await stat(output);
 
-  if (total !== bytes)
-    throw new Error(`Invalid download size: ${total} != ${bytes}`);
-
-  return { bytes };
+    if (length.total !== fileLength)
+      throw new Error(
+        `Invalid download size: ${length.total} != ${fileLength}`,
+      );
+  } catch (error) {
+    try {
+      await unlink(output);
+    } catch (_) {}
+    throw error;
+  }
+  if (checksum) await assertFileChecksum(output, checksum, "sha1");
+  if (requestError) throw requestError;
+  return { bytes: length.total };
 }
 
 export async function uploadFile(
   url: string,
   path: string,
-  options: {
-    headers?: Record<string, string>;
-    query?: Record<string, string>;
+  options: Omit<RequestInit, "method" | "body"> & {
+    checksum?: boolean;
   } = {},
 ) {
   const { size } = await stat(path);
-  const readStream = createReadStream(path);
-
-  await new Promise<void>((resolve, reject) => {
-    const req = request(
-      href(url, options.query),
-      {
-        method: "POST",
-        headers: {
-          ...options.headers,
-          "Content-length": size,
-        },
+  const file = createReadStream(path);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      method: "POST",
+      duplex: "half",
+      headers: {
+        ...options.headers,
+        "Content-Length": size.toString(),
+        ...(options.checksum && {
+          "x-checksum": await calcFileHash(path, "sha1"),
+        }),
       },
-      (res) => {
-        if (res.statusCode !== 200) {
-          reject(
-            new Error(`Upload failed: ${res.statusCode} ${res.statusMessage}`),
-          );
-        } else {
-          resolve();
-        }
-      },
-    ).on("error", reject);
+      body: file,
+    });
 
-    readStream.on("error", reject).pipe(req);
-  });
+    if (res.status !== 200)
+      new Error(`Upload failed: ${res.status} ${res.statusText}`);
+  } finally {
+    file.close();
+  }
 }

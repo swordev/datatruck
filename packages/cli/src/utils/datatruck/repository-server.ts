@@ -1,12 +1,9 @@
 import { ConfigAction } from "../../actions/ConfigAction";
 import { logJson } from "../cli";
-import { readRequestData } from "../http";
+import { readRequestData, recvFile, sendFile } from "../http";
 import { Counter } from "../math";
 import { LocalFs } from "../virtual-fs";
-import { createReadStream, createWriteStream } from "fs";
-import { stat } from "fs/promises";
 import { IncomingMessage, createServer } from "http";
-import { pipeline } from "stream/promises";
 
 type User = {
   enabled?: boolean;
@@ -144,15 +141,11 @@ export function createDatatruckRepositoryServer(
       } else if (action === "upload") {
         const [target] = params;
         const path = fs.resolvePath(target);
-        const file = createWriteStream(path);
-        await pipeline(req, file);
+        await recvFile(req, res, path);
       } else if (action === "download") {
         const [target] = params;
         const path = fs.resolvePath(target);
-        const file = createReadStream(path);
-        const fileStat = await stat(path);
-        res.setHeader("Content-Length", fileStat.size);
-        await pipeline(file, res, { end: false });
+        await sendFile(req, res, path);
       } else if (action === "writeFile") {
         const data = await readRequestData(req);
         const [target] = params;
@@ -169,7 +162,8 @@ export function createDatatruckRepositoryServer(
         logJson("repository-server", "request failed", { id });
         console.error(error);
       }
-      if (!res.headersSent) res.writeHead(500, (error as Error).message);
+      if (!res.writableEnded && !res.headersSent)
+        res.writeHead(500, (error as Error).message);
     } finally {
       if (requestError) {
         logJson("repository-server", "request error", { id });
@@ -180,11 +174,7 @@ export function createDatatruckRepositoryServer(
         console.error(responseError);
       }
 
-      if (requestError || responseError) {
-        res.destroy();
-      } else {
-        res.end();
-      }
+      if (!res.writableEnded) res.end();
     }
   });
 }

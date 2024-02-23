@@ -3,7 +3,6 @@ import {
   createDatatruckRepositoryServer,
   headerKey,
 } from "../src/utils/datatruck/repository-server";
-import { FetchOptions, fetch } from "../src/utils/http";
 import { mkTmpDir } from "../src/utils/temp";
 import { Server } from "http";
 import { AddressInfo } from "net";
@@ -23,13 +22,13 @@ async function create(
   return [url, server];
 }
 
-function expectFetch(url: string, options?: FetchOptions) {
+function expectFetch(url: string, options?: RequestInit) {
   return {
-    toBe: (status: number, data?: any) =>
-      expect(fetch(url, { ...options, statusError: false })).resolves.toEqual({
-        data,
-        status,
-      }),
+    toBe: async (status: number, data?: string) => {
+      const res = await fetch(url, options);
+      expect(res.status).toEqual(status);
+      if (typeof data === "string") expect(await res.text()).toEqual(data);
+    },
   };
 }
 
