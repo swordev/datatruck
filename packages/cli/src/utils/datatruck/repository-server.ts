@@ -18,6 +18,7 @@ export type DatatruckRepositoryServerOptions = {
     address?: string;
   };
   trustProxy?: true | { remoteAddressHeader: string };
+  keepAliveTimeout?: number;
   allowlist?: {
     /**
      * @default true
@@ -109,7 +110,7 @@ export function createDatatruckRepositoryServer(
   } = {},
 ) {
   const counter = new Counter();
-  return createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     const url = req.url || "";
     if (url === "/" || url === "/favicon.ico") return res.end();
     const id = counter.next();
@@ -177,4 +178,7 @@ export function createDatatruckRepositoryServer(
       if (!res.writableEnded) res.end();
     }
   });
+  if (typeof inOptions.keepAliveTimeout === "number")
+    server.keepAliveTimeout = inOptions.keepAliveTimeout;
+  return server;
 }
