@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.7
+
+### Patch Changes
+
+- [`afe2a9c`](https://github.com/swordev/datatruck/commit/afe2a9c395041020a2776576a46761153555923d) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `keepAliveTimeout` option
+
 ## 0.36.6
 
 ### Patch Changes
