@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.36.8
+
+### Patch Changes
+
+- [`a93fafb`](https://github.com/swordev/datatruck/commit/a93fafbfae900336caf42ce3cebadce2f540e4ff) Thanks [@juanrgm](https://github.com/juanrgm)! - Add options to allow nginx as reverse proxy
+
 ## 0.36.7
 
 ### Patch Changes
