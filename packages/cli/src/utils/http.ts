@@ -74,6 +74,7 @@ export async function sendFile(
   res: ServerResponse,
   path: string,
   options: {
+    contentLength?: boolean;
     end?: boolean;
     checksum?: boolean;
   } = {},
@@ -82,7 +83,10 @@ export async function sendFile(
   try {
     file = createReadStream(path);
     const fileStat = await stat(path);
-    res.setHeader("Content-Length", fileStat.size);
+    res.setHeader(
+      options.contentLength ?? true ? "Content-Length" : "x-content-length",
+      fileStat.size,
+    );
     if (options.checksum)
       res.setHeader("x-checksum", await calcFileHash(path, "sha1"));
     file.pipe(res);
@@ -142,7 +146,9 @@ export async function downloadFile(
       signal: AbortSignal.timeout(timeout ?? 3600 * 1000), // 60m
     });
     length.total = parseContentLength(
-      res.headers.get("content-length") ?? undefined,
+      res.headers.get("content-length") ??
+        res.headers.get("x-content-length") ??
+        undefined,
     );
     checksum = res.headers.get("x-checksum") ?? undefined;
     const body = Readable.fromWeb(res.body!);

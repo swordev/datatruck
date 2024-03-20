@@ -19,6 +19,10 @@ export type DatatruckRepositoryServerOptions = {
   };
   trustProxy?: true | { remoteAddressHeader: string };
   keepAliveTimeout?: number;
+  /**
+   * @default true
+   */
+  contentLength?: boolean;
   allowlist?: {
     /**
      * @default true
@@ -118,6 +122,7 @@ export function createDatatruckRepositoryServer(
     let responseError: Error | undefined;
     req.on("error", (error) => (requestError = error));
     res.on("error", (error) => (responseError = error));
+    res.setHeader("X-Accel-Buffering", "no");
     try {
       const { repository, action, params } = parseUrl(url);
       if (!repository || !action) return res.writeHead(404);
@@ -146,7 +151,9 @@ export function createDatatruckRepositoryServer(
       } else if (action === "download") {
         const [target] = params;
         const path = fs.resolvePath(target);
-        await sendFile(req, res, path);
+        await sendFile(req, res, path, {
+          contentLength: options.contentLength ?? true,
+        });
       } else if (action === "writeFile") {
         const data = await readRequestData(req);
         const [target] = params;
