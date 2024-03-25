@@ -9,6 +9,7 @@ import type {
 } from "./config-repository-type";
 import type { TaskConfig } from "./config-task-type";
 import type { DatatruckCronServerOptions } from "./cron-server";
+import type { Job } from "./job";
 import type { DatatruckRepositoryServerOptions } from "./repository-server";
 
 export { RepositoryConfig, RepositoryConfigEnabledAction, TaskConfig };
@@ -21,6 +22,7 @@ export type Config = {
   repositories: RepositoryConfig[];
   packages: PackageConfig[];
   server?: DatatruckServerOptions;
+  jobs?: { [name: string]: Job };
   reports?: DatatruckReportConfig[];
   prunePolicy?: DatatruckPolicyConfig;
 };

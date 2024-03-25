@@ -124,7 +124,7 @@ export function renderObject(object: Record<string, any>, color?: boolean) {
 
 export type OptionsConfig<T1, T2 extends { [K in keyof T1]: unknown }> = {
   [K in keyof Required<T1>]: {
-    option: string;
+    option?: string;
     description: string;
     required?: boolean;
     defaults?: Exclude<T1[K], undefined>;
@@ -138,10 +138,14 @@ export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
 ) {
   const result: T2 = {} as any;
   for (const key in options) {
-    const isNegative = options[key].option.startsWith("--no");
-    const defaultsValue = isNegative ? true : options[key].defaults;
+    const opt = options[key].option;
+    let defaultsValue: any;
+    let parser = options[key].parser;
+    if (typeof opt === "string") {
+      const isNegative = opt.startsWith("--no");
+      defaultsValue = isNegative ? true : options[key].defaults;
+    }
     const value = object?.[key] ?? defaultsValue;
-    const parser = options[key].parser;
     if (typeof value !== "undefined") {
       result[key] = parser ? parser(value as any) : (value as any);
     }
@@ -154,21 +158,27 @@ export function stringifyOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
   object: any,
 ) {
   const result: string[] = [];
+  const prepend: string[] = [];
   for (const key in options) {
     const fullOpt = options[key].option;
-    const [opt] = fullOpt.split(",");
-    const isNegative = fullOpt.startsWith("--no");
-    const isBool = !fullOpt.includes("<") && !fullOpt.includes("[");
-    const defaultsValue = isNegative ? true : options[key].defaults;
-    const value = object?.[key] ?? defaultsValue;
+    if (typeof fullOpt === "string") {
+      const [opt] = fullOpt.split(",");
+      const isNegative = fullOpt.startsWith("--no");
+      const isBool = !fullOpt.includes("<") && !fullOpt.includes("[");
+      const defaultsValue = isNegative ? true : options[key].defaults;
+      const value = object?.[key] ?? defaultsValue;
 
-    if (isBool) {
-      if (object[key]) result.push(opt);
-    } else if (value !== undefined) {
-      result.push(opt, `${value}`);
+      if (isBool) {
+        if (object[key]) result.push(opt);
+      } else if (value !== undefined) {
+        result.push(opt, `${value}`);
+      }
+    } else {
+      const value = object?.[key];
+      if (value !== undefined) prepend.push(value);
     }
   }
-  return result;
+  return [...prepend, ...result];
 }
 
 export function confirm(message: string) {

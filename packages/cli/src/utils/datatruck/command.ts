@@ -6,6 +6,7 @@ import { CopyCommand } from "../../commands/CopyCommand";
 import { InitCommand } from "../../commands/InitCommand";
 import { PruneCommand } from "../../commands/PruneCommand";
 import { RestoreCommand } from "../../commands/RestoreCommand";
+import { RunCommand } from "../../commands/RunCommand";
 import { SnapshotsCommand } from "../../commands/SnapshotsCommand";
 import { StartServerCommand } from "../../commands/StartServerCommand";
 import { AppError } from "../error";
@@ -19,6 +20,7 @@ export const datatruckCommandMap = {
   prune: PruneCommand,
   backup: BackupCommand,
   restore: RestoreCommand,
+  run: RunCommand,
   copy: CopyCommand,
   cleanCache: CleanCacheCommand,
   startServer: StartServerCommand,

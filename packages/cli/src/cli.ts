@@ -34,28 +34,55 @@ function getGlobalOptions() {
 }
 
 function makeCommand(command: keyof DatatruckCommandMap) {
-  const programCommand = program.command(command);
-
   const instance = createCommand(command, getGlobalOptions(), null as any);
   const options = instance.optionsConfig() as OptionsConfig<any, any>;
+  const inlineOptions: { name: string; required?: boolean }[] = [];
 
-  for (const key in options) {
-    const option = options[key];
-    const description = `${option.description}${
-      option.defaults ? ` (defaults: ${option.defaults})` : ""
-    }`;
-    if (option.required) {
-      programCommand.requiredOption(option.option, description);
-    } else {
-      programCommand.option(option.option, description);
+  for (const name in options) {
+    const option = options[name];
+    if (typeof option.option !== "string") {
+      inlineOptions.push({ name, required: option.required });
     }
   }
 
-  return programCommand.action(makeCommandAction(command));
+  const programCommand = program.command(
+    [
+      command,
+      ...inlineOptions.map((v) => (v.required ? `<${v.name}>` : `[${v.name}]`)),
+    ].join(" "),
+  );
+
+  for (const key in options) {
+    const option = options[key];
+    if (typeof option.option === "string") {
+      const description = `${option.description}${
+        option.defaults ? ` (defaults: ${option.defaults})` : ""
+      }`;
+      if (option.required) {
+        programCommand.requiredOption(option.option, description);
+      } else {
+        programCommand.option(option.option, description);
+      }
+    }
+  }
+
+  return programCommand.action(async (...args: any[]) => {
+    const inlineValues = args.slice(0, inlineOptions.length);
+    const action = makeCommandAction(command);
+    const inOptions = args[inlineOptions.length] || {};
+    const options = inlineOptions.reduce((result, inlineOption, index) => {
+      const value = inlineValues[index];
+      if (value !== undefined) result[inlineOption.name] = value;
+      return result;
+    }, inOptions);
+    return await action(options);
+  });
 }
 
-function makeCommandAction<T>(command: keyof DatatruckCommandMap) {
-  return async function (options: T) {
+function makeCommandAction<T extends keyof DatatruckCommandMap>(command: T) {
+  return async function (
+    options: InstanceType<DatatruckCommandMap[T]>["options"],
+  ) {
     let exitCode = 1;
     const globalOptions = getGlobalOptions();
     try {
@@ -74,7 +101,6 @@ function makeCommandAction<T>(command: keyof DatatruckCommandMap) {
         command,
         {
           ...globalOptions,
-          config: config.data,
         },
         options as any,
         {},
@@ -133,6 +159,7 @@ makeCommand("snapshots").alias("s");
 makeCommand("prune").alias("p");
 makeCommand("backup").alias("b");
 makeCommand("restore").alias("r");
+makeCommand("run");
 makeCommand("copy").alias("cp");
 makeCommand("cleanCache").alias("cc");
 
