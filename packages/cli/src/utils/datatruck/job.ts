@@ -96,6 +96,7 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
           ...process.env,
           COLUMNS: "160",
           NO_COLOR: "1",
+          JOB_NAME: name,
         },
       },
     );

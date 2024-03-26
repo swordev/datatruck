@@ -56,7 +56,7 @@ export function createReportListTasks<T extends ReportListTaskContext>(
         } else if (isReportStep(report.run)) {
           await runReportSteps(report.run, {
             data: {
-              title: `[${options.hostname}] DTT ${options.action}`,
+              title: `[${options.hostname}] DTT ${process.env.JOB_NAME ?? options.action}`,
               message,
               success,
             },
