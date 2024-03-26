@@ -1,5 +1,15 @@
 # @datatruck/cli
 
+## 0.37.0
+
+### Minor Changes
+
+- [`2267d4d`](https://github.com/swordev/datatruck/commit/2267d4db8d551981c4f58fbf44cf7006b161b13c) Thanks [@juanrgm](https://github.com/juanrgm)! - Show error stack at bottom
+
+- [`5cf1657`](https://github.com/swordev/datatruck/commit/5cf1657d65d3554e2da0f9d82d840502d71e4517) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `server.cron.logPath` option
+
+- [`cc276c5`](https://github.com/swordev/datatruck/commit/cc276c562102e408c5535dc59b144131fa8b9aab) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `run` command
+
 ## 0.36.8
 
 ### Patch Changes
