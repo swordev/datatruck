@@ -39,6 +39,8 @@ export class StartServerCommand extends CommandAbstract<
       server.listen(port, address);
     }
     const cronOptions = config.server?.cron || {};
+    const logPath = config.server?.cron?.logPath;
+
     if (cronOptions.enabled ?? true) {
       if (typeof configPath !== "string")
         throw new AppError(`Config path is required by cron server`);
@@ -46,13 +48,16 @@ export class StartServerCommand extends CommandAbstract<
         configPath,
         verbose,
         log,
+        logPath,
       });
       server.start();
       logJson("cron-server", `server started`);
     }
-    process.on("SIGINT", () => process.exit(1));
-    process.on("SIGTERM", () => process.exit(1));
-    await new Promise<void>(() => setInterval(() => {}, 60_000));
-    return { exitCode: 0 };
+
+    const exitCode = await new Promise<number>((resolve) => {
+      process.on("SIGINT", () => resolve(1)).on("SIGTERM", () => resolve(1));
+    });
+
+    return { exitCode };
   }
 }

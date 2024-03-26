@@ -35,6 +35,7 @@ export class RunCommand extends CommandAbstract<
       log,
       verbose: verbose,
       configPath: config.path!,
+      logPath: config.data.server?.cron?.logPath,
     });
 
     return { exitCode: 0 };

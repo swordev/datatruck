@@ -4,20 +4,28 @@ import { formatCronScheduleObject } from "../cron";
 import { compareJsons } from "../string";
 import { createWatcher } from "../watcher";
 import { Config } from "./config-type";
-import { Job, runJob } from "./job";
+import { Job, JobConfig, runJob } from "./job";
 import { Cron } from "croner";
+import { platform } from "os";
+import { join } from "path";
+
+export const defaultsLogPath =
+  platform() === "win32"
+    ? join(
+        process.env.APPDATA ?? `${process.env.HOMEDRIVE ?? "C:"}\\ProgramData`,
+        "datatruck\\logs",
+      )
+    : "/var/logs/datatruck";
 
 export type DatatruckCronServerOptions = {
   enabled?: boolean;
+  /**
+   * @default '/var/logs/datatruck'
+   */
+  logPath?: string | boolean;
 };
 
-type Options = {
-  log: boolean;
-  verbose: boolean;
-  configPath: string;
-};
-
-function createCrons(jobs: Record<string, Job>, options: Options) {
+function createCrons(jobs: Record<string, Job>, options: JobConfig) {
   const crons: Cron[] = [];
   for (const name in jobs) {
     const job = jobs[name];
@@ -40,7 +48,7 @@ function createCrons(jobs: Record<string, Job>, options: Options) {
   return crons;
 }
 
-export async function createCronServer(options: Options) {
+export async function createCronServer(options: JobConfig) {
   const config = await ConfigAction.fromGlobalOptions({
     config: options.configPath,
   });
