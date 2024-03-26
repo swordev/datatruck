@@ -48,5 +48,9 @@ export abstract class CommandAbstract<
   ) {
     return options;
   }
-  abstract exec(): Promise<{ exitCode: number; result?: any }>;
+  abstract exec(): Promise<{
+    exitCode: number;
+    result?: any;
+    errors?: Error[];
+  }>;
 }

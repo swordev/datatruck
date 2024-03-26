@@ -68,6 +68,7 @@ export class CopyAction<TRequired extends boolean = true> {
     options: {
       streams?: StdStreams;
       verbose?: number;
+      errors?: Error[];
     } = {},
   ) {
     const renderTitle = (
@@ -135,7 +136,7 @@ export class CopyAction<TRequired extends boolean = true> {
             renderTitle(item, true),
             renderData(item, result, "table"),
             duration(item.elapsed),
-            renderError(item.error, options.verbose),
+            renderError(item.error, options.errors?.indexOf(item.error!)),
           ]),
       },
     });
@@ -358,6 +359,6 @@ export class CopyAction<TRequired extends boolean = true> {
           },
         }),
       ])
-      .exec();
+      .execAndParse(this.options.verbose);
   }
 }

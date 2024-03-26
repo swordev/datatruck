@@ -175,6 +175,7 @@ export class BackupAction<TRequired extends boolean = true> {
     options: {
       streams?: StdStreams;
       verbose?: number;
+      errors?: Error[];
     } = {},
   ) {
     const renderTitle = (
@@ -221,6 +222,7 @@ export class BackupAction<TRequired extends boolean = true> {
         }),
       });
     };
+
     return new DataFormat({
       streams: options.streams,
       json: result,
@@ -241,16 +243,17 @@ export class BackupAction<TRequired extends boolean = true> {
           { value: "Duration", width: 10 },
           { value: "Error", width: 50 },
         ],
-        rows: () =>
-          result
+        rows: () => {
+          return result
             .filter((item) => item.key !== "cleanup")
             .map((item) => [
               renderResult(item.error),
               renderTitle(item, true),
               renderData(item, result, "table"),
               duration(item.elapsed),
-              renderError(item.error, options.verbose),
-            ]),
+              renderError(item.error, options.errors?.indexOf(item.error!)),
+            ]);
+        },
       },
     });
   }
@@ -453,6 +456,6 @@ export class BackupAction<TRequired extends boolean = true> {
           },
         }),
       ])
-      .exec();
+      .execAndParse(this.options.verbose);
   }
 }

@@ -1,4 +1,5 @@
 import { Timer, createTimer } from "./date";
+import { AppError } from "./error";
 import { onExit } from "./exit";
 import { ProgressManager } from "./progress";
 import { StdStreams, createStdStreams } from "./stream";
@@ -211,6 +212,16 @@ export class Listr3<T extends Listr3Context> extends Listr<
     for (const task of this.tasks)
       if (task.isPending()) task.state$ = ListrTaskState.FAILED;
     this["renderer"].end(new Error("Interrupted."));
+  }
+  async execAndParse(verbose: boolean | undefined) {
+    const result = await this.exec();
+    const exitCode = result.some((item) => item.error) ? 1 : 0;
+    const errors = result
+      .filter(
+        (item) => item.error && (verbose || !(item.error instanceof AppError)),
+      )
+      .map(({ error }) => error) as Error[];
+    return { result, exitCode, errors };
   }
   async exec(): Promise<(Listr3TaskResult<T> | List3SummaryResult)[]> {
     const dispose = onExit(() => {

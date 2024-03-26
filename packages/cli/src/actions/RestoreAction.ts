@@ -148,6 +148,7 @@ export class RestoreAction<TRequired extends boolean = true> {
     options: {
       streams?: StdStreams;
       verbose?: number;
+      errors?: Error[];
     } = {},
   ) {
     const renderTitle = (
@@ -194,7 +195,7 @@ export class RestoreAction<TRequired extends boolean = true> {
             renderTitle(item, true),
             renderData(item, true, result),
             duration(item.elapsed),
-            renderError(item.error, options.verbose),
+            renderError(item.error, options.errors?.indexOf(item.error!)),
           ]),
       },
     });
@@ -314,6 +315,6 @@ export class RestoreAction<TRequired extends boolean = true> {
           },
         }),
       )
-      .exec();
+      .execAndParse(this.options.verbose);
   }
 }

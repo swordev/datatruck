@@ -1,5 +1,5 @@
 import { ConfigAction } from "./actions/ConfigAction";
-import { GlobalOptions } from "./commands/CommandAbstract";
+import { CommandAbstract, GlobalOptions } from "./commands/CommandAbstract";
 import globalData from "./globalData";
 import { OptionsConfig, showCursorCommand, waitForStdDrain } from "./utils/cli";
 import { DataFormatType } from "./utils/data-format";
@@ -13,7 +13,7 @@ import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
 import { snakeCase } from "./utils/string";
 import { sessionTmpDir } from "./utils/temp";
-import { red } from "chalk";
+import chalk, { red } from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";
 import { dirname, isAbsolute, join, sep } from "path";
@@ -79,37 +79,51 @@ function makeCommand(command: keyof DatatruckCommandMap) {
   });
 }
 
-function makeCommandAction<T extends keyof DatatruckCommandMap>(command: T) {
+function makeCommandAction<T extends keyof DatatruckCommandMap>(
+  commandName: T,
+) {
   return async function (
     options: InstanceType<DatatruckCommandMap[T]>["options"],
   ) {
     let exitCode = 1;
+    let error: Error | undefined;
+    let errors: Error[] | undefined;
     const globalOptions = getGlobalOptions();
     try {
-      const configAction = new ConfigAction({
-        path: globalOptions.config,
-        verbose: !!globalOptions.verbose,
-      });
-      const config = await configAction.exec();
+      const config =
+        await ConfigAction.fromGlobalOptionsWithPath(globalOptions);
 
       if (config.data.tempDir)
         globalData.tempDir = isAbsolute(config.data.tempDir)
           ? config.data.tempDir
-          : join(dirname(config.path), config.data.tempDir);
+          : join(dirname(config.path!), config.data.tempDir);
 
-      const response = await createCommand(
-        command,
-        {
-          ...globalOptions,
-        },
-        options as any,
+      const command = createCommand(
+        commandName,
+        { ...globalOptions },
+        options,
         {},
         globalOptions.config,
-      ).exec();
+      ) as CommandAbstract<{}, {}>;
 
+      const response = await command.exec();
+      errors = response.errors;
       exitCode = response.exitCode;
     } catch (e) {
-      const error = e as Error;
+      error = e as Error;
+    }
+
+    if (errors?.length) {
+      console.error();
+      errors.forEach((error, index) => {
+        console.error(
+          chalk.red(`${index + 1}. ` + error.stack ?? error.message),
+        );
+        if (errors![index + 1]) console.error();
+      });
+    }
+
+    if (error) {
       if (globalOptions.verbose) {
         console.error(red(error.stack));
       } else {

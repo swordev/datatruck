@@ -79,15 +79,17 @@ export class BackupCommand extends CommandAbstract<
       prune: this.options.prune,
     });
 
-    const result = await backup.exec();
+    const data = await backup.exec();
 
     if (this.globalOptions.outputFormat)
       backup
-        .dataFormat(result, { streams: this.streams, verbose })
+        .dataFormat(data.result, {
+          verbose,
+          streams: this.streams,
+          errors: data.errors,
+        })
         .log(this.globalOptions.outputFormat);
 
-    const exitCode = result.some((item) => item.error) ? 1 : 0;
-
-    return { result, exitCode };
+    return data;
   }
 }

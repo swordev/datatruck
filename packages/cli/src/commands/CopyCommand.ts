@@ -66,15 +66,17 @@ export class CopyCommand extends CommandAbstract<
       progress: this.globalOptions.progress,
     });
 
-    const result = await copy.exec();
+    const data = await copy.exec();
 
     if (this.globalOptions.outputFormat)
       copy
-        .dataFormat(result, { streams: this.streams, verbose })
+        .dataFormat(data.result, {
+          verbose,
+          streams: this.streams,
+          errors: data.errors,
+        })
         .log(this.globalOptions.outputFormat);
 
-    const exitCode = result.some((item) => item.error) ? 1 : 0;
-
-    return { result, exitCode };
+    return data;
   }
 }

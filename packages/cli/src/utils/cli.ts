@@ -80,18 +80,18 @@ export function renderResult(
 
 export function renderError(
   error: Error | null | string | undefined,
-  verbose?: number,
+  index?: number,
 ) {
-  if (!error) {
-    return "";
-  } else if (error instanceof AppError) {
-    return chalk.red(verbose ? error.stack ?? error.message : error.message);
-  } else if (error instanceof Error) {
-    return chalk.red(error.stack ?? error.message);
-  } else {
-    const message = error.split(/\r?\n/).shift() ?? "";
-    return chalk.red(message.trim());
-  }
+  if (!error) return "";
+  const message =
+    error instanceof Error
+      ? error.message
+      : (error.split(/\r?\n/).shift() ?? "").trim();
+  return chalk.red(
+    typeof index === "number" && index !== -1
+      ? `${index + 1}. ${message}`
+      : message,
+  );
 }
 
 export function renderListTaskItem<T extends Record<string, any>>(

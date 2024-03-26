@@ -80,15 +80,17 @@ export class RestoreCommand extends CommandAbstract<
       streams: this.streams,
     });
 
-    const result = await restore.exec();
+    const data = await restore.exec();
 
     if (this.globalOptions.outputFormat)
       restore
-        .dataFormat(result, { streams: this.streams, verbose })
+        .dataFormat(data.result, {
+          verbose,
+          streams: this.streams,
+          errors: data.errors,
+        })
         .log(this.globalOptions.outputFormat);
 
-    const exitCode = result.some((item) => item.error) ? 1 : 0;
-
-    return { result, exitCode };
+    return data;
   }
 }

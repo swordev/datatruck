@@ -3,6 +3,7 @@ import { InitAction } from "../actions/InitAction";
 import { renderError, renderResult } from "../utils/cli";
 import { DataFormat } from "../utils/data-format";
 import type { RepositoryConfig } from "../utils/datatruck/config-type";
+import { AppError } from "../utils/error";
 import { parseStringList } from "../utils/string";
 import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
@@ -39,6 +40,12 @@ export class InitCommand extends CommandAbstract<
       verbose: verbose > 0,
     });
     const result = await init.exec();
+    const exitCode = result.some((item) => item.error) ? 1 : 0;
+    const errors = result
+      .filter(
+        (item) => item.error && (verbose || !(item.error instanceof AppError)),
+      )
+      .map(({ error }) => error) as Error[];
     const dataFormat = new DataFormat({
       streams: this.streams,
       json: result,
@@ -56,7 +63,7 @@ export class InitCommand extends CommandAbstract<
             item.repositoryName,
             item.repositoryType,
             item.repositorySource,
-            renderError(item.error, verbose),
+            renderError(item.error, errors.indexOf(item.error!)),
           ]),
       },
     });
@@ -64,6 +71,6 @@ export class InitCommand extends CommandAbstract<
     if (this.globalOptions.outputFormat)
       dataFormat.log(this.globalOptions.outputFormat);
 
-    return { result, exitCode: 0 };
+    return { result, exitCode, errors };
   }
 }
