@@ -30,11 +30,11 @@ export const pruneActionOptions = {
     shortFlag: "g",
     defaults: "packageName,repositoryName",
     value: (v) =>
-      parseStringList(v, [
+      parseStringList<"packageName" | "repositoryName" | "repositoryType">(v, [
         "packageName",
         "repositoryName",
         "repositoryType",
-      ] as const),
+      ]),
   },
   dryRun: {
     description: "",
