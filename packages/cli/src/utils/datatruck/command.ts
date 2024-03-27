@@ -3,6 +3,7 @@ import { CleanCacheCommand } from "../../commands/CleanCacheCommand";
 import { GlobalOptions } from "../../commands/CommandAbstract";
 import { ConfigCommand } from "../../commands/ConfigCommand";
 import { CopyCommand } from "../../commands/CopyCommand";
+import { ExportCommand } from "../../commands/ExportCommand";
 import { InitCommand } from "../../commands/InitCommand";
 import { PruneCommand } from "../../commands/PruneCommand";
 import { RestoreCommand } from "../../commands/RestoreCommand";
@@ -24,6 +25,7 @@ export const datatruckCommands = {
   copy: CopyCommand,
   cleanCache: CleanCacheCommand,
   startServer: StartServerCommand,
+  export: ExportCommand,
 };
 
 export type DatatruckCommandMap = typeof datatruckCommands;
