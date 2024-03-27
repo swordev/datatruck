@@ -9,7 +9,7 @@ import { datatruckCommands } from "./command";
 import { defaultsLogPath } from "./cron-server";
 import { WriteStream, createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
-import { join } from "path";
+import { dirname, join } from "path";
 
 export type JobScheduleObject = {
   minute?: number | { each: number };
@@ -71,36 +71,34 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
     let stream: WriteStream | undefined;
     let logPath: string | undefined;
     const dt = new Date().toISOString().replaceAll(":", "-");
+    const argv = [
+      process.env.pm_exec_path ?? bin,
+      "--tty",
+      "false",
+      "--progress",
+      "interval:3000",
+      "-c",
+      config.configPath,
+      job.action,
+      ...cliOptions,
+    ];
 
     if (baseLogPath) {
       const tmpLogPath = join(baseLogPath, dt) + ".log";
       await mkdir(baseLogPath, { recursive: true });
       stream = createWriteStream(tmpLogPath);
+      stream.write(`+ dtt ${argv.join(" ")}\n`);
     }
-    const p = new AsyncProcess(
-      node,
-      [
-        process.env.pm_exec_path ?? bin,
-        "--tty",
-        "false",
-        "--progress",
-        "interval:3000",
-        "-c",
-        config.configPath,
-        job.action,
-        ...cliOptions,
-      ],
-      {
-        $log: config.verbose,
-        $exitCode: false,
-        env: {
-          ...process.env,
-          COLUMNS: "160",
-          NO_COLOR: "1",
-          JOB_NAME: name,
-        },
+    const p = new AsyncProcess(node, argv, {
+      $log: config.verbose,
+      $exitCode: false,
+      env: {
+        ...process.env,
+        COLUMNS: "160",
+        NO_COLOR: "1",
+        JOB_NAME: name,
       },
-    );
+    });
 
     pid = p.child.pid || 0;
 
@@ -112,11 +110,13 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
       stream && p.stdout.pipe(stream),
     ]);
 
-    if (stream)
+    if (stream) {
+      const base = dirname(stream.path.toString());
       await safeRename(
         stream.path.toString(),
-        (logPath = join(stream.path.toString(), `${dt}-${pid}.log`)),
+        (logPath = join(base, `${dt}-${pid}.log`)),
       );
+    }
 
     if (config.log)
       logJson("job", `'${name}' finished`, {
