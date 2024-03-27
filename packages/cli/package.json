@@ -31,7 +31,7 @@
     "watch": "tsc -b tsconfig.build.json -w"
   },
   "dependencies": {
-    "@supercharge/promise-pool": "^3.1.1",
+    "@supercharge/promise-pool": "^3.2.0",
     "ajv": "^8.12.0",
     "async": "^3.2.5",
     "chalk": "^4.1.2",
@@ -42,9 +42,9 @@
     "fast-glob": "^3.3.2",
     "listr2": "^8.0.2",
     "micromatch": "^4.0.5",
-    "mysql2": "^3.9.1",
+    "mysql2": "^3.9.3",
     "tty-table": "^4.2.3",
-    "yaml": "^2.3.4"
+    "yaml": "^2.4.1"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
