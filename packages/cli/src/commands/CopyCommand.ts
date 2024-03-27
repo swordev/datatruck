@@ -1,11 +1,11 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { CopyAction, copyActionOptions } from "../actions/CopyAction";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const copyCommandOptions = defineOptionsConfig({
+export const copyCommandOptions = {
   ...copyActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type CopyCommandOptions = InferOptions<typeof copyCommandOptions>;
 

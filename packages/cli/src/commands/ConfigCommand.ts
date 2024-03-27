@@ -2,11 +2,11 @@ import { ConfigAction } from "../actions/ConfigAction";
 import { DataFormat } from "../utils/data-format";
 import { filterPackages } from "../utils/datatruck/config";
 import type { RepositoryConfig } from "../utils/datatruck/config-type";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { parseStringList } from "../utils/string";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const configCommandOptions = defineOptionsConfig({
+export const configCommandOptions = {
   packageNames: {
     description: "Filter by package names",
     option: "-p,--package <values>",
@@ -27,7 +27,7 @@ export const configCommandOptions = defineOptionsConfig({
     option: "-rt,--repository-type <values>",
     parser: (v) => parseStringList<RepositoryConfig["type"]>(v),
   },
-});
+} satisfies OptionsConfig;
 
 export type ConfigCommandOptions = InferOptions<typeof configCommandOptions>;
 

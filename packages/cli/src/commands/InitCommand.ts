@@ -3,12 +3,12 @@ import { InitAction, initActionOptions } from "../actions/InitAction";
 import { renderError, renderResult } from "../utils/cli";
 import { DataFormat } from "../utils/data-format";
 import { AppError } from "../utils/error";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const initCommandOptions = defineOptionsConfig({
+export const initCommandOptions = {
   ...initActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type InitCommandOptions = InferOptions<typeof initCommandOptions>;
 

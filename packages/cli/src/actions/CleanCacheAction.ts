@@ -1,9 +1,9 @@
 import { existsDir, fastFolderSizeAsync } from "../utils/fs";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { parentTmpDir } from "../utils/temp";
 import { rm } from "fs/promises";
 
-export const cleanCacheActionOptions = defineOptionsConfig({});
+export const cleanCacheActionOptions = {} satisfies OptionsConfig;
 
 export type CleanCacheActionOptions = InferOptions<
   typeof cleanCacheActionOptions

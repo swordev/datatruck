@@ -21,7 +21,7 @@ import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { StrictMap, pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { parseStringList } from "../utils/string";
@@ -30,7 +30,7 @@ import { snapshotsActionOptions } from "./SnapshotsAction";
 import chalk from "chalk";
 import { hostname } from "os";
 
-export const copyActionOptions = defineOptionsConfig({
+export const copyActionOptions = {
   ids: {
     option: "-i,--id <ids>",
     description: "Filter by identifiers",
@@ -55,7 +55,7 @@ export const copyActionOptions = defineOptionsConfig({
     description: "Filter by repository names",
     parser: parseStringList<string>,
   },
-});
+} satisfies OptionsConfig;
 
 export type CopyActionOptions = InferOptions<typeof copyActionOptions> & {
   verbose?: boolean;

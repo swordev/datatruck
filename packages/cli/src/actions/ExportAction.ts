@@ -11,7 +11,7 @@ import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
@@ -23,7 +23,7 @@ import {
 import chalk from "chalk";
 import { join } from "path";
 
-export const exportActionOptions = defineOptionsConfig({
+export const exportActionOptions = {
   id: {
     description: "Filter by snapshot id",
     option: "-i,--id <id>",
@@ -42,7 +42,7 @@ export const exportActionOptions = defineOptionsConfig({
     repositoryNames: true,
     repositoryTypes: true,
   }),
-});
+} satisfies OptionsConfig;
 
 export type ExportActionOptions = InferOptions<typeof exportActionOptions> & {
   verbose?: boolean;

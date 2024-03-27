@@ -19,7 +19,7 @@ import { AppError } from "../utils/error";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
@@ -45,7 +45,7 @@ type Context = {
   prune: { packageName: string; total: number; pruned: number };
 } & ReportListTaskContext;
 
-export const backupActionOptions = defineOptionsConfig({
+export const backupActionOptions = {
   ...pickProps(snapshotsActionOptions, {
     repositoryNames: true,
     repositoryTypes: true,
@@ -67,7 +67,7 @@ export const backupActionOptions = defineOptionsConfig({
     option: "--prune",
     boolean: true,
   },
-});
+} satisfies OptionsConfig;
 
 export type BackupActionOptions = InferOptions<typeof backupActionOptions> & {
   verbose?: boolean;

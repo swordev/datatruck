@@ -2,10 +2,10 @@ import { ConfigAction } from "../actions/ConfigAction";
 import { PruneAction, pruneActionOptions } from "../actions/PruneAction";
 import { confirm } from "../utils/cli";
 import { DataFormat } from "../utils/data-format";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const pruneCommandOptions = defineOptionsConfig({
+export const pruneCommandOptions = {
   ...pruneActionOptions,
   longId: {
     description: "Show long snapshot id",
@@ -17,7 +17,7 @@ export const pruneCommandOptions = defineOptionsConfig({
     option: "--confirm",
     boolean: true,
   },
-});
+} satisfies OptionsConfig;
 
 export type PruneCommandOptions = InferOptions<typeof pruneCommandOptions>;
 

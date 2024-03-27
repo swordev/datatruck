@@ -4,12 +4,12 @@ import {
 } from "../actions/CleanCacheAction";
 import { formatBytes } from "../utils/bytes";
 import { DataFormat } from "../utils/data-format";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const cleanCacheCommandOptions = defineOptionsConfig({
+export const cleanCacheCommandOptions = {
   ...cleanCacheActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type CleanCacheCommandOptions = InferOptions<
   typeof cleanCacheCommandOptions

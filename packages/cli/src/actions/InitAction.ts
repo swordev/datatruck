@@ -2,16 +2,16 @@ import { filterRepositoryByEnabled } from "../utils/datatruck/config";
 import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
 import { pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { createPatternFilter } from "../utils/string";
 import { snapshotsActionOptions } from "./SnapshotsAction";
 
-export const initActionOptions = defineOptionsConfig({
+export const initActionOptions = {
   ...pickProps(snapshotsActionOptions, {
     repositoryNames: true,
     repositoryTypes: true,
   }),
-});
+} satisfies OptionsConfig;
 
 export type InitActionOptions = InferOptions<typeof initActionOptions> & {
   verbose?: boolean;

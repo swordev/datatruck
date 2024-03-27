@@ -4,7 +4,7 @@ import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { createFilterByLastOptions } from "../utils/date";
 import { AppError } from "../utils/error";
 import { groupBy, pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { parseStringList } from "../utils/string";
 import {
   ExtendedSnapshot,
@@ -12,7 +12,7 @@ import {
   snapshotsActionOptions,
 } from "./SnapshotsAction";
 
-export const pruneActionOptions = defineOptionsConfig({
+export const pruneActionOptions = {
   ids: {
     description: "Filter by snapshot id",
     option: "-i,--id <snapshotId>",
@@ -80,7 +80,7 @@ export const pruneActionOptions = defineOptionsConfig({
     option: "--keepYearly <number>",
     parser: Number,
   },
-});
+} satisfies OptionsConfig;
 
 export type PruneActionsOptions = InferOptions<typeof pruneActionOptions> & {
   verbose?: boolean;

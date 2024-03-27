@@ -17,7 +17,7 @@ import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { pickProps } from "../utils/object";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
@@ -25,7 +25,7 @@ import { SnapshotsAction, snapshotsActionOptions } from "./SnapshotsAction";
 import { ok } from "assert";
 import chalk from "chalk";
 
-export const restoreActionOptions = defineOptionsConfig({
+export const restoreActionOptions = {
   id: {
     description: "Filter by snapshot id",
     option: "-i,--id <id>",
@@ -44,7 +44,7 @@ export const restoreActionOptions = defineOptionsConfig({
     option: "--initial",
     boolean: true,
   },
-});
+} satisfies OptionsConfig;
 
 export type RestoreActionOptions = InferOptions<typeof restoreActionOptions> & {
   verbose?: boolean;

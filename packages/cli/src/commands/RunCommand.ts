@@ -1,13 +1,13 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { runJob } from "../utils/datatruck/job";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const runCommandOptions = defineOptionsConfig({
+export const runCommandOptions = {
   jobName: {
     description: "Job name",
   },
-});
+} satisfies OptionsConfig;
 
 export type RunCommandOptions = InferOptions<typeof runCommandOptions>;
 

@@ -29,10 +29,6 @@ export type InferOptions<T extends OptionsConfig> = {
     : K]?: InferOptionsValue<T[K]>;
 };
 
-export function defineOptionsConfig<T extends OptionsConfig>(config: T) {
-  return config;
-}
-
 export type CommandConfig<T extends OptionsConfig = OptionsConfig> = {
   name: string;
   alias?: string;

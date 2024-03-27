@@ -5,16 +5,16 @@ import {
 } from "../actions/SnapshotsAction";
 import { formatBytes } from "../utils/bytes";
 import { DataFormat } from "../utils/data-format";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const snapshotsCommandOptions = defineOptionsConfig({
+export const snapshotsCommandOptions = {
   ...snapshotsActionOptions,
   longId: {
     option: "--longId",
     description: "Show long id",
   },
-});
+} satisfies OptionsConfig;
 
 export type SnapshotsCommandOptions = InferOptions<
   typeof snapshotsCommandOptions

@@ -1,11 +1,11 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { RestoreAction, restoreActionOptions } from "../actions/RestoreAction";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const restoreCommandOptions = defineOptionsConfig({
+export const restoreCommandOptions = {
   ...restoreActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type RestoreCommandOptions = InferOptions<typeof restoreCommandOptions>;
 

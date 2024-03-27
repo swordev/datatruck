@@ -1,11 +1,11 @@
 import { BackupAction, backupActionOptions } from "../actions/BackupAction";
 import { ConfigAction } from "../actions/ConfigAction";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const backupCommandOptions = defineOptionsConfig({
+export const backupCommandOptions = {
   ...backupActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type BackupCommandOptions = InferOptions<typeof backupCommandOptions>;
 

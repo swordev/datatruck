@@ -3,10 +3,10 @@ import { logJson } from "../utils/cli";
 import { createCronServer } from "../utils/datatruck/cron-server";
 import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
 import { AppError } from "../utils/error";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const startServerOptions = defineOptionsConfig({});
+export const startServerOptions = {} satisfies OptionsConfig;
 
 export type StartServerOptions = InferOptions<typeof startServerOptions>;
 

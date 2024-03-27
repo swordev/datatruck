@@ -1,11 +1,11 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { ExportAction, exportActionOptions } from "../actions/ExportAction";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export const exportCommandOptions = defineOptionsConfig({
+export const exportCommandOptions = {
   ...exportActionOptions,
-});
+} satisfies OptionsConfig;
 
 export type ExportCommandOptions = InferOptions<typeof exportCommandOptions>;
 

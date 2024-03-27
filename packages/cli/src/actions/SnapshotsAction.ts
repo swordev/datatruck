@@ -6,7 +6,7 @@ import type {
 } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
-import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { InferOptions, OptionsConfig } from "../utils/options";
 import { createPatternFilter, parseStringList } from "../utils/string";
 
 export type SnapshotGroupByType = keyof Pick<
@@ -21,7 +21,7 @@ const groupByValues: ("id" | SnapshotGroupByType)[] = [
   "repositoryType",
 ];
 
-export const snapshotsActionOptions = defineOptionsConfig({
+export const snapshotsActionOptions = {
   ids: {
     option: "-i,--id <ids>",
     description: "Filter by identifiers",
@@ -101,7 +101,7 @@ export const snapshotsActionOptions = defineOptionsConfig({
     description: "Filter by last yearly",
     parser: Number,
   },
-});
+} satisfies OptionsConfig;
 
 export type SnapshotsActionOptions = InferOptions<
   typeof snapshotsActionOptions
