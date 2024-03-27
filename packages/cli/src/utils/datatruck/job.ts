@@ -2,9 +2,10 @@ import { BackupCommandOptions } from "../../commands/BackupCommand";
 import { CopyCommandOptions } from "../../commands/CopyCommand";
 import { PruneCommandOptions } from "../../commands/PruneCommand";
 import { AsyncProcess } from "../async-process";
-import { logJson, stringifyOptions } from "../cli";
+import { logJson } from "../cli";
 import { safeRename } from "../fs";
-import { datatruckCommandMap } from "./command";
+import { stringifyOptions } from "../options";
+import { datatruckCommands } from "./command";
 import { defaultsLogPath } from "./cron-server";
 import { WriteStream, createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
@@ -47,13 +48,13 @@ export type JobConfig = {
 export async function runJob(job: Job, name: string, config: JobConfig) {
   let pid = 0;
   try {
-    const Command = datatruckCommandMap[job.action];
+    const Command = datatruckCommands[job.action];
     const command = new Command(
       { config: { packages: [], repositories: [] } },
       {} as any,
     );
     const cliOptions = stringifyOptions(
-      command.optionsConfig() as any,
+      command.optionsConfig,
       job.action === "prune"
         ? ({ ...job.options, confirm: true } satisfies PruneCommandOptions)
         : job.options,

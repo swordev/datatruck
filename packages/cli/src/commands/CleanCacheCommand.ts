@@ -1,21 +1,35 @@
-import { CleanCacheAction } from "../actions/CleanCacheAction";
+import {
+  CleanCacheAction,
+  cleanCacheActionOptions,
+} from "../actions/CleanCacheAction";
 import { formatBytes } from "../utils/bytes";
 import { DataFormat } from "../utils/data-format";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type CleanCacheCommandOptions<TResolved = false> = {};
+export const cleanCacheCommandOptions = defineOptionsConfig({
+  ...cleanCacheActionOptions,
+});
+
+export type CleanCacheCommandOptions = InferOptions<
+  typeof cleanCacheCommandOptions
+>;
 
 export class CleanCacheCommand extends CommandAbstract<
-  CleanCacheCommandOptions<false>,
-  CleanCacheCommandOptions<true>
+  typeof cleanCacheCommandOptions
 > {
-  override optionsConfig() {
-    return this.castOptionsConfig({});
+  static override config() {
+    return {
+      name: "cleanCache",
+      alias: "cc",
+      options: cleanCacheCommandOptions,
+    };
+  }
+  override get optionsConfig() {
+    return cleanCacheCommandOptions;
   }
   override async exec() {
-    const cleanCache = new CleanCacheAction({
-      verbose: !!this.globalOptions.verbose,
-    });
+    const cleanCache = new CleanCacheAction({});
     const result = await cleanCache.exec();
     const dataFormat = new DataFormat({
       streams: this.streams,

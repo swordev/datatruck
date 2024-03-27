@@ -246,7 +246,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
 
     const params: ResolveDatabaseNameParams = {
       packageName: data.package.name,
-      snapshotId: data.options.snapshotId,
+      snapshotId: data.options.id,
       snapshotDate: data.snapshot.date,
       action: "restore",
       database: undefined,

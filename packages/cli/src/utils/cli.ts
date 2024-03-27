@@ -1,4 +1,3 @@
-import { AppError } from "./error";
 import { Listr3TaskResultEnd } from "./list";
 import chalk from "chalk";
 import { cyan, grey } from "chalk";
@@ -120,65 +119,6 @@ export function renderObject(object: Record<string, any>, color?: boolean) {
   for (const key in object)
     values.push(`${key}: ${color ? grey(object[key]) : object[key]}`);
   return values.join(` `);
-}
-
-export type OptionsConfig<T1, T2 extends { [K in keyof T1]: unknown }> = {
-  [K in keyof Required<T1>]: {
-    option?: string;
-    description: string;
-    required?: boolean;
-    defaults?: Exclude<T1[K], undefined>;
-    parser?: (value: Exclude<T1[K], undefined>) => Exclude<T2[K], undefined>;
-  };
-};
-
-export function parseOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
-  object: T1,
-  options: OptionsConfig<T1, T2>,
-) {
-  const result: T2 = {} as any;
-  for (const key in options) {
-    const opt = options[key].option;
-    let defaultsValue: any;
-    let parser = options[key].parser;
-    if (typeof opt === "string") {
-      const isNegative = opt.startsWith("--no");
-      defaultsValue = isNegative ? true : options[key].defaults;
-    }
-    const value = object?.[key] ?? defaultsValue;
-    if (typeof value !== "undefined") {
-      result[key] = parser ? parser(value as any) : (value as any);
-    }
-  }
-  return result;
-}
-
-export function stringifyOptions<T1, T2 extends { [K in keyof T1]: unknown }>(
-  options: OptionsConfig<T1, T2>,
-  object: any,
-) {
-  const result: string[] = [];
-  const prepend: string[] = [];
-  for (const key in options) {
-    const fullOpt = options[key].option;
-    if (typeof fullOpt === "string") {
-      const [opt] = fullOpt.split(",");
-      const isNegative = fullOpt.startsWith("--no");
-      const isBool = !fullOpt.includes("<") && !fullOpt.includes("[");
-      const defaultsValue = isNegative ? true : options[key].defaults;
-      const value = object?.[key] ?? defaultsValue;
-
-      if (isBool) {
-        if (object[key]) result.push(opt);
-      } else if (value !== undefined) {
-        result.push(opt, `${value}`);
-      }
-    } else {
-      const value = object?.[key];
-      if (value !== undefined) prepend.push(value);
-    }
-  }
-  return [...prepend, ...result];
 }
 
 export function confirm(message: string) {

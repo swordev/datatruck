@@ -1,23 +1,27 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { runJob } from "../utils/datatruck/job";
 import { AppError } from "../utils/error";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type RunCommandOptions<TResolved = false> = {
-  jobName: string;
-};
+export const runCommandOptions = defineOptionsConfig({
+  jobName: {
+    description: "Job name",
+    required: true,
+  },
+});
 
-export class RunCommand extends CommandAbstract<
-  RunCommandOptions<false>,
-  RunCommandOptions<true>
-> {
-  override optionsConfig() {
-    return this.castOptionsConfig({
-      jobName: {
-        description: "Job name",
-        required: true,
-      },
-    });
+export type RunCommandOptions = InferOptions<typeof runCommandOptions>;
+
+export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
+  static override config() {
+    return {
+      name: "run",
+      options: runCommandOptions,
+    };
+  }
+  override get optionsConfig() {
+    return runCommandOptions;
   }
   override async exec() {
     const config = await ConfigAction.fromGlobalOptionsWithPath(

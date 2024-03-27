@@ -241,7 +241,7 @@ describe(
 
         await runRestores(config, fileChanger, backups);
         await runRestores(config, fileChanger, backups, {
-          repository: `${type}-mirror`,
+          repositoryNames: [`${type}-mirror`],
         });
       },
     );

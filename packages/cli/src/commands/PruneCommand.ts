@@ -1,134 +1,46 @@
 import { ConfigAction } from "../actions/ConfigAction";
-import { PruneAction } from "../actions/PruneAction";
-import { SnapshotGroupByType } from "../actions/SnapshotsAction";
+import { PruneAction, pruneActionOptions } from "../actions/PruneAction";
 import { confirm } from "../utils/cli";
 import { DataFormat } from "../utils/data-format";
-import type { RepositoryConfig } from "../utils/datatruck/config-type";
-import { KeepObject } from "../utils/date";
-import { parseStringList } from "../utils/string";
-import { If } from "../utils/ts";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type PruneCommandOptions<TResolved = false> = KeepObject & {
-  id?: If<TResolved, string[]>;
-  longId?: boolean;
-  package?: If<TResolved, string[]>;
-  repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
-  tag?: If<TResolved, string[]>;
-  groupBy?: If<TResolved, SnapshotGroupByType[]>;
-  dryRun?: boolean;
-  showAll?: boolean;
-  confirm?: boolean;
-};
+export const pruneCommandOptions = defineOptionsConfig({
+  ...pruneActionOptions,
+  longId: {
+    description: "Show long snapshot id",
+    option: "--longId",
+    boolean: true,
+  },
+  confirm: {
+    description: "Confirm action",
+    option: "--confirm",
+    boolean: true,
+  },
+});
 
-export class PruneCommand extends CommandAbstract<
-  PruneCommandOptions<false>,
-  PruneCommandOptions<true>
-> {
-  override optionsConfig() {
-    return this.castOptionsConfig({
-      dryRun: {
-        description: "",
-        option: "--dry-run",
-        parser: undefined,
-      },
-      groupBy: {
-        description:
-          "Group by values (packageName, repositoryName, repositoryType)",
-        option: "-g,--group-by <values>",
-        defaults: "packageName, repositoryName",
-        parser: (v) =>
-          parseStringList(v, [
-            "packageName",
-            "repositoryName",
-            "repositoryType",
-          ]) as any,
-      },
-      id: {
-        description: "Filter by snapshot id",
-        option: "-i,--id <snapshotId>",
-        parser: parseStringList,
-      },
-      keepMinutely: {
-        description: "Keep last N minutely snapshots",
-        option: "--keepMinutely <number>",
-        parser: Number,
-      },
-      keepDaily: {
-        description: "Keep last N daily snapshots",
-        option: "--keepDaily <number>",
-        parser: Number,
-      },
-      keepHourly: {
-        description: "Keep last N hourly snapshots",
-        option: "--keepHourly <number>",
-        parser: Number,
-      },
-      keepLast: {
-        description: "Keep last N snapshots",
-        option: "--keepLast <number>",
-        parser: Number,
-      },
-      keepMonthly: {
-        description: "Keep last N monthly snapshots",
-        option: "--keepMonthly <number>",
-        parser: Number,
-      },
-      keepWeekly: {
-        description: "Keep last N weekly snapshots",
-        option: "--keepWeekly <number>",
-        parser: Number,
-      },
-      keepYearly: {
-        description: "Keep last N yearly snapshots",
-        option: "--keepYearly <number>",
-        parser: Number,
-      },
-      longId: {
-        description: "Show long snapshot id",
-        option: "--longId",
-      },
-      package: {
-        description: "Filter by package names",
-        option: "-p,--package <values>",
-        parser: parseStringList,
-      },
-      repository: {
-        description: "Filter by repository names",
-        option: "-r,--repository <values>",
-        parser: parseStringList,
-      },
-      repositoryType: {
-        description: "Filter by repository types",
-        option: "-rt,--repository-type <values>",
-        parser: (v) => parseStringList(v) as any,
-      },
-      tag: {
-        description: "Filter by tags",
-        option: "-t,--tag <values>",
-        parser: parseStringList,
-      },
-      showAll: {
-        description: "Show all",
-        option: "-a,--showAll",
-      },
-      confirm: {
-        description: "Confirm action",
-        option: "--confirm",
-      },
-    });
+export type PruneCommandOptions = InferOptions<typeof pruneCommandOptions>;
+
+export class PruneCommand extends CommandAbstract<typeof pruneCommandOptions> {
+  static override config() {
+    return {
+      name: "prune",
+      alias: "p",
+      options: pruneCommandOptions,
+    };
   }
-
+  override get optionsConfig() {
+    return pruneCommandOptions;
+  }
   override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
 
     const prune = new PruneAction(config, {
-      ids: this.options.id,
-      packageNames: this.options.package,
-      repositoryNames: this.options.repository,
-      repositoryTypes: this.options.repositoryType,
+      ids: this.options.ids,
+      packageNames: this.options.packageNames,
+      repositoryNames: this.options.repositoryNames,
+      repositoryTypes: this.options.repositoryTypes,
       verbose: verbose > 0,
       dryRun: this.options.dryRun || !this.options.confirm,
       groupBy: this.options.groupBy,
@@ -139,9 +51,8 @@ export class PruneCommand extends CommandAbstract<
       keepMonthly: this.options.keepMonthly,
       keepWeekly: this.options.keepWeekly,
       keepYearly: this.options.keepYearly,
-      tags: this.options.tag,
-      longId: this.options.longId,
-      returnsAll: this.options.showAll,
+      tags: this.options.tags,
+      showAll: this.options.showAll,
     });
 
     const result = await prune.exec();

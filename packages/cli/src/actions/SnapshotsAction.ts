@@ -6,31 +6,107 @@ import type {
 } from "../utils/datatruck/config-type";
 import { createAndInitRepo } from "../utils/datatruck/repository";
 import { groupAndFilter } from "../utils/datatruck/snapshot";
-import { createPatternFilter } from "../utils/string";
-import { IfRequireKeys } from "../utils/ts";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
+import { createPatternFilter, parseStringList } from "../utils/string";
 
 export type SnapshotGroupByType = keyof Pick<
   ExtendedSnapshot,
   "packageName" | "repositoryName" | "repositoryType"
 >;
-export type SnapshotsActionOptions = {
-  ids?: string[];
-  hostnames?: string[];
-  repositoryNames?: string[];
-  packageNames?: string[];
-  packageTaskNames?: string[];
-  packageConfig?: boolean;
-  repositoryTypes?: string[];
+
+const groupByValues: ("id" | SnapshotGroupByType)[] = [
+  "id",
+  "packageName",
+  "repositoryName",
+  "repositoryType",
+];
+
+export const snapshotsActionOptions = defineOptionsConfig({
+  ids: {
+    option: "-i,--id <ids>",
+    description: "Filter by identifiers",
+    parser: parseStringList<string>,
+  },
+  repositoryNames: {
+    option: "-r,--repository <names>",
+    description: "Filter by repository names",
+    parser: parseStringList<string>,
+  },
+  repositoryTypes: {
+    option: "-rt,--repository-type <names>",
+    description: "Filter by repository types",
+    parser: parseStringList<string>,
+  },
+  packageNames: {
+    option: "-p,--package <names>",
+    description: "Filter by package names",
+    parser: parseStringList<string>,
+  },
+  packageTaskNames: {
+    option: "-pt,--package-task <values>",
+    description: "Filter by task names",
+    parser: parseStringList<string>,
+  },
+  tags: {
+    description: "Filter by tags",
+    option: "-t,--tag <values>",
+    parser: parseStringList<string>,
+  },
+  packageConfig: {
+    description: "Filter by package config",
+    option: "-pc,--package-config",
+  },
+  hostnames: {
+    option: "-h,--host <values>",
+    description: "Filter by hostnames",
+    parser: parseStringList<string>,
+  },
+  groupBy: {
+    option: "-g,--group-by <values>",
+    description: `Group by values (${groupByValues.join(", ")})`,
+    parser: (v) => parseStringList(v, groupByValues),
+  },
+  last: {
+    option: "-l,--last <number>",
+    description: "Filter by last snapshots",
+    parser: Number,
+  },
+  lastMinutely: {
+    option: "--lastMinutely <number>",
+    description: "Filter by last minutely",
+    parser: Number,
+  },
+  lastDaily: {
+    option: "--lastDaily <number>",
+    description: "Filter by last daily",
+    parser: Number,
+  },
+  lastHourly: {
+    option: "--lastHourly <number>",
+    description: "Filter by last hourly",
+    parser: Number,
+  },
+  lastMonthly: {
+    option: "--lastMonthly <number>",
+    description: "Filter by last monthly",
+    parser: Number,
+  },
+  lastWeekly: {
+    option: "--lastWeekly <number>",
+    description: "Filter by last weekly",
+    parser: Number,
+  },
+  lastYearly: {
+    option: "--lastYearly <number>",
+    description: "Filter by last yearly",
+    parser: Number,
+  },
+});
+
+export type SnapshotsActionOptions = InferOptions<
+  typeof snapshotsActionOptions
+> & {
   verbose?: boolean;
-  tags?: string[];
-  last?: number;
-  lastMinutely?: number;
-  lastHourly?: number;
-  lastDaily?: number;
-  lastWeekly?: number;
-  lastMonthly?: number;
-  lastYearly?: number;
-  groupBy?: SnapshotGroupByType[];
 };
 
 export type ExtendedSnapshot = {
@@ -39,10 +115,10 @@ export type ExtendedSnapshot = {
   repositoryType: string;
 } & Snapshot;
 
-export class SnapshotsAction<TRequired extends boolean = true> {
+export class SnapshotsAction {
   constructor(
     readonly config: Config,
-    readonly options: IfRequireKeys<TRequired, SnapshotsActionOptions>,
+    readonly options: SnapshotsActionOptions,
   ) {}
 
   async exec(sourceAction?: RepositoryConfigEnabledAction) {
@@ -86,8 +162,10 @@ export class SnapshotsAction<TRequired extends boolean = true> {
     }
     result = result.sort((a, b) => b.date.localeCompare(a.date));
 
-    return groupAndFilter(result, this.options.groupBy, this.options).map(
-      ({ item }) => item,
-    );
+    return groupAndFilter(
+      result,
+      this.options.groupBy as any,
+      this.options,
+    ).map(({ item }) => item);
   }
 }

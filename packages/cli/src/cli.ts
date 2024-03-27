@@ -1,19 +1,18 @@
 import { ConfigAction } from "./actions/ConfigAction";
-import { CommandAbstract, GlobalOptions } from "./commands/CommandAbstract";
+import { CommandConstructor, GlobalOptions } from "./commands/CommandAbstract";
 import globalData from "./globalData";
-import { OptionsConfig, showCursorCommand, waitForStdDrain } from "./utils/cli";
+import { showCursorCommand, waitForStdDrain } from "./utils/cli";
 import { DataFormatType } from "./utils/data-format";
 import {
   DatatruckCommandMap,
-  InferDatatruckCommandOptions,
-  createCommand,
+  datatruckCommands,
 } from "./utils/datatruck/command";
 import { AppError } from "./utils/error";
 import { onExit } from "./utils/exit";
 import { parsePackageFile } from "./utils/fs";
-import { snakeCase } from "./utils/string";
+import { createCommand } from "./utils/options";
 import { sessionTmpDir } from "./utils/temp";
-import chalk, { red } from "chalk";
+import chalk from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";
 import { dirname, isAbsolute, join, sep } from "path";
@@ -33,54 +32,8 @@ function getGlobalOptions() {
   };
 }
 
-function makeCommand(command: keyof DatatruckCommandMap) {
-  const instance = createCommand(command, getGlobalOptions(), null as any);
-  const options = instance.optionsConfig() as OptionsConfig<any, any>;
-  const inlineOptions: { name: string; required?: boolean }[] = [];
-
-  for (const name in options) {
-    const option = options[name];
-    if (typeof option.option !== "string") {
-      inlineOptions.push({ name, required: option.required });
-    }
-  }
-
-  const programCommand = program.command(
-    [
-      command,
-      ...inlineOptions.map((v) => (v.required ? `<${v.name}>` : `[${v.name}]`)),
-    ].join(" "),
-  );
-
-  for (const key in options) {
-    const option = options[key];
-    if (typeof option.option === "string") {
-      const description = `${option.description}${
-        option.defaults ? ` (defaults: ${option.defaults})` : ""
-      }`;
-      if (option.required) {
-        programCommand.requiredOption(option.option, description);
-      } else {
-        programCommand.option(option.option, description);
-      }
-    }
-  }
-
-  return programCommand.action(async (...args: any[]) => {
-    const inlineValues = args.slice(0, inlineOptions.length);
-    const action = makeCommandAction(command);
-    const inOptions = args[inlineOptions.length] || {};
-    const options = inlineOptions.reduce((result, inlineOption, index) => {
-      const value = inlineValues[index];
-      if (value !== undefined) result[inlineOption.name] = value;
-      return result;
-    }, inOptions);
-    return await action(options);
-  });
-}
-
-function makeCommandAction<T extends keyof DatatruckCommandMap>(
-  commandName: T,
+function createCommandAction<T extends keyof DatatruckCommandMap>(
+  Constructor: CommandConstructor,
 ) {
   return async function (
     options: InstanceType<DatatruckCommandMap[T]>["options"],
@@ -98,14 +51,12 @@ function makeCommandAction<T extends keyof DatatruckCommandMap>(
           ? config.data.tempDir
           : join(dirname(config.path!), config.data.tempDir);
 
-      const command = createCommand(
-        commandName,
+      const command = new Constructor(
         { ...globalOptions },
-        options,
+        options as any,
         {},
         globalOptions.config,
-      ) as CommandAbstract<{}, {}>;
-
+      );
       const response = await command.exec();
       errors = response.errors;
       exitCode = response.exitCode;
@@ -125,12 +76,12 @@ function makeCommandAction<T extends keyof DatatruckCommandMap>(
 
     if (error) {
       if (globalOptions.verbose) {
-        console.error(red(error.stack));
+        console.error(chalk.red(error.stack));
       } else {
         if (error instanceof AppError) {
-          console.error(red(error.message));
+          console.error(chalk.red(error.message));
         } else {
-          console.error(red(error.stack));
+          console.error(chalk.red(error.stack));
         }
       }
     }
@@ -166,26 +117,12 @@ program.option(
   "table" as DataFormatType,
 );
 
-makeCommand("startServer").alias("start");
-makeCommand("config").alias("c");
-makeCommand("init").alias("i");
-makeCommand("snapshots").alias("s");
-makeCommand("prune").alias("p");
-makeCommand("backup").alias("b");
-makeCommand("restore").alias("r");
-makeCommand("run");
-makeCommand("copy").alias("cp");
-makeCommand("cleanCache").alias("cc");
+const Commands = (Object.values(datatruckCommands) as CommandConstructor[])
+  .map((Command) => ({ Command, config: Command.config() }))
+  .sort((a, b) => a.config.name.localeCompare(b.config.name));
 
-export function buildArgs<T extends keyof DatatruckCommandMap>(
-  input: T,
-  options: InferDatatruckCommandOptions<T>,
-) {
-  const optionsArray = Object.keys(options).flatMap((name) => [
-    `--${snakeCase(name, "-")}`,
-    options[name as keyof typeof options] as any,
-  ]);
-  return [input, ...optionsArray];
+for (const { Command, config } of Commands) {
+  program.addCommand(createCommand(config, createCommandAction(Command)));
 }
 
 export function parseArgs(args: string[]) {
@@ -208,12 +145,4 @@ export function parseArgs(args: string[]) {
       } catch (error) {}
     if (eventName !== "exit") process.exit(1);
   });
-}
-
-export async function exec<T extends keyof DatatruckCommandMap>(
-  input: T,
-  options: InferDatatruckCommandOptions<T>,
-) {
-  const argv = buildArgs(input, options);
-  return parseArgs(argv);
 }

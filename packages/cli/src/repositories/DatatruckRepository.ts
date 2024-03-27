@@ -460,7 +460,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
     const restorePath = resolve(relRestorePath);
     const [snapshot] = await this.fetchSnapshots({
       options: {
-        ids: [data.options.snapshotId],
+        ids: [data.options.id],
       },
     });
 

@@ -14,28 +14,39 @@ import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
+import { pickProps } from "../utils/object";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { createPatternFilter } from "../utils/string";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
-import { IfRequireKeys } from "../utils/ts";
-import { SnapshotsAction } from "./SnapshotsAction";
+import { SnapshotsAction, snapshotsActionOptions } from "./SnapshotsAction";
 import { ok } from "assert";
 import chalk from "chalk";
 
-export type RestoreActionOptions = {
-  snapshotId: string;
-  tags?: string[];
-  packageNames?: string[];
-  packageTaskNames?: string[];
-  packageConfig?: boolean;
-  repositoryNames?: string[];
-  repositoryTypes?: string[];
+export const restoreActionOptions = defineOptionsConfig({
+  id: {
+    description: "Filter by snapshot id",
+    option: "-i,--id <id>",
+    required: true,
+  },
+  ...pickProps(snapshotsActionOptions, {
+    tags: true,
+    packageNames: true,
+    packageTaskNames: true,
+    packageConfig: true,
+    repositoryNames: true,
+    repositoryTypes: true,
+  }),
+  initial: {
+    description: "Initial restoring (disables restore path)",
+    option: "--initial",
+    boolean: true,
+  },
+});
+
+export type RestoreActionOptions = InferOptions<typeof restoreActionOptions> & {
   verbose?: boolean;
-  initial?: boolean;
-  tty?: "auto" | boolean;
-  progress?: ProgressMode;
-  streams?: StdStreams;
 };
 
 type RestoreSnapshot = Snapshot & {
@@ -48,13 +59,18 @@ type Context = {
   restore: RestoreSnapshot;
 };
 
-export class RestoreAction<TRequired extends boolean = true> {
+export class RestoreAction {
   protected taskErrors: Record<string, Error[]> = {};
   protected repoErrors: Record<string, Error[]> = {};
 
   constructor(
     readonly config: Config,
-    readonly options: IfRequireKeys<TRequired, RestoreActionOptions>,
+    readonly options: RestoreActionOptions,
+    readonly settings: {
+      tty?: "auto" | boolean;
+      progress?: ProgressMode;
+      streams?: StdStreams;
+    },
   ) {}
 
   protected async findSnapshots() {
@@ -66,9 +82,9 @@ export class RestoreAction<TRequired extends boolean = true> {
       if (!filterRepo(repository.name)) continue;
       if (!filterRepoType(repository.type)) continue;
 
-      const snapshotsAction = new SnapshotsAction<false>(this.config, {
+      const snapshotsAction = new SnapshotsAction(this.config, {
         repositoryNames: [repository.name],
-        ids: [this.options.snapshotId],
+        ids: [this.options.id],
         packageNames: this.options.packageNames,
         packageTaskNames: this.options.packageTaskNames,
         packageConfig: this.options.packageConfig,
@@ -201,16 +217,16 @@ export class RestoreAction<TRequired extends boolean = true> {
     });
   }
   async exec() {
-    const { options } = this;
+    const { options, settings } = this;
     const gc = new GargabeCollector();
     const pm = new ProgressManager({
       verbose: options.verbose,
-      tty: options.tty,
-      mode: options.progress,
+      tty: settings.tty,
+      mode: settings.progress,
     });
 
     const l = new Listr3<Context>({
-      streams: options.streams,
+      streams: settings.streams,
       progressManager: pm,
       gargabeCollector: gc,
     });
@@ -233,12 +249,11 @@ export class RestoreAction<TRequired extends boolean = true> {
             const { minFreeDiskSpace } = this.config;
             if (minFreeDiskSpace)
               await ensureFreeDiskTempSpace(minFreeDiskSpace);
-            if (!options.snapshotId)
-              throw new AppError("Snapshot id is required");
+            if (!options.id) throw new AppError("Snapshot id is required");
             const snapshots = this.groupSnapshots(await this.findSnapshots());
             if (!snapshots.length) throw new AppError("None snapshot found");
 
-            data.id = options.snapshotId;
+            data.id = options.id;
             data.packages = snapshots.length;
 
             return snapshots.map((snapshot) =>
@@ -257,7 +272,7 @@ export class RestoreAction<TRequired extends boolean = true> {
                   let pkg = resolvePackage(
                     findPackageOrFail(this.config, snapshot.packageName),
                     {
-                      snapshotId: options.snapshotId,
+                      snapshotId: options.id,
                       snapshotDate: snapshot.date,
                       action: "restore",
                     },

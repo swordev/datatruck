@@ -1,9 +1,9 @@
-import { OptionsConfig, parseOptions } from "../utils/cli";
 import { DataFormatType } from "../utils/data-format";
 import type { Config } from "../utils/datatruck/config-type";
+import { CommandConfig, InferOptions, OptionsConfig } from "../utils/options";
 import { ProgressMode } from "../utils/progress";
 import { StdStreams, createStdStreams } from "../utils/stream";
-import { If, SimilarObject } from "../utils/ts";
+import { If } from "../utils/ts";
 
 export type GlobalOptions<TResolved = false> = {
   config: string | Config;
@@ -17,36 +17,29 @@ export type GlobalOptions<TResolved = false> = {
   >;
 };
 
-export type CommandConstructor<
-  TUnresolvedOptions,
-  TOptions extends SimilarObject<TUnresolvedOptions>,
-> = {
+export type CommandConstructor<T extends OptionsConfig = OptionsConfig> = {
   new (
     globalOptions: GlobalOptions<true>,
-    options: TOptions,
-  ): CommandAbstract<TUnresolvedOptions, TOptions>;
+    options: InferOptions<T>,
+    streams?: Partial<StdStreams>,
+    configPath?: string,
+  ): CommandAbstract<T>;
+  config(): CommandConfig;
 };
 
-export abstract class CommandAbstract<
-  TUnresolvedOptions,
-  TOptions extends SimilarObject<TUnresolvedOptions>,
-> {
-  readonly options: TOptions;
+export abstract class CommandAbstract<T extends OptionsConfig = OptionsConfig> {
   readonly streams: StdStreams;
+  abstract optionsConfig: T;
+  static config(): CommandConfig {
+    throw new Error("Not implemented");
+  }
   constructor(
     readonly globalOptions: GlobalOptions<true>,
-    readonly inputOptions: TUnresolvedOptions,
+    readonly options: InferOptions<T>,
     streams: Partial<StdStreams> = {},
     readonly configPath?: string,
   ) {
-    this.options = parseOptions(inputOptions, this.optionsConfig());
     this.streams = createStdStreams(streams);
-  }
-  abstract optionsConfig(): OptionsConfig<TUnresolvedOptions, TOptions>;
-  protected castOptionsConfig(
-    options: OptionsConfig<TUnresolvedOptions, TOptions>,
-  ) {
-    return options;
   }
   abstract exec(): Promise<{
     exitCode: number;

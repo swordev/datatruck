@@ -25,6 +25,26 @@ export function omitProp<T extends Record<string, any>, N extends keyof T>(
   return result;
 }
 
+export function pickProps<
+  T extends Record<string, any>,
+  I extends { [K in keyof T]?: boolean },
+>(
+  object: T,
+  input: I,
+): {
+  [K in keyof T as K extends keyof I
+    ? [I[K]] extends [true]
+      ? K
+      : never
+    : never]: T[K];
+} {
+  const result = {} as Record<string, any>;
+  for (const name in input) {
+    if (input[name]) result[name] = object[name];
+  }
+  return result as any;
+}
+
 export function getErrorProperties(error: Error) {
   const alt: Record<string, string> = {};
 

@@ -20,21 +20,44 @@ import { groupAndFilter } from "../utils/datatruck/snapshot";
 import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
-import { StrictMap } from "../utils/object";
+import { StrictMap, pickProps } from "../utils/object";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
+import { parseStringList } from "../utils/string";
 import { ensureFreeDiskTempSpace, useTempDir } from "../utils/temp";
-import { IfRequireKeys } from "../utils/ts";
+import { snapshotsActionOptions } from "./SnapshotsAction";
 import chalk from "chalk";
 import { hostname } from "os";
 
-export type CopyActionOptions = {
-  ids?: string[];
-  last?: number;
-  repositoryName: string;
-  packageNames?: string[];
-  packageTaskNames?: string[];
-  repositoryNames2?: string[];
+export const copyActionOptions = defineOptionsConfig({
+  ids: {
+    option: "-i,--id <ids>",
+    description: "Filter by identifiers",
+    parser: parseStringList<string>,
+  },
+  last: {
+    option: "-l,--last <amount>",
+    description: "Last snapshots",
+    parser: Number,
+  },
+  repositoryName: {
+    option: "-r,--repository <name>",
+    description: "Filter by repository name",
+    required: true,
+  },
+  ...pickProps(snapshotsActionOptions, {
+    packageNames: true,
+    packageTaskNames: true,
+  }),
+  repositoryNames2: {
+    option: "-r2,--repository2 <names>",
+    description: "Filter by repository names",
+    parser: parseStringList<string>,
+  },
+});
+
+export type CopyActionOptions = InferOptions<typeof copyActionOptions> & {
   verbose?: boolean;
   tty?: "auto" | boolean;
   progress?: ProgressMode;
@@ -58,10 +81,10 @@ export type Context = {
   };
 } & ReportListTaskContext;
 
-export class CopyAction<TRequired extends boolean = true> {
+export class CopyAction {
   constructor(
     readonly config: Config,
-    readonly options: IfRequireKeys<TRequired, CopyActionOptions>,
+    readonly options: CopyActionOptions,
   ) {}
   dataFormat(
     result: Listr3TaskResultEnd<Context>[],
@@ -180,7 +203,7 @@ export class CopyAction<TRequired extends boolean = true> {
     await repo.restore({
       options: {
         verbose: this.options.verbose,
-        snapshotId: snapshot.id,
+        id: snapshot.id,
       },
       snapshot: { id: snapshot.id, date: snapshot.date },
       package: { name: snapshot.packageName },

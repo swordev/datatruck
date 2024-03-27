@@ -69,7 +69,7 @@ describe(
         const dtt = createCommands({ config, verbose });
         await dtt.init({});
         await dtt.backup({});
-        const [snapshot] = await dtt.snapshots({ last: "1" });
+        const [snapshot] = await dtt.snapshots({ last: 1 });
         await dtt.restore({ id: snapshot.id });
         const fileContents = (
           await readFile(storePath + "/file.txt")
@@ -151,7 +151,7 @@ describe(
         const dtt = createCommands({ config, verbose });
         await dtt.init({});
         await dtt.backup({});
-        const [snapshot] = await dtt.snapshots({ last: "1" });
+        const [snapshot] = await dtt.snapshots({ last: 1 });
         await dtt.restore({ id: snapshot.id });
 
         expect(await readdir(restorePath)).toHaveLength(3);

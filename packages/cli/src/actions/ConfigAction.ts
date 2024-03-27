@@ -4,19 +4,15 @@ import { findRepositoryOrFail } from "../utils/datatruck/config";
 import type { Config, RepositoryConfig } from "../utils/datatruck/config-type";
 import { AppError } from "../utils/error";
 import { findFile, parseFile, parseFileExtensions } from "../utils/fs";
-import { IfRequireKeys } from "../utils/ts";
 import Ajv from "ajv";
 import { ok } from "assert";
 
 export type ConfigActionOptions = {
   path: string;
-  verbose?: boolean;
 };
 
-export class ConfigAction<TRequired extends boolean = true> {
-  constructor(
-    readonly options: IfRequireKeys<TRequired, ConfigActionOptions>,
-  ) {}
+export class ConfigAction {
+  constructor(readonly options: ConfigActionOptions) {}
 
   static validate(config: Config) {
     const validate = new Ajv({
@@ -108,7 +104,6 @@ export class ConfigAction<TRequired extends boolean = true> {
       };
     const configAction = new ConfigAction({
       path: globalOptions.config,
-      verbose: !!globalOptions.verbose && globalOptions.verbose > 0,
     });
     return await configAction.exec();
   }

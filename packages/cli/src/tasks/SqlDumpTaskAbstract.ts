@@ -216,7 +216,7 @@ export abstract class SqlDumpTaskAbstract<
     const database: TargetDatabase = {
       name: resolveDatabaseName(this.config.database, {
         packageName: data.package.name,
-        snapshotId: data.options.snapshotId,
+        snapshotId: data.options.id,
         snapshotDate: data.snapshot.date,
         action: "restore",
         database: undefined,
@@ -226,7 +226,7 @@ export abstract class SqlDumpTaskAbstract<
     if (this.config.targetDatabase && !data.options.initial) {
       database.name = resolveDatabaseName(this.config.targetDatabase.name, {
         packageName: data.package.name,
-        snapshotId: data.options.snapshotId,
+        snapshotId: data.options.id,
         snapshotDate: data.snapshot.date,
         action: "restore",
         database: database.name,

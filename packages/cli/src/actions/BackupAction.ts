@@ -7,11 +7,7 @@ import {
   findRepositoryOrFail,
   resolvePackages,
 } from "../utils/datatruck/config";
-import type {
-  Config,
-  PackageConfig,
-  RepositoryConfig,
-} from "../utils/datatruck/config-type";
+import type { Config, PackageConfig } from "../utils/datatruck/config-type";
 import {
   ReportListTaskContext,
   createReportListTasks,
@@ -22,31 +18,18 @@ import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
 import { ensureExistsDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
+import { pickProps } from "../utils/object";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
-import { IfRequireKeys } from "../utils/ts";
 import { PruneAction } from "./PruneAction";
+import { snapshotsActionOptions } from "./SnapshotsAction";
 import { ok } from "assert";
 import chalk from "chalk";
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 import { hostname } from "os";
-
-export type BackupActionOptions = {
-  repositoryNames?: string[];
-  repositoryTypes?: RepositoryConfig["type"][];
-  packageNames?: string[];
-  packageTaskNames?: string[];
-  tags?: string[];
-  dryRun?: boolean;
-  verbose?: boolean;
-  date?: string;
-  tty?: "auto" | boolean;
-  progress?: ProgressMode;
-  streams?: StdStreams;
-  prune?: boolean;
-};
 
 type Context = {
   snapshot: { id: string };
@@ -62,10 +45,43 @@ type Context = {
   prune: { packageName: string; total: number; pruned: number };
 } & ReportListTaskContext;
 
-export class BackupAction<TRequired extends boolean = true> {
+export const backupActionOptions = defineOptionsConfig({
+  ...pickProps(snapshotsActionOptions, {
+    repositoryNames: true,
+    repositoryTypes: true,
+    packageNames: true,
+    packageTaskNames: true,
+    tags: true,
+  }),
+  dryRun: {
+    description: "Skip execution",
+    option: "--dryRun",
+    boolean: true,
+  },
+  date: {
+    description: "Date time (ISO)",
+    option: "--date <value>",
+  },
+  prune: {
+    description: "Prune backups",
+    option: "--prune",
+    boolean: true,
+  },
+});
+
+export type BackupActionOptions = InferOptions<typeof backupActionOptions> & {
+  verbose?: boolean;
+};
+
+export class BackupAction {
   constructor(
     readonly config: Config,
-    readonly options: IfRequireKeys<TRequired, BackupActionOptions> = {} as any,
+    readonly options: BackupActionOptions,
+    readonly settings: {
+      tty?: "auto" | boolean;
+      progress?: ProgressMode;
+      streams?: StdStreams;
+    },
   ) {}
 
   protected prepareSnapshot(): PreSnapshot {
@@ -258,15 +274,15 @@ export class BackupAction<TRequired extends boolean = true> {
     });
   }
   async exec() {
-    const { options } = this;
+    const { options, settings } = this;
     const gc = new GargabeCollector();
     const pm = new ProgressManager({
       verbose: options.verbose,
-      tty: options.tty,
-      mode: options.progress,
+      tty: settings.tty,
+      mode: settings.progress,
     });
     const l = new Listr3<Context>({
-      streams: this.options.streams,
+      streams: settings.streams,
       progressManager: pm,
       gargabeCollector: gc,
     });
@@ -320,7 +336,7 @@ export class BackupAction<TRequired extends boolean = true> {
                         await taskGc.disposeIfFail(async () => {
                           using progress = pm.create(task);
                           taskResult = await createTask(pkg.task!).backup({
-                            options,
+                            options: this.options,
                             package: pkg,
                             snapshot,
                             onProgress: progress.update,
@@ -431,9 +447,9 @@ export class BackupAction<TRequired extends boolean = true> {
                         packageName: pkg.name,
                       },
                       run: async (_, data) => {
-                        const prune = new PruneAction<false>(this.config, {
+                        const prune = new PruneAction(this.config, {
                           repositoryNames: this.options.repositoryNames,
-                          repositoryTypes: this.options.repositoryTypes,
+                          repositoryTypes: this.options.repositoryTypes as any,
                           packageNames: [pkg.name],
                           groupBy: ["packageName", "repositoryName"],
                         });

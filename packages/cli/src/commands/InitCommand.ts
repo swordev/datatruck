@@ -1,42 +1,34 @@
 import { ConfigAction } from "../actions/ConfigAction";
-import { InitAction } from "../actions/InitAction";
+import { InitAction, initActionOptions } from "../actions/InitAction";
 import { renderError, renderResult } from "../utils/cli";
 import { DataFormat } from "../utils/data-format";
-import type { RepositoryConfig } from "../utils/datatruck/config-type";
 import { AppError } from "../utils/error";
-import { parseStringList } from "../utils/string";
-import { If } from "../utils/ts";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type InitCommandOptions<TResolved = false> = {
-  repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
-};
+export const initCommandOptions = defineOptionsConfig({
+  ...initActionOptions,
+});
 
-export class InitCommand extends CommandAbstract<
-  InitCommandOptions<false>,
-  InitCommandOptions<true>
-> {
-  override optionsConfig() {
-    return this.castOptionsConfig({
-      repository: {
-        description: "Filter by repository names",
-        option: "-r,--repository <values>",
-        parser: parseStringList,
-      },
-      repositoryType: {
-        description: "Filter by repository types",
-        option: "-rt,--repository-type <values>",
-        parser: (v) => parseStringList(v) as any,
-      },
-    });
+export type InitCommandOptions = InferOptions<typeof initCommandOptions>;
+
+export class InitCommand extends CommandAbstract<typeof initCommandOptions> {
+  static override config() {
+    return {
+      name: "init",
+      alias: "i",
+      options: initCommandOptions,
+    };
+  }
+  override get optionsConfig() {
+    return initCommandOptions;
   }
   override async exec() {
     const verbose = this.globalOptions.verbose ?? 0;
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const init = new InitAction(config, {
-      repositoryNames: this.options.repository,
-      repositoryTypes: this.options.repositoryType,
+      repositoryNames: this.options.repositoryNames,
+      repositoryTypes: this.options.repositoryTypes,
       verbose: verbose > 0,
     });
     const result = await init.exec();

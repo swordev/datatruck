@@ -1,16 +1,16 @@
 import { existsDir, fastFolderSizeAsync } from "../utils/fs";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { parentTmpDir } from "../utils/temp";
-import { IfRequireKeys } from "../utils/ts";
 import { rm } from "fs/promises";
 
-export type CleanCacheActionOptions = {
-  verbose?: boolean;
-};
+export const cleanCacheActionOptions = defineOptionsConfig({});
 
-export class CleanCacheAction<TRequired extends boolean = true> {
-  constructor(
-    readonly options: IfRequireKeys<TRequired, CleanCacheActionOptions>,
-  ) {}
+export type CleanCacheActionOptions = InferOptions<
+  typeof cleanCacheActionOptions
+>;
+
+export class CleanCacheAction {
+  constructor(readonly options: CleanCacheActionOptions) {}
   async exec() {
     const path = parentTmpDir();
     let freedSize = 0;

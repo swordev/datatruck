@@ -2,44 +2,47 @@ import { ConfigAction } from "../actions/ConfigAction";
 import { DataFormat } from "../utils/data-format";
 import { filterPackages } from "../utils/datatruck/config";
 import type { RepositoryConfig } from "../utils/datatruck/config-type";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { parseStringList } from "../utils/string";
-import { If } from "../utils/ts";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type ConfigCommandOptions<TResolved = false> = {
-  package?: If<TResolved, string[]>;
-  packageTask?: If<TResolved, string[]>;
-  repository?: If<TResolved, string[]>;
-  repositoryType?: If<TResolved, RepositoryConfig["type"][]>;
-};
+export const configCommandOptions = defineOptionsConfig({
+  packageNames: {
+    description: "Filter by package names",
+    option: "-p,--package <values>",
+    parser: parseStringList<string>,
+  },
+  packageTaskNames: {
+    description: "Filter by package task names",
+    option: "-pt,--package-task <values>",
+    parser: parseStringList<string>,
+  },
+  repositoryNames: {
+    description: "Filter by repository names",
+    option: "-r,--repository <values>",
+    parser: parseStringList<string>,
+  },
+  repositoryTypes: {
+    description: "Filter by repository types",
+    option: "-rt,--repository-type <values>",
+    parser: (v) => parseStringList<RepositoryConfig["type"]>(v),
+  },
+});
+
+export type ConfigCommandOptions = InferOptions<typeof configCommandOptions>;
 
 export class ConfigCommand extends CommandAbstract<
-  ConfigCommandOptions<false>,
-  ConfigCommandOptions<true>
+  typeof configCommandOptions
 > {
-  override optionsConfig() {
-    return this.castOptionsConfig({
-      package: {
-        description: "Filter by package names",
-        option: "-p,--package <values>",
-        parser: parseStringList,
-      },
-      packageTask: {
-        description: "Filter by package task names",
-        option: "-pt,--package-task <values>",
-        parser: parseStringList,
-      },
-      repository: {
-        description: "Filter by repository names",
-        option: "-r,--repository <values>",
-        parser: parseStringList,
-      },
-      repositoryType: {
-        description: "Filter by repository types",
-        option: "-rt,--repository-type <values>",
-        parser: (v) => parseStringList(v) as any,
-      },
-    });
+  static override config() {
+    return {
+      name: "config",
+      alias: "c",
+      options: configCommandOptions,
+    };
+  }
+  override get optionsConfig() {
+    return configCommandOptions;
   }
   override async exec() {
     const result = await ConfigAction.fromGlobalOptionsWithPath(
@@ -47,10 +50,10 @@ export class ConfigCommand extends CommandAbstract<
     );
 
     const packages = filterPackages(result.data, {
-      packageNames: this.options.package,
-      packageTaskNames: this.options.packageTask,
-      repositoryNames: this.options.repository,
-      repositoryTypes: this.options.repositoryType,
+      packageNames: this.options.packageNames,
+      packageTaskNames: this.options.packageTaskNames,
+      repositoryNames: this.options.repositoryNames,
+      repositoryTypes: this.options.repositoryTypes,
     });
 
     const summaryConfig = packages.flatMap((pkg) => ({

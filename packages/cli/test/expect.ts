@@ -29,7 +29,7 @@ export async function runBackups(
       throw new Error(`Failed backup: ${index}`);
     }
     index++;
-    const [snapshot] = await dtt.snapshots({ last: "1" });
+    const [snapshot] = await dtt.snapshots({ last: 1 });
     backups.push({ id: snapshot.id, files });
   }
   return backups;

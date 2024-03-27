@@ -5,6 +5,10 @@ export function snakeCase(value: string, char = "_") {
   return value.replace(/[A-Z]/g, (letter) => `${char}${letter.toLowerCase()}`);
 }
 
+export function camelize(input: string) {
+  return input.replace(/-./g, (x) => x[1].toUpperCase());
+}
+
 export function render(
   subject: string,
   data: Record<string, string | undefined>,
@@ -44,7 +48,7 @@ export function render(
 
 type NoInfer<T> = [T][T extends any ? 0 : never];
 
-export function parseStringList<T>(
+export function parseStringList<T = string>(
   value: string | undefined,
   validValues?: T[],
   defaultsValues?: NoInfer<T>[] | true,

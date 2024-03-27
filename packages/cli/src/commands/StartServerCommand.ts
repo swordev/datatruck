@@ -3,16 +3,25 @@ import { logJson } from "../utils/cli";
 import { createCronServer } from "../utils/datatruck/cron-server";
 import { createDatatruckRepositoryServer } from "../utils/datatruck/repository-server";
 import { AppError } from "../utils/error";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
-export type StartServerCommandOptions<TResolved = false> = {};
+export const startServerOptions = defineOptionsConfig({});
+
+export type StartServerOptions = InferOptions<typeof startServerOptions>;
 
 export class StartServerCommand extends CommandAbstract<
-  StartServerCommandOptions<false>,
-  StartServerCommandOptions<true>
+  typeof startServerOptions
 > {
-  override optionsConfig() {
-    return this.castOptionsConfig({});
+  static override config() {
+    return {
+      name: "startServer",
+      alias: "start",
+      options: startServerOptions,
+    };
+  }
+  override get optionsConfig() {
+    return startServerOptions;
   }
   override async exec() {
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);

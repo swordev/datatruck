@@ -13,7 +13,7 @@ import { AppError } from "../error";
 import { StdStreams } from "../stream";
 import { Writable } from "stream";
 
-export const datatruckCommandMap = {
+export const datatruckCommands = {
   config: ConfigCommand,
   init: InitCommand,
   snapshots: SnapshotsCommand,
@@ -26,10 +26,7 @@ export const datatruckCommandMap = {
   startServer: StartServerCommand,
 };
 
-export type DatatruckCommandMap = typeof datatruckCommandMap;
-
-export type InferDatatruckCommandOptions<T extends keyof DatatruckCommandMap> =
-  InstanceType<DatatruckCommandMap[T]>["inputOptions"];
+export type DatatruckCommandMap = typeof datatruckCommands;
 
 export type InferDatatruckCommandResult<
   T extends keyof DatatruckCommandMap,
@@ -39,22 +36,22 @@ export type InferDatatruckCommandResult<
 export function createCommand<T extends keyof DatatruckCommandMap>(
   name: T,
   globalOptions: GlobalOptions<true>,
-  options: InferDatatruckCommandOptions<T>,
+  options: InstanceType<DatatruckCommandMap[T]>["options"],
   streams?: Partial<StdStreams>,
   configPath?: string,
 ) {
-  const constructor = datatruckCommandMap[name];
+  const constructor = datatruckCommands[name];
   if (!constructor) throw new AppError(`Invalid command name: ${name}`);
   return new constructor(globalOptions, options as any, streams, configPath);
 }
 
 export function createCommands(globalOptions: GlobalOptions<true>): {
   [K in keyof DatatruckCommandMap as `${K}`]: (
-    options: InferDatatruckCommandOptions<K>,
+    options: InstanceType<DatatruckCommandMap[K]>["options"],
   ) => Promise<InferDatatruckCommandResult<K>>;
 } {
   const object: Record<string, any> = {};
-  for (const name in datatruckCommandMap) {
+  for (const name in datatruckCommands) {
     object[name as any] = async (options: any) => {
       let stdoutData = "";
       const stdout = new Writable({

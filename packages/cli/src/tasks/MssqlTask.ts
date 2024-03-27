@@ -111,7 +111,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
           action: "restore",
           database: databaseName,
           packageName: data.package.name,
-          snapshotId: data.options.snapshotId,
+          snapshotId: data.options.id,
           snapshotDate: data.snapshot.date,
         });
       const databasePath = join(snapshotPath, file);

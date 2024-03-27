@@ -1,19 +1,26 @@
 import { filterRepositoryByEnabled } from "../utils/datatruck/config";
 import type { Config } from "../utils/datatruck/config-type";
 import { createRepo } from "../utils/datatruck/repository";
+import { pickProps } from "../utils/object";
+import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { createPatternFilter } from "../utils/string";
-import { IfRequireKeys } from "../utils/ts";
+import { snapshotsActionOptions } from "./SnapshotsAction";
 
-export type InitActionOptions = {
-  repositoryNames?: string[];
-  repositoryTypes?: string[];
+export const initActionOptions = defineOptionsConfig({
+  ...pickProps(snapshotsActionOptions, {
+    repositoryNames: true,
+    repositoryTypes: true,
+  }),
+});
+
+export type InitActionOptions = InferOptions<typeof initActionOptions> & {
   verbose?: boolean;
 };
 
-export class InitAction<TRequired extends boolean = true> {
+export class InitAction {
   constructor(
     readonly config: Config,
-    readonly options: IfRequireKeys<TRequired, InitActionOptions>,
+    readonly options: InitActionOptions,
   ) {}
 
   async exec() {
