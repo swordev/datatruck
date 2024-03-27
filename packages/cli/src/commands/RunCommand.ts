@@ -1,13 +1,11 @@
 import { ConfigAction } from "../actions/ConfigAction";
 import { runJob } from "../utils/datatruck/job";
-import { AppError } from "../utils/error";
 import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { CommandAbstract } from "./CommandAbstract";
 
 export const runCommandOptions = defineOptionsConfig({
   jobName: {
     description: "Job name",
-    required: true,
   },
 });
 
@@ -31,9 +29,15 @@ export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
     const log = config.data.server?.log ?? true;
     const jobs = config.data.jobs || {};
     const jobName = this.options.jobName;
-    const job = jobs[jobName];
+    const job = jobName ? jobs[jobName] : undefined;
 
-    if (!job) throw new AppError(`Job not found: ${jobName}`);
+    if (!job || !jobName) {
+      const jobNames = Object.keys(config.data.jobs || {});
+      console.error(
+        `error: missing required argument 'jobName' (values: ${jobNames.join(", ")})`,
+      );
+      return { exitCode: 1 };
+    }
 
     await runJob(job, jobName, {
       log,
