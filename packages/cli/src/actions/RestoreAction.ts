@@ -8,17 +8,18 @@ import {
   resolvePackage,
 } from "../utils/datatruck/config";
 import type { Config, PackageConfig } from "../utils/datatruck/config-type";
-import { createAndInitRepo } from "../utils/datatruck/repository";
+import {
+  createAndInitRepo,
+  initSnapshotPath,
+} from "../utils/datatruck/repository";
 import { createTask } from "../utils/datatruck/task";
 import { duration } from "../utils/date";
 import { AppError } from "../utils/error";
-import { ensureFreeDiskSpace, initEmptyDir } from "../utils/fs";
 import { Listr3, Listr3TaskResultEnd } from "../utils/list";
 import { pickProps } from "../utils/object";
 import { InferOptions, defineOptionsConfig } from "../utils/options";
 import { Progress, ProgressManager, ProgressMode } from "../utils/progress";
 import { StdStreams } from "../utils/stream";
-import { createPatternFilter } from "../utils/string";
 import { GargabeCollector, ensureFreeDiskTempSpace } from "../utils/temp";
 import { SnapshotsAction, snapshotsActionOptions } from "./SnapshotsAction";
 import { ok } from "assert";
@@ -60,9 +61,6 @@ type Context = {
 };
 
 export class RestoreAction {
-  protected taskErrors: Record<string, Error[]> = {};
-  protected repoErrors: Record<string, Error[]> = {};
-
   constructor(
     readonly config: Config,
     readonly options: RestoreActionOptions,
@@ -73,52 +71,6 @@ export class RestoreAction {
     },
   ) {}
 
-  protected async findSnapshots() {
-    const result: RestoreSnapshot[] = [];
-    const filterRepo = createPatternFilter(this.options.repositoryNames);
-    const filterRepoType = createPatternFilter(this.options.repositoryTypes);
-
-    for (const repository of this.config.repositories) {
-      if (!filterRepo(repository.name)) continue;
-      if (!filterRepoType(repository.type)) continue;
-
-      const snapshotsAction = new SnapshotsAction(this.config, {
-        repositoryNames: [repository.name],
-        ids: [this.options.id],
-        packageNames: this.options.packageNames,
-        packageTaskNames: this.options.packageTaskNames,
-        packageConfig: this.options.packageConfig,
-        tags: this.options.tags,
-      });
-      const snapshots = await snapshotsAction.exec("restore");
-
-      result.push(
-        ...snapshots.map(
-          (ss) =>
-            ({
-              date: ss.date,
-              id: ss.id,
-              originalId: ss.originalId,
-              packageName: ss.packageName,
-              packageTaskName: ss.packageTaskName,
-              tags: ss.tags,
-              repositoryName: repository.name,
-            }) as RestoreSnapshot,
-        ),
-      );
-    }
-
-    return result;
-  }
-
-  protected groupSnapshots(snapshots: RestoreSnapshot[]) {
-    const names: string[] = [];
-    return snapshots.filter((snapshot) => {
-      if (names.includes(snapshot.packageName)) return false;
-      names.push(snapshot.packageName);
-      return true;
-    });
-  }
   protected async restore(data: {
     pkg: PackageConfig;
     task: TaskAbstract | undefined;
@@ -142,9 +94,8 @@ export class RestoreAction {
       });
       snapshotPath = taskResult?.snapshotPath;
     }
-    await initEmptyDir(snapshotPath);
-    if (this.config.minFreeDiskSpace)
-      await ensureFreeDiskSpace([snapshotPath!], this.config.minFreeDiskSpace);
+    ok(snapshotPath);
+    await initSnapshotPath(snapshotPath, this.config.minFreeDiskSpace);
     await repo.restore({
       options: this.options,
       snapshot: data.snapshot,
@@ -250,7 +201,18 @@ export class RestoreAction {
             if (minFreeDiskSpace)
               await ensureFreeDiskTempSpace(minFreeDiskSpace);
             if (!options.id) throw new AppError("Snapshot id is required");
-            const snapshots = this.groupSnapshots(await this.findSnapshots());
+
+            const snapshots = await new SnapshotsAction(this.config, {
+              ids: [this.options.id],
+              repositoryNames: this.options.repositoryNames,
+              repositoryTypes: this.options.repositoryTypes,
+              packageNames: this.options.packageNames,
+              packageTaskNames: this.options.packageTaskNames,
+              packageConfig: this.options.packageConfig,
+              tags: this.options.tags,
+              groupBy: ["packageName"],
+            }).exec("restore");
+
             if (!snapshots.length) throw new AppError("None snapshot found");
 
             data.id = options.id;

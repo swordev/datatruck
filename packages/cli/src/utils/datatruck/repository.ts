@@ -12,6 +12,7 @@ import {
   resticRepositoryName,
 } from "../../repositories/ResticRepository";
 import { AppError } from "../error";
+import { ensureFreeDiskSpace, initEmptyDir } from "../fs";
 import type { RepositoryConfig } from "./config-type";
 
 const repoMap = {
@@ -43,4 +44,12 @@ export async function createAndInitRepo(
   const repo = createRepo(repository, verbose);
   await repo.init({ options: { verbose } });
   return repo;
+}
+
+export async function initSnapshotPath(
+  path: string,
+  minFreeDiskSpace?: string | number,
+) {
+  await initEmptyDir(path);
+  if (minFreeDiskSpace) await ensureFreeDiskSpace([path], minFreeDiskSpace);
 }
