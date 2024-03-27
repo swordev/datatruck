@@ -28,7 +28,7 @@ import chalk from "chalk";
 export const restoreActionOptions = {
   id: {
     description: "Filter by snapshot id",
-    option: "-i,--id <id>",
+    shortFlag: "i",
     required: true,
   },
   ...pickProps(snapshotsActionOptions, {
@@ -41,8 +41,7 @@ export const restoreActionOptions = {
   }),
   initial: {
     description: "Initial restoring (disables restore path)",
-    option: "--initial",
-    boolean: true,
+    value: "boolean",
   },
 } satisfies OptionsConfig;
 

@@ -15,8 +15,8 @@ import {
 export const pruneActionOptions = {
   ids: {
     description: "Filter by snapshot id",
-    option: "-i,--id <snapshotId>",
-    parser: parseStringList<string>,
+    shortFlag: "i",
+    value: "array",
   },
   ...pickProps(snapshotsActionOptions, {
     packageNames: true,
@@ -27,58 +27,50 @@ export const pruneActionOptions = {
   groupBy: {
     description:
       "Group by values (packageName, repositoryName, repositoryType)",
-    option: "-g,--group-by <values>",
-    defaults: "packageName, repositoryName",
-    parser: (v) =>
+    shortFlag: "g",
+    defaults: "packageName,repositoryName",
+    value: (v) =>
       parseStringList(v, [
         "packageName",
         "repositoryName",
         "repositoryType",
-      ]) as any,
+      ] as const),
   },
   dryRun: {
     description: "",
-    option: "--dry-run",
-    boolean: true,
+    value: "boolean",
   },
   showAll: {
     description: "Show all",
-    option: "-a,--showAll",
+    shortFlag: "a",
   },
   keepMinutely: {
     description: "Keep last N minutely snapshots",
-    option: "--keepMinutely <number>",
-    parser: Number,
+    value: "number",
   },
   keepDaily: {
     description: "Keep last N daily snapshots",
-    option: "--keepDaily <number>",
-    parser: Number,
+    value: "number",
   },
   keepHourly: {
     description: "Keep last N hourly snapshots",
-    option: "--keepHourly <number>",
-    parser: Number,
+    value: "number",
   },
   keepLast: {
     description: "Keep last N snapshots",
-    option: "--keepLast <number>",
-    parser: Number,
+    value: "number",
   },
   keepMonthly: {
     description: "Keep last N monthly snapshots",
-    option: "--keepMonthly <number>",
-    parser: Number,
+    value: "number",
   },
   keepWeekly: {
     description: "Keep last N weekly snapshots",
-    option: "--keepWeekly <number>",
-    parser: Number,
+    value: "number",
   },
   keepYearly: {
     description: "Keep last N yearly snapshots",
-    option: "--keepYearly <number>",
-    parser: Number,
+    value: "number",
   },
 } satisfies OptionsConfig;
 

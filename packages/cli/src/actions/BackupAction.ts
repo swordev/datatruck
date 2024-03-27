@@ -55,17 +55,14 @@ export const backupActionOptions = {
   }),
   dryRun: {
     description: "Skip execution",
-    option: "--dryRun",
-    boolean: true,
+    value: "boolean",
   },
   date: {
     description: "Date time (ISO)",
-    option: "--date <value>",
   },
   prune: {
     description: "Prune backups",
-    option: "--prune",
-    boolean: true,
+    value: "boolean",
   },
 } satisfies OptionsConfig;
 

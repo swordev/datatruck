@@ -9,13 +9,11 @@ export const pruneCommandOptions = {
   ...pruneActionOptions,
   longId: {
     description: "Show long snapshot id",
-    option: "--longId",
-    boolean: true,
+    value: "boolean",
   },
   confirm: {
     description: "Confirm action",
-    option: "--confirm",
-    boolean: true,
+    value: "boolean",
   },
 } satisfies OptionsConfig;
 

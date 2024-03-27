@@ -26,12 +26,11 @@ import { join } from "path";
 export const exportActionOptions = {
   id: {
     description: "Filter by snapshot id",
-    option: "-i,--id <id>",
+    shortFlag: "i",
     required: true,
   },
   outPath: {
     description: "Out path",
-    option: "--out <path>",
     required: true,
   },
   ...pickProps(snapshotsActionOptions, {

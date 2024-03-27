@@ -11,7 +11,6 @@ import { CommandAbstract } from "./CommandAbstract";
 export const snapshotsCommandOptions = {
   ...snapshotsActionOptions,
   longId: {
-    option: "--longId",
     description: "Show long id",
   },
 } satisfies OptionsConfig;

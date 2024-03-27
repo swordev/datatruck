@@ -9,23 +9,23 @@ import { CommandAbstract } from "./CommandAbstract";
 export const configCommandOptions = {
   packageNames: {
     description: "Filter by package names",
-    option: "-p,--package <values>",
-    parser: parseStringList<string>,
+    shortFlag: "p",
+    value: "array",
   },
   packageTaskNames: {
     description: "Filter by package task names",
-    option: "-pt,--package-task <values>",
-    parser: parseStringList<string>,
+    shortFlag: "pt",
+    value: "array",
   },
   repositoryNames: {
     description: "Filter by repository names",
-    option: "-r,--repository <values>",
-    parser: parseStringList<string>,
+    shortFlag: "r",
+    value: "array",
   },
   repositoryTypes: {
     description: "Filter by repository types",
-    option: "-rt,--repository-type <values>",
-    parser: (v) => parseStringList<RepositoryConfig["type"]>(v),
+    shortFlag: "rt",
+    value: parseStringList<RepositoryConfig["type"]>,
   },
 } satisfies OptionsConfig;
 

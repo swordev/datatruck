@@ -32,18 +32,18 @@ import { hostname } from "os";
 
 export const copyActionOptions = {
   ids: {
-    option: "-i,--id <ids>",
     description: "Filter by identifiers",
-    parser: parseStringList<string>,
+    shortFlag: "i",
+    value: "array",
   },
   last: {
-    option: "-l,--last <amount>",
     description: "Last snapshots",
-    parser: Number,
+    shortFlag: "l",
+    value: "number",
   },
   repositoryName: {
-    option: "-r,--repository <name>",
     description: "Filter by repository name",
+    shortFlag: "r",
     required: true,
   },
   ...pickProps(snapshotsActionOptions, {
@@ -51,9 +51,9 @@ export const copyActionOptions = {
     packageTaskNames: true,
   }),
   repositoryNames2: {
-    option: "-r2,--repository2 <names>",
     description: "Filter by repository names",
-    parser: parseStringList<string>,
+    shortFlag: "r2",
+    value: "array",
   },
 } satisfies OptionsConfig;
 

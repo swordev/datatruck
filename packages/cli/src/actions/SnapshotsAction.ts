@@ -23,83 +23,77 @@ const groupByValues: ("id" | SnapshotGroupByType)[] = [
 
 export const snapshotsActionOptions = {
   ids: {
-    option: "-i,--id <ids>",
     description: "Filter by identifiers",
-    parser: parseStringList<string>,
+    shortFlag: "i",
+    value: "array",
   },
   repositoryNames: {
-    option: "-r,--repository <names>",
     description: "Filter by repository names",
-    parser: parseStringList<string>,
+    shortFlag: "r",
+    value: "array",
   },
   repositoryTypes: {
-    option: "-rt,--repository-type <names>",
     description: "Filter by repository types",
-    parser: parseStringList<string>,
+    shortFlag: "rt",
+    value: "array",
   },
   packageNames: {
-    option: "-p,--package <names>",
     description: "Filter by package names",
-    parser: parseStringList<string>,
+    shortFlag: "p",
+    value: "array",
   },
   packageTaskNames: {
-    option: "-pt,--package-task <values>",
     description: "Filter by task names",
-    parser: parseStringList<string>,
+    shortFlag: "pt",
+    value: "array",
   },
   tags: {
     description: "Filter by tags",
-    option: "-t,--tag <values>",
-    parser: parseStringList<string>,
+    shortFlag: "t",
+    value: "array",
   },
   packageConfig: {
     description: "Filter by package config",
-    option: "-pc,--package-config",
+    shortFlag: "pc",
   },
   hostnames: {
-    option: "-h,--host <values>",
     description: "Filter by hostnames",
-    parser: parseStringList<string>,
+    shortFlag: "h",
+    value: "array",
   },
   groupBy: {
-    option: "-g,--group-by <values>",
     description: `Group by values (${groupByValues.join(", ")})`,
-    parser: (v) => parseStringList(v, groupByValues),
+    shortFlag: "g",
+    value: (v) => parseStringList(v, groupByValues),
   },
   last: {
-    option: "-l,--last <number>",
     description: "Filter by last snapshots",
-    parser: Number,
+    shortFlag: "l",
+    value: "number",
   },
   lastMinutely: {
-    option: "--lastMinutely <number>",
     description: "Filter by last minutely",
-    parser: Number,
+    value: "number",
   },
   lastDaily: {
-    option: "--lastDaily <number>",
     description: "Filter by last daily",
-    parser: Number,
+    value: "number",
   },
   lastHourly: {
-    option: "--lastHourly <number>",
     description: "Filter by last hourly",
-    parser: Number,
+    value: "number",
   },
   lastMonthly: {
-    option: "--lastMonthly <number>",
     description: "Filter by last monthly",
-    parser: Number,
+    value: "number",
   },
   lastWeekly: {
-    option: "--lastWeekly <number>",
     description: "Filter by last weekly",
-    parser: Number,
+    value: "number",
   },
   lastYearly: {
-    option: "--lastYearly <number>",
     description: "Filter by last yearly",
-    parser: Number,
+    value: "number",
   },
 } satisfies OptionsConfig;
 

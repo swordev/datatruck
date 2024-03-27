@@ -6,6 +6,7 @@ import { CommandAbstract } from "./CommandAbstract";
 export const runCommandOptions = {
   jobName: {
     description: "Job name",
+    flag: false,
   },
 } satisfies OptionsConfig;
 
