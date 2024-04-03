@@ -72,7 +72,7 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
     let logPath: string | undefined;
     const dt = new Date().toISOString().replaceAll(":", "-");
     const argv = [
-      process.env.pm_exec_path ?? bin,
+      process.env.DTT_BIN_SCRIPT ?? process.env.pm_exec_path ?? bin,
       "--tty",
       "false",
       "--progress",

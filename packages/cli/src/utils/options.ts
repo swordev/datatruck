@@ -115,7 +115,7 @@ export function stringifyOptions(options: OptionsConfig, object: any) {
   for (const key in options) {
     const option = options[key];
     const value = object[key];
-    if (value !== undefined) continue;
+    if (value === undefined) continue;
 
     if (option.flag === false) {
       prepend.push(value);

@@ -13,13 +13,17 @@ import {
 } from "./util";
 import { readFile, rm, writeFile } from "fs/promises";
 import { join } from "path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 const repositoryTypes = parseStringList(
   process.env.DTT_REPO,
   testRepositoryTypes,
   true,
 );
+
+beforeAll(() => {
+  process.env.DTT_BIN_SCRIPT = "packages/cli/lib/bin.js";
+});
 
 describe(
   "datatruck",
@@ -312,6 +316,35 @@ describe(
       await rm(fileChanger.path, { recursive: true });
       await dtt.restore({ id, initial: true });
       await expect(readTextFile(restoredFile)).resolves.toBe("abc");
+    });
+
+    it.each(repositoryTypes)("runs job of %s", async (type) => {
+      const repo = await makeRepositoryConfig(type);
+      const fileChanger = await createFileChanger({
+        file: "test",
+      });
+      const config = await makeConfig({
+        repositories: [repo],
+        jobs: {
+          backup: {
+            action: "backup",
+            options: {
+              packageNames: ["main/files"],
+            },
+          },
+        },
+        packages: [
+          {
+            name: "main/files",
+            path: fileChanger.path,
+            repositoryNames: [type],
+          },
+        ],
+      });
+      const dtt = createCommands({ config });
+      await dtt.run({ jobName: "backup" });
+      const snapshots = await dtt.snapshots({});
+      expect(snapshots.length).toBe(1);
     });
   },
 );
