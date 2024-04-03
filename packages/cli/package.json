@@ -1,6 +1,6 @@
 {
   "name": "@datatruck/cli",
-  "version": "0.37.0",
+  "version": "0.38.0",
   "description": "Tool for creating and managing backups",
   "homepage": "https://github.com/swordev/datatruck#readme",
   "bugs": {
