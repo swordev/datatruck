@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.38.2
+
+### Patch Changes
+
+- [`a7bf95e`](https://github.com/swordev/datatruck/commit/a7bf95e9f52009e9be5887bfa77e11e0fa6ce10d) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix cli options
+
 ## 0.38.1
 
 ### Patch Changes
