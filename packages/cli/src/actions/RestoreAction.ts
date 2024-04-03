@@ -210,6 +210,7 @@ export class RestoreAction {
               packageConfig: this.options.packageConfig,
               tags: this.options.tags,
               groupBy: ["packageName"],
+              last: 1,
             }).exec("restore");
 
             if (!snapshots.length) throw new AppError("None snapshot found");
