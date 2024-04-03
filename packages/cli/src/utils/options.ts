@@ -96,7 +96,8 @@ export function createCommand<T extends OptionsConfig>(
         const parse =
           typeof option.value === "string" ? parsers[option.value] : undefined;
         const cliValue = cliOptions[option.flag ?? name] ?? option.defaults;
-        commandOptions[name] = parse ? parse(cliValue) : cliValue;
+        if (cliValue !== undefined)
+          commandOptions[name] = parse ? parse(cliValue) : cliValue;
       }
     }
     const options = argumentOptions.reduce((result, inlineOption, index) => {
