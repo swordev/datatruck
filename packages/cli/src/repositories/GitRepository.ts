@@ -271,7 +271,10 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
       size: size.toString(),
     });
 
-    await git.addTag(meta.name, meta.message);
+    await git.addTag(meta.name, meta.message, {
+      userName: "datatruck",
+      userEmail: "datatruck@localhost",
+    });
     await git.push({ branchName });
     await git.pushTags();
 

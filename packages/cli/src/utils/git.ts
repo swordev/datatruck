@@ -122,11 +122,23 @@ export class Git {
     );
   }
 
-  async addTag(name: string, message?: string) {
+  async addTag(
+    name: string,
+    message?: string,
+    options: {
+      allowEmpty?: boolean;
+      userName?: string;
+      userEmail?: string;
+    } = {},
+  ) {
+    const commit = [
+      ...(options.userName ? ["-c", `user.name='${options.userName}'`] : []),
+      ...(options.userEmail ? ["-c", `user.email='${options.userEmail}'`] : []),
+    ];
     if (message) {
-      await this.exec(["tag", "-a", name, "-m", message]);
+      await this.exec([...commit, "tag", "-a", name, "-m", message]);
     } else {
-      await this.exec(["tag", name]);
+      await this.exec([...commit, "tag", name]);
     }
   }
 
