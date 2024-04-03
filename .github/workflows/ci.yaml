@@ -25,11 +25,11 @@ jobs:
           docker exec $CONTAINER_ID sh -c 'echo [mysqld] > /etc/mysql/mariadb.conf.d/settings.cnf'
           docker exec $CONTAINER_ID sh -c 'echo "secure_file_priv=/var/lib/mysql-files" >> /etc/mysql/mariadb.conf.d/settings.cnf'
           docker kill --signal=SIGHUP $CONTAINER_ID
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -55,7 +55,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: changesets_meta
         name: Build changesets meta
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
           PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
         with:
@@ -71,7 +71,7 @@ jobs:
             Object.keys(output).forEach(k => core.setOutput(k, output[k]));
       - id: image_meta
         name: Build image metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         if: steps.changesets_meta.outputs['@datatruck/cli:version'] != ''
         with:
           images: ghcr.io/${{ github.repository }}
@@ -84,15 +84,15 @@ jobs:
             type=semver,pattern={{major}},value=v${{ steps.changesets_meta.outputs['@datatruck/cli:version'] }}
             type=sha
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Login Docker
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and publish image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           tags: ${{ steps.image_meta.outputs.tags }}
           labels: ${{ steps.image_meta.outputs.labels }}
