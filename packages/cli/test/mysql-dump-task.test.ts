@@ -23,6 +23,9 @@ const dataFormats = parseStringList(
 
 describe(
   "mysql-dump-task",
+  {
+    timeout: 300_000,
+  },
   () => {
     it.each(
       repositoryTypes.flatMap((repositoryType) =>
@@ -136,8 +139,5 @@ describe(
         }
       },
     );
-  },
-  {
-    timeout: 300_000,
   },
 );

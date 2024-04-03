@@ -1,4 +1,3 @@
-import { scriptTaskCode } from "../src/tasks/ScriptTask";
 import { createCommands } from "../src/utils/datatruck/command";
 import { existsFile, readTextFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
@@ -12,7 +11,7 @@ import {
   FileChanges,
   testRepositoryTypes,
 } from "./util";
-import { readFile, rm, rmdir, writeFile } from "fs/promises";
+import { readFile, rm, writeFile } from "fs/promises";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 
@@ -24,6 +23,9 @@ const repositoryTypes = parseStringList(
 
 describe(
   "datatruck",
+  {
+    timeout: 300_000,
+  },
   () => {
     it("returns config", async () => {
       const config = await makeConfig({
@@ -311,8 +313,5 @@ describe(
       await dtt.restore({ id, initial: true });
       await expect(readTextFile(restoredFile)).resolves.toBe("abc");
     });
-  },
-  {
-    timeout: 300_000,
   },
 );

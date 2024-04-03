@@ -15,6 +15,9 @@ const repositoryTypes = parseStringList(
 
 describe(
   "script-task",
+  {
+    timeout: 300_000,
+  },
   () => {
     it.each(repositoryTypes.map((repositoryType) => ({ repositoryType })))(
       "with temp path $repositoryType",
@@ -163,8 +166,5 @@ describe(
         }
       },
     );
-  },
-  {
-    timeout: 300_000,
   },
 );
