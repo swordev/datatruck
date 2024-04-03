@@ -75,7 +75,9 @@ export function createCommands(globalOptions: GlobalOptions<true>): {
         const { exitCode } = await command.exec();
         if (exitCode !== 0) throw new Error(`Invalid exit code: ${exitCode}`);
         await end();
-        return ["run"].includes(name) ? undefined : JSON.parse(stdoutData);
+        return ["run", "export"].includes(name)
+          ? undefined
+          : JSON.parse(stdoutData);
       } finally {
         await end();
       }

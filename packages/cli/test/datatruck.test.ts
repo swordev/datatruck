@@ -1,3 +1,4 @@
+import { DatatruckRepository } from "../src/repositories/DatatruckRepository";
 import { createCommands } from "../src/utils/datatruck/command";
 import { existsFile, readTextFile } from "../src/utils/fs";
 import { parseStringList } from "../src/utils/string";
@@ -10,6 +11,8 @@ import {
   createFileChanger,
   FileChanges,
   testRepositoryTypes,
+  expectSameFiles,
+  readFiles,
 } from "./util";
 import { readFile, rm, writeFile } from "fs/promises";
 import { join } from "path";
@@ -345,6 +348,37 @@ describe(
       await dtt.run({ jobName: "backup" });
       const snapshots = await dtt.snapshots({});
       expect(snapshots.length).toBe(1);
+    });
+    it.each(repositoryTypes)("exports of %s", async (type) => {
+      const repo = await makeRepositoryConfig(type);
+      const fileChanger = await createFileChanger({
+        file: "test",
+      });
+      const config = await makeConfig({
+        repositories: [repo],
+        packages: [
+          {
+            name: "main/files",
+            path: fileChanger.path,
+            repositoryNames: [type],
+          },
+        ],
+      });
+      const dtt = createCommands({ config });
+      await dtt.backup({});
+      const snapshots = await dtt.snapshots({});
+      expect(snapshots.length).toBe(1);
+      const outPath = await mkTmpDir("test", "export");
+      await dtt.export({ id: snapshots[0].id, outPath });
+      const snapshotPath = join(
+        outPath,
+        type,
+        DatatruckRepository.createSnapshotName(snapshots[0], {
+          name: "main/files",
+        }),
+      );
+      const files = await readFiles(snapshotPath);
+      await expectSameFiles(fileChanger.files, files, "Invalid export export");
     });
   },
 );
