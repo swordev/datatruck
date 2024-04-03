@@ -81,7 +81,7 @@ export class GitRepository extends RepositoryAbstract<GitRepositoryConfig> {
     });
 
     if (await git.canBeInit(this.config.repo)) {
-      await mkdir(git.options.dir);
+      await mkdir(git.options.dir, { recursive: true });
       await git.exec(["init", "--bare", this.config.repo]);
     }
 
