@@ -19,7 +19,7 @@ export type DatatruckCronServerOptions = {
      */
     enabled?: boolean;
     /**
-     * @default '/var/logs/datatruck'
+     * @default "/var/logs/datatruck"
      */
     path?: string;
     rotate?: {
