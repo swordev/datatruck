@@ -108,6 +108,9 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
         NO_COLOR: "1",
         JOB_NAME: name,
       },
+      ...(log?.type === "inherit" && {
+        stdio: "inherit",
+      }),
     });
 
     pid = p.child.pid || 0;
@@ -118,9 +121,7 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
       p.waitForClose(),
       ...(log?.stream
         ? [p.stderr.pipe(log?.stream), p.stdout.pipe(log?.stream)]
-        : log?.type === "inherit"
-          ? [p.stderr.pipe(process.stderr), p.stdout.pipe(process.stderr)]
-          : []),
+        : []),      
     ]);
 
     let logData: Record<string, any> = {};
