@@ -27,13 +27,11 @@ export class StartServerCommand extends CommandAbstract<
     const config = await ConfigAction.fromGlobalOptions(this.globalOptions);
     const configPath = this.configPath;
     const verbose = !!this.globalOptions.verbose;
-    const log = config.server?.log ?? true;
     const repositoryOptions = config.server?.repository || {};
 
     if (repositoryOptions.enabled ?? true) {
       const server = createDatatruckRepositoryServer(repositoryOptions, {
         configPath,
-        log,
       });
       const port = repositoryOptions.listen?.port ?? 8888;
       const address = repositoryOptions.listen?.address ?? "127.0.0.1";
@@ -48,7 +46,6 @@ export class StartServerCommand extends CommandAbstract<
       server.listen(port, address);
     }
     const cronOptions = config.server?.cron || {};
-    const logPath = config.server?.cron?.logPath;
 
     if (cronOptions.enabled ?? true) {
       if (typeof configPath !== "string")
@@ -56,11 +53,9 @@ export class StartServerCommand extends CommandAbstract<
       const server = await createCronServer({
         configPath,
         verbose,
-        log,
-        logPath,
+        log: config.server?.cron?.log,
       });
       server.start();
-      logJson("cron-server", `server started`);
     }
 
     const exitCode = await new Promise<number>((resolve) => {

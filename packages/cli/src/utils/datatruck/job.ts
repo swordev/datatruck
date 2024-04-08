@@ -4,9 +4,10 @@ import { PruneCommandOptions } from "../../commands/PruneCommand";
 import { AsyncProcess } from "../async-process";
 import { logJson } from "../cli";
 import { safeRename } from "../fs";
+import { defaultsLogPath } from "../logs";
 import { stringifyOptions } from "../options";
 import { datatruckCommands } from "./command";
-import { defaultsLogPath } from "./cron-server";
+import { DatatruckCronServerOptions } from "./cron-server";
 import { WriteStream, createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
 import { dirname, join } from "path";
@@ -39,11 +40,33 @@ export type Job = JobAction & {
 };
 
 export type JobConfig = {
-  log: boolean;
-  logPath: string | boolean | undefined;
+  log: DatatruckCronServerOptions["log"] | "inherit";
   verbose: boolean;
   configPath: string;
 };
+
+async function createJobLog(
+  config: DatatruckCronServerOptions["log"] | "inherit",
+  name: string,
+) {
+  if (typeof config === "object" && (config?.enabled ?? true)) {
+    const dt = new Date().toISOString().replaceAll(":", "-");
+    const dir = config?.path ?? defaultsLogPath;
+    const tmpLogPath = join(dir, `${dt}_${name}.tmp.log`);
+    await mkdir(dir, { recursive: true });
+
+    return {
+      type: "file" as const,
+      dt,
+      dir,
+      stream: createWriteStream(tmpLogPath),
+    };
+  } else if (config === "inherit") {
+    return {
+      type: "inherit" as const,
+    };
+  }
+}
 
 export async function runJob(job: Job, name: string, config: JobConfig) {
   let pid = 0;
@@ -61,16 +84,6 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
     );
     const [node, bin] = process.argv;
 
-    const baseLogPath =
-      typeof config.logPath === "string"
-        ? config.logPath
-        : config.logPath === true || config.logPath === undefined
-          ? defaultsLogPath
-          : config.logPath;
-
-    let stream: WriteStream | undefined;
-    let logPath: string | undefined;
-    const dt = new Date().toISOString().replaceAll(":", "-");
     const argv = [
       process.env.DTT_BIN_SCRIPT ?? process.env.pm_exec_path ?? bin,
       "--tty",
@@ -83,12 +96,9 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
       ...cliOptions,
     ];
 
-    if (baseLogPath) {
-      const tmpLogPath = join(baseLogPath, dt) + ".log";
-      await mkdir(baseLogPath, { recursive: true });
-      stream = createWriteStream(tmpLogPath);
-      stream.write(`+ dtt ${argv.join(" ")}\n`);
-    }
+    const log = await createJobLog(config.log, name);
+    if (log?.type === "file") log.stream.write(`+ dtt ${argv.join(" ")}\n`);
+
     const p = new AsyncProcess(node, argv, {
       $log: config.verbose,
       $exitCode: false,
@@ -102,30 +112,33 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
 
     pid = p.child.pid || 0;
 
-    if (config.log) logJson("job", `'${name}' started`, { pid });
+    logJson("job", `'${name}' started`, { pid });
 
     const [exitCode] = await Promise.all([
       p.waitForClose(),
-      stream && p.stderr.pipe(stream),
-      stream && p.stdout.pipe(stream),
+      ...(log?.stream
+        ? [p.stderr.pipe(log?.stream), p.stdout.pipe(log?.stream)]
+        : log?.type === "inherit"
+          ? [p.stderr.pipe(process.stderr), p.stdout.pipe(process.stderr)]
+          : []),
     ]);
 
-    if (stream) {
-      const base = dirname(stream.path.toString());
-      await safeRename(
-        stream.path.toString(),
-        (logPath = join(base, `${dt}-${pid}.log`)),
-      );
+    let logData: Record<string, any> = {};
+
+    if (log?.stream) {
+      const base = dirname(log?.stream.path.toString());
+      const logPath = join(base, `${log.dt}_${name}_${pid}.log`);
+      await safeRename(log?.stream.path.toString(), logPath);
+      logData["log"] = logPath;
     }
 
-    if (config.log)
-      logJson("job", `'${name}' finished`, {
-        pid,
-        exitCode,
-        ...(logPath && { log: logPath }),
-      });
+    logJson("job", `'${name}' finished`, {
+      pid,
+      exitCode,
+      ...logData,
+    });
   } catch (error) {
-    if (config.log) logJson("job", `'${name}' failed`, { pid });
+    logJson("job", `'${name}' failed`, { pid });
     console.error(error);
   }
 }

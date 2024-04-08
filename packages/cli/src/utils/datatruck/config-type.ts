@@ -28,7 +28,6 @@ export type Config = {
 };
 
 export type DatatruckServerOptions = {
-  log?: boolean;
   repository?: DatatruckRepositoryServerOptions;
   cron?: DatatruckCronServerOptions;
 };

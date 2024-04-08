@@ -109,7 +109,6 @@ const getRemoteAddress = (
 export function createDatatruckRepositoryServer(
   inOptions: Omit<DatatruckRepositoryServerOptions, "listen">,
   config: {
-    log?: boolean;
     configPath?: string;
   } = {},
 ) {
@@ -137,8 +136,7 @@ export function createDatatruckRepositoryServer(
 
       if (!backend) return res.writeHead(401);
 
-      if (config.log)
-        logJson("repository-server", "request", { id, repository, url });
+      logJson("repository-server", "request", { id, repository, url });
 
       const fs = new LocalFs({ backend: backend.path });
 
@@ -164,12 +162,10 @@ export function createDatatruckRepositoryServer(
         const json = await object(...params);
         if (json !== undefined) res.write(JSON.stringify(json));
       }
-      if (config.log) logJson("repository-server", "request finished", { id });
+      logJson("repository-server", "request finished", { id });
     } catch (error) {
-      if (config.log) {
-        logJson("repository-server", "request failed", { id });
-        console.error(error);
-      }
+      logJson("repository-server", "request failed", { id });
+      console.error(error);
       if (!res.writableEnded && !res.headersSent)
         res.writeHead(500, (error as Error).message);
     } finally {

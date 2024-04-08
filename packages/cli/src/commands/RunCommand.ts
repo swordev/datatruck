@@ -27,7 +27,6 @@ export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
       this.globalOptions,
     );
     const verbose = !!this.globalOptions.verbose;
-    const log = config.data.server?.log ?? true;
     const jobs = config.data.jobs || {};
     const jobName = this.options.jobName;
     const job = jobName ? jobs[jobName] : undefined;
@@ -41,10 +40,9 @@ export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
     }
 
     await runJob(job, jobName, {
-      log,
       verbose: verbose,
       configPath: config.path!,
-      logPath: config.data.server?.cron?.logPath,
+      log: "inherit",
     });
 
     return { exitCode: 0 };
