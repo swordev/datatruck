@@ -113,9 +113,9 @@ export function stringifyOptions(options: OptionsConfig, object: any) {
   const result: string[] = [];
   const prepend: string[] = [];
 
-  for (const key in options) {
-    const option = options[key];
-    const value = object[key];
+  for (const name in options) {
+    const option = options[name];
+    const value = object[name];
     if (value === undefined) continue;
 
     if (option.flag === false) {
@@ -123,7 +123,7 @@ export function stringifyOptions(options: OptionsConfig, object: any) {
     } else {
       const flag = option.shortFlag
         ? `-${option.shortFlag}`
-        : `--${option.flag ?? option.shortFlag}`;
+        : `--${option.flag ?? name}`;
 
       if (option.value === "boolean") {
         if (option.value) result.push(flag);
