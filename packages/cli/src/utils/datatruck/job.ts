@@ -89,6 +89,8 @@ export async function runJob(
     node,
     [
       process.env.DTT_BIN_SCRIPT ?? process.env.pm_exec_path ?? bin,
+      "-c",
+      config.configPath,
       job.action,
       ...cliOptions,
       ...(config.verbose ? ["-v"] : []),
