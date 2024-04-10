@@ -5,7 +5,7 @@ import { MaxAge, defaultsLogPath, removeOldLogs } from "../logs";
 import { compareJsons } from "../string";
 import { createWatcher } from "../watcher";
 import { Config } from "./config-type";
-import { Job, JobConfig, runJob } from "./job";
+import { Job, JobConfig, runCronJob } from "./job";
 import { Cron } from "croner";
 
 export type DatatruckCronServerOptions = {
@@ -47,7 +47,7 @@ function createCrons(jobs: Record<string, Job>, options: JobConfig) {
             catch: true,
             protect: true,
           },
-          () => runJob(job, name, options),
+          () => runCronJob(job, name, options),
         ),
       );
   }

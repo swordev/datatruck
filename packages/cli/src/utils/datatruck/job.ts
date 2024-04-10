@@ -40,13 +40,13 @@ export type Job = JobAction & {
 };
 
 export type JobConfig = {
-  log: DatatruckCronServerOptions["log"] | "inherit";
+  log: DatatruckCronServerOptions["log"];
   verbose: boolean;
   configPath: string;
 };
 
 async function createJobLog(
-  config: DatatruckCronServerOptions["log"] | "inherit",
+  config: DatatruckCronServerOptions["log"],
   name: string,
 ) {
   if (typeof config === "object" && (config?.enabled ?? true)) {
@@ -56,32 +56,63 @@ async function createJobLog(
     await mkdir(dir, { recursive: true });
 
     return {
-      type: "file" as const,
       dt,
       dir,
       stream: createWriteStream(tmpLogPath),
     };
-  } else if (config === "inherit") {
-    return {
-      type: "inherit" as const,
-    };
   }
 }
 
-export async function runJob(job: Job, name: string, config: JobConfig) {
+export function getJobCliOptions(job: Job) {
+  const Command = datatruckCommands[job.action];
+  const command = new Command(
+    { config: { packages: [], repositories: [] } },
+    {} as any,
+  );
+  return stringifyOptions(
+    command.optionsConfig,
+    job.action === "prune"
+      ? ({ ...job.options, confirm: true } satisfies PruneCommandOptions)
+      : job.options,
+  );
+}
+
+export async function runJob(
+  job: Job,
+  name: string,
+  config: Omit<JobConfig, "log">,
+) {
+  const cliOptions = getJobCliOptions(job);
+  const [node, bin] = process.argv;
+
+  const exitCode = await AsyncProcess.exec(
+    node,
+    [
+      process.env.DTT_BIN_SCRIPT ?? process.env.pm_exec_path ?? bin,
+      job.action,
+      ...cliOptions,
+      ...(config.verbose ? ["-v"] : []),
+    ],
+    {
+      $exitCode: false,
+      $log: { exec: config.verbose },
+      env: {
+        ...process.env,
+        JOB_NAME: name,
+      },
+      stdio: "inherit",
+    },
+  );
+
+  process.exit(exitCode);
+}
+
+export async function runCronJob(job: Job, name: string, config: JobConfig) {
   let pid = 0;
+
   try {
-    const Command = datatruckCommands[job.action];
-    const command = new Command(
-      { config: { packages: [], repositories: [] } },
-      {} as any,
-    );
-    const cliOptions = stringifyOptions(
-      command.optionsConfig,
-      job.action === "prune"
-        ? ({ ...job.options, confirm: true } satisfies PruneCommandOptions)
-        : job.options,
-    );
+    const log = await createJobLog(config.log, name);
+    const cliOptions = getJobCliOptions(job);
     const [node, bin] = process.argv;
 
     const argv = [
@@ -96,26 +127,22 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
       ...cliOptions,
     ];
 
-    const log = await createJobLog(config.log, name);
-    if (log?.type === "file") log.stream.write(`+ dtt ${argv.join(" ")}\n`);
+    log?.stream.write(`+ dtt ${argv.slice(1).join(" ")}\n`);
 
     const p = new AsyncProcess(node, argv, {
       $log: config.verbose,
       $exitCode: false,
       env: {
         ...process.env,
+        JOB_NAME: name,
         COLUMNS: "160",
         NO_COLOR: "1",
-        JOB_NAME: name,
       },
-      ...(log?.type === "inherit" && {
-        stdio: "inherit",
-      }),
     });
 
     pid = p.child.pid || 0;
 
-    logJson("job", `'${name}' started`, { pid });
+    if (log) logJson("job", `'${name}' started`, { pid });
 
     const [exitCode] = await Promise.all([
       p.waitForClose(),
@@ -126,18 +153,13 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
 
     let logData: Record<string, any> = {};
 
-    if (log?.stream) {
-      const base = dirname(log?.stream.path.toString());
+    if (log) {
+      const base = dirname(log.stream.path.toString());
       const logPath = join(base, `${log.dt}_${name}_${pid}.log`);
       await safeRename(log?.stream.path.toString(), logPath);
       logData["log"] = logPath;
     }
-
-    logJson("job", `'${name}' finished`, {
-      pid,
-      exitCode,
-      ...logData,
-    });
+    logJson("job", `'${name}' finished`, { pid, exitCode, ...logData });
   } catch (error) {
     logJson("job", `'${name}' failed`, { pid });
     console.error(error);

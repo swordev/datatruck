@@ -42,7 +42,6 @@ export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
     await runJob(job, jobName, {
       verbose: verbose,
       configPath: config.path!,
-      log: "inherit",
     });
 
     return { exitCode: 0 };
