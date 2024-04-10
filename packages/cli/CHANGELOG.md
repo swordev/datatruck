@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.39.1
+
+### Patch Changes
+
+- [`b7c723d`](https://github.com/swordev/datatruck/commit/b7c723d7ff520b52ae25d7b20cd473400e3ceab7) Thanks [@juanrgm](https://github.com/juanrgm)! - Show job progress
+
+- [`a3487c4`](https://github.com/swordev/datatruck/commit/a3487c43e039d23d0279125d592a9c1982cc8568) Thanks [@juanrgm](https://github.com/juanrgm)! - Read dir only if exists
+
 ## 0.39.0
 
 ### Minor Changes
