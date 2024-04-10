@@ -85,7 +85,7 @@ export async function runJob(
   const cliOptions = getJobCliOptions(job);
   const [node, bin] = process.argv;
 
-  const exitCode = await AsyncProcess.exec(
+  return await AsyncProcess.exec(
     node,
     [
       process.env.DTT_BIN_SCRIPT ?? process.env.pm_exec_path ?? bin,
@@ -103,8 +103,6 @@ export async function runJob(
       stdio: "inherit",
     },
   );
-
-  process.exit(exitCode);
 }
 
 export async function runCronJob(job: Job, name: string, config: JobConfig) {

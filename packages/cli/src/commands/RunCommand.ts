@@ -39,11 +39,11 @@ export class RunCommand extends CommandAbstract<typeof runCommandOptions> {
       return { exitCode: 1 };
     }
 
-    await runJob(job, jobName, {
+    const exitCode = await runJob(job, jobName, {
       verbose: verbose,
       configPath: config.path!,
     });
 
-    return { exitCode: 0 };
+    return { exitCode };
   }
 }
