@@ -10,7 +10,7 @@ import {
   ensureSingleFile,
   groupFiles,
   mkdirIfNotExists,
-  readDir,
+  safeReaddir,
   safeRename,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
@@ -263,7 +263,7 @@ export class MysqlDumpTask extends TaskAbstract<MysqlDumpTaskConfig> {
       });
 
     const [files, compressed] = groupFiles(
-      await readDir(snapshotPath),
+      await safeReaddir(snapshotPath),
       Object.values(suffix),
     );
 

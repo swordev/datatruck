@@ -1,5 +1,5 @@
 import { AsyncProcess, AsyncProcessOptions } from "./async-process";
-import { existsDir, isLocalDir, readDir } from "./fs";
+import { existsDir, isLocalDir, safeReaddir } from "./fs";
 
 export class Git {
   constructor(
@@ -26,7 +26,7 @@ export class Git {
   async canBeInit(repo: string) {
     return (
       isLocalDir(repo) &&
-      (!(await existsDir(repo)) || !(await readDir(repo)).length)
+      (!(await existsDir(repo)) || !(await safeReaddir(repo)).length)
     );
   }
 

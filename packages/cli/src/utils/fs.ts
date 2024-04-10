@@ -75,7 +75,7 @@ export async function ensureEmptyDir(path: string) {
 }
 
 export async function ensureSingleFile(path: string) {
-  const files = await readDir(path);
+  const files = await safeReaddir(path);
   if (files.length !== 1)
     throw new AppError(`Dir has not one file: ${files.length}`);
   const [file] = files;
@@ -190,7 +190,7 @@ export async function readPartialFile(
   });
 }
 
-export async function readDir(path: string, optional?: boolean) {
+export async function safeReaddir(path: string, optional?: boolean) {
   try {
     return await readdir(path);
   } catch (anyError) {
@@ -212,7 +212,7 @@ export async function forEachFile(
   cb: (path: string, dir: boolean) => void,
   includeDir?: boolean,
 ) {
-  const files = await readDir(dirPath);
+  const files = await safeReaddir(dirPath);
   for (const file of files) {
     const filePath = join(dirPath, file);
     if ((await stat(filePath)).isDirectory()) {

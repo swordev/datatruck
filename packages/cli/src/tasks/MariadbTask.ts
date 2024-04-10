@@ -1,6 +1,6 @@
 import { AsyncProcess } from "../utils/async-process";
 import { logExec } from "../utils/cli";
-import { forEachFile, readDir } from "../utils/fs";
+import { forEachFile, safeReaddir } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { extractTar } from "../utils/tar";
 import { mkTmpDir } from "../utils/temp";
@@ -231,7 +231,7 @@ export class MariadbTask extends TaskAbstract<MariadbTaskConfig> {
       data: { removeFile?: string } = {},
     ): Promise<string[]> => {
       if (data.removeFile) removeFiles.push(data.removeFile);
-      return (files = (await readDir(snapshotPath)).filter(
+      return (files = (await safeReaddir(snapshotPath)).filter(
         (v) => !removeFiles.includes(v),
       ));
     };

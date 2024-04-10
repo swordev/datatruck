@@ -1,7 +1,7 @@
 import { AsyncProcess } from "../utils/async-process";
 import { resolveDatabaseName } from "../utils/datatruck/config";
 import { AppError } from "../utils/error";
-import { readDir } from "../utils/fs";
+import { safeReaddir } from "../utils/fs";
 import { createPatternFilter } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import { TaskBackupData, TaskRestoreData, TaskAbstract } from "./TaskAbstract";
@@ -101,7 +101,7 @@ export class MssqlTask extends TaskAbstract<MssqlTaskConfig> {
   override async restore(data: TaskRestoreData) {
     this.verbose = data.options.verbose;
     const snapshotPath = data.snapshotPath;
-    const files = await readDir(snapshotPath);
+    const files = await safeReaddir(snapshotPath);
 
     for (const file of files) {
       if (!file.endsWith(MssqlTask.SUFFIX)) continue;

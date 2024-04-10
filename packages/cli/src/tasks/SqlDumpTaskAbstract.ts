@@ -5,7 +5,7 @@ import {
   ensureEmptyDir,
   existsDir,
   mkdirIfNotExists,
-  readDir,
+  safeReaddir,
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { createPatternFilter } from "../utils/string";
@@ -233,7 +233,7 @@ export abstract class SqlDumpTaskAbstract<
       });
     }
 
-    const items = (await readDir(snapshotPath))
+    const items = (await safeReaddir(snapshotPath))
       .map(parseSqlFile)
       .filter((v) => !!v) as SqlFile[];
 
