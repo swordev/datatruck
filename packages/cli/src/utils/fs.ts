@@ -190,13 +190,12 @@ export async function readPartialFile(
   });
 }
 
-export async function safeReaddir(path: string, optional?: boolean) {
+export async function safeReaddir(path: string) {
   try {
     return await readdir(path);
   } catch (anyError) {
     const nodeError = anyError as NodeJS.ErrnoException;
     if (nodeError.code === "ENOENT") {
-      if (optional) return [];
       const error: NodeJS.ErrnoException = new Error(nodeError.message);
       error.code = nodeError.code;
       error.errno = nodeError.errno;
@@ -204,6 +203,15 @@ export async function safeReaddir(path: string, optional?: boolean) {
       throw error;
     }
     throw anyError;
+  }
+}
+
+export async function tryReaddir(path: string) {
+  try {
+    return await safeReaddir(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
   }
 }
 

@@ -8,7 +8,7 @@ import { defaultsLogPath } from "../logs";
 import { stringifyOptions } from "../options";
 import { datatruckCommands } from "./command";
 import { DatatruckCronServerOptions } from "./cron-server";
-import { WriteStream, createWriteStream } from "fs";
+import { createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
 import { dirname, join } from "path";
 
@@ -121,7 +121,7 @@ export async function runJob(job: Job, name: string, config: JobConfig) {
       p.waitForClose(),
       ...(log?.stream
         ? [p.stderr.pipe(log?.stream), p.stdout.pipe(log?.stream)]
-        : []),      
+        : []),
     ]);
 
     let logData: Record<string, any> = {};

@@ -1,4 +1,5 @@
-import { readdir, rm, stat } from "fs/promises";
+import { tryReaddir } from "./fs";
+import { rm, stat } from "fs/promises";
 import { platform } from "os";
 import { join } from "path";
 
@@ -34,7 +35,9 @@ export async function removeOldLogs(path: string, inMaxAge: MaxAge) {
   const maxAge = maxAgeToMS(inMaxAge);
   const hasMaxAge = Object.values(inMaxAge).some((v) => typeof v === "number");
   if (!hasMaxAge) return [];
-  const files = (await readdir(path)).filter((file) => file.endsWith(".log"));
+  const files = (await tryReaddir(path)).filter((file) =>
+    file.endsWith(".log"),
+  );
   const now = Date.now();
   const paths: string[] = [];
   for (const file of files) {
