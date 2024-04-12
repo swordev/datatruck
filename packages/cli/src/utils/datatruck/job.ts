@@ -10,7 +10,7 @@ import { datatruckCommands } from "./command";
 import { DatatruckCronServerOptions } from "./cron-server";
 import { createWriteStream } from "fs";
 import { mkdir } from "fs/promises";
-import { dirname, join } from "path";
+import { join } from "path";
 
 export type JobScheduleObject = {
   minute?: number | { each: number };
@@ -49,18 +49,22 @@ async function createJobLog(
   config: DatatruckCronServerOptions["log"],
   name: string,
 ) {
-  if (typeof config === "object" && (config?.enabled ?? true)) {
-    const dt = new Date().toISOString().replaceAll(":", "-");
-    const dir = config?.path ?? defaultsLogPath;
-    const tmpLogPath = join(dir, `${dt}_${name}.tmp.log`);
-    await mkdir(dir, { recursive: true });
-
-    return {
-      dt,
-      dir,
-      stream: createWriteStream(tmpLogPath),
-    };
-  }
+  const dt = new Date().toISOString().replaceAll(":", "-");
+  const dir = config?.path ?? defaultsLogPath;
+  const tmpPath = join(dir, `${dt}_${name}.tmp.log`);
+  await mkdir(dir, { recursive: true });
+  const stream = createWriteStream(tmpPath);
+  return {
+    stream,
+    write(data: string) {
+      stream.write(data);
+    },
+    async finish(pid: number) {
+      const path = join(dir, `${dt}_${name}_${pid}.log`);
+      await safeRename(tmpPath, path);
+      return path;
+    },
+  };
 }
 
 export function getJobCliOptions(job: Job) {
@@ -111,7 +115,9 @@ export async function runCronJob(job: Job, name: string, config: JobConfig) {
   let pid = 0;
 
   try {
-    const log = await createJobLog(config.log, name);
+    const log = config.log?.enabled
+      ? await createJobLog(config.log, name)
+      : undefined;
     const cliOptions = getJobCliOptions(job);
     const [node, bin] = process.argv;
 
@@ -127,7 +133,7 @@ export async function runCronJob(job: Job, name: string, config: JobConfig) {
       ...cliOptions,
     ];
 
-    log?.stream.write(`+ dtt ${argv.slice(1).join(" ")}\n`);
+    log?.write(`+ dtt ${argv.slice(1).join(" ")}\n`);
 
     const p = new AsyncProcess(node, argv, {
       $log: config.verbose,
@@ -142,24 +148,21 @@ export async function runCronJob(job: Job, name: string, config: JobConfig) {
 
     pid = p.child.pid || 0;
 
-    if (log) logJson("job", `'${name}' started`, { pid });
+    logJson("job", `'${name}' started`, { pid });
 
     const [exitCode] = await Promise.all([
       p.waitForClose(),
-      ...(log?.stream
-        ? [p.stderr.pipe(log?.stream), p.stdout.pipe(log?.stream)]
-        : []),
+      log && p.stderr.pipe(log.stream),
+      log && p.stdout.pipe(log.stream),
     ]);
 
-    let logData: Record<string, any> = {};
+    const logPath = await log?.finish(pid);
 
-    if (log) {
-      const base = dirname(log.stream.path.toString());
-      const logPath = join(base, `${log.dt}_${name}_${pid}.log`);
-      await safeRename(log?.stream.path.toString(), logPath);
-      logData["log"] = logPath;
-    }
-    logJson("job", `'${name}' finished`, { pid, exitCode, ...logData });
+    logJson("job", `'${name}' finished`, {
+      pid,
+      exitCode,
+      ...(logPath && { log: logPath }),
+    });
   } catch (error) {
     logJson("job", `'${name}' failed`, { pid });
     console.error(error);
