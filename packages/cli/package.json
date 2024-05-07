@@ -32,26 +32,26 @@
   },
   "dependencies": {
     "@supercharge/promise-pool": "^3.2.0",
-    "ajv": "^8.12.0",
+    "ajv": "^8.13.0",
     "async": "^3.2.5",
     "chalk": "^4.1.2",
     "commander": "^12.0.0",
     "croner": "^8.0.2",
-    "dayjs": "^1.11.10",
+    "dayjs": "^1.11.11",
     "fast-folder-size": "^2.2.0",
     "fast-glob": "^3.3.2",
     "listr2": "^8.2.1",
     "micromatch": "^4.0.5",
-    "mongodb": "^6.5.0",
-    "mysql2": "^3.9.4",
+    "mongodb": "^6.6.1",
+    "mysql2": "^3.9.7",
     "tty-table": "^4.2.3",
     "undici": "^6.15.0",
-    "yaml": "^2.4.1"
+    "yaml": "^2.4.2"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/micromatch": "^4.0.6",
-    "mongodb-memory-server": "^9.1.8"
+    "@types/micromatch": "^4.0.7",
+    "mongodb-memory-server": "^9.2.0"
   },
   "optionalDependencies": {
     "ts-node": "^10.9.2"
