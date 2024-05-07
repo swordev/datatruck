@@ -17,7 +17,7 @@ describe("uploadFile", () => {
     const dir = await mkTmpDir("server");
     const server = createServer(async (req, res) => {
       const path = join(dir, req.url!);
-      await recvFile(req, res, path, { end: true });
+      await recvFile(req, res, path);
     });
     try {
       server.listen();

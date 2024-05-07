@@ -75,7 +75,6 @@ export async function sendFile(
   path: string,
   options: {
     contentLength?: boolean;
-    end?: boolean;
     checksum?: boolean;
   } = {},
 ) {
@@ -97,7 +96,7 @@ export async function sendFile(
     });
   } finally {
     file?.close();
-    if (options.end) res.end();
+    if (!res.writableEnded) res.end();
   }
 }
 
@@ -105,9 +104,6 @@ export async function recvFile(
   req: IncomingMessage,
   res: ServerResponse,
   path: string,
-  options: {
-    end?: boolean;
-  } = {},
 ) {
   let file: WriteStream | undefined;
   try {
@@ -123,7 +119,7 @@ export async function recvFile(
       await assertFileChecksum(path, checksum, "sha1");
   } finally {
     file?.close();
-    if (options.end) res.end();
+    res.end();
   }
 }
 
