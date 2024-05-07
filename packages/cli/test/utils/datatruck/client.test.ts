@@ -42,10 +42,11 @@ describe("RemoteFs", () => {
       const dir = await mkTmpDir("remote-fs");
 
       for (const snapshot of snapshots) {
+        if (!snapshot || snapshot.snapshotShortId !== options.snapshot)
+          continue;
         if (
-          !snapshot ||
-          snapshot.snapshotShortId !== options.snapshot ||
-          snapshot.packageName !== options.package
+          options.package &&
+          !options.package.split(",").includes(snapshot.packageName)
         )
           continue;
         const files = await fs.readdir(snapshot.sourcePath);
@@ -72,6 +73,6 @@ describe("RemoteFs", () => {
 
       expect(1).toBe(1);
     },
-    5 * 60 * 1000,
+    10 * 60 * 1000,
   );
 });
