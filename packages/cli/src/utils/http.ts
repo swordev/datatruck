@@ -11,6 +11,7 @@ import { stat, unlink } from "fs/promises";
 import { IncomingMessage, Server, ServerResponse } from "http";
 import { Readable, Transform } from "stream";
 import { pipeline } from "stream/promises";
+import { fetch, type RequestInit } from "undici";
 
 export function createHref(inUrl: string, query?: Record<string, string>) {
   const url = new URL(inUrl);

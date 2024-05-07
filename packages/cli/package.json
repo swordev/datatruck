@@ -45,6 +45,7 @@
     "mongodb": "^6.5.0",
     "mysql2": "^3.9.4",
     "tty-table": "^4.2.3",
+    "undici": "^6.15.0",
     "yaml": "^2.4.1"
   },
   "devDependencies": {
