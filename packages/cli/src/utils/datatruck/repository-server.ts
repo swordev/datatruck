@@ -119,7 +119,8 @@ export function createDatatruckRepositoryServer(
     const id = counter.next();
     let requestError: Error | undefined;
     let responseError: Error | undefined;
-    req.on("error", (error) => (requestError = error));
+    const requestErrorListener = (error: Error) => (requestError = error);
+    req.on("error", requestErrorListener);
     res.on("error", (error) => (responseError = error));
     res.setHeader("X-Accel-Buffering", "no");
     try {
@@ -145,14 +146,17 @@ export function createDatatruckRepositoryServer(
       } else if (action === "upload") {
         const [target] = params;
         const path = fs.resolvePath(target);
+        req.off("error", requestErrorListener);
         await recvFile(req, res, path);
       } else if (action === "download") {
         const [target] = params;
         const path = fs.resolvePath(target);
+        req.off("error", requestErrorListener);
         await sendFile(req, res, path, {
           contentLength: options.contentLength ?? true,
         });
       } else if (action === "writeFile") {
+        req.off("error", requestErrorListener);
         const data = await readRequestData(req);
         const [target] = params;
         await fs.writeFile(target, data!);
