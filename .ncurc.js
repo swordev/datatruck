@@ -4,7 +4,7 @@ module.exports = {
   root: true,
   dep: "dev,optional,prod,bundle",
   target: (name) => {
-    if (["chalk"].includes(name)) {
+    if (["chalk", "@types/node"].includes(name)) {
       return "minor";
     } else {
       return "latest";

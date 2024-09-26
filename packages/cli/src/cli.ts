@@ -68,7 +68,7 @@ function createCommandAction<T extends keyof DatatruckCommandMap>(
       console.error();
       errors.forEach((error, index) => {
         console.error(
-          chalk.red(`${index + 1}. ` + error.stack ?? error.message),
+          chalk.red(`${index + 1}. ` + (error.stack ?? error.message)),
         );
         if (errors![index + 1]) console.error();
       });
