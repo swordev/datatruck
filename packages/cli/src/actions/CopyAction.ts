@@ -246,6 +246,7 @@ export class CopyAction {
         l.$task({
           key: "snapshots",
           data: { snapshots: [] },
+          exitOnError: false,
           title: {
             initial: "Fetch snapshots",
             started: "Fetching snapshots",
@@ -370,16 +371,16 @@ export class CopyAction {
                   });
                 }),
               ),
-              ...createReportListTasks(l, {
-                hostname: this.config.hostname ?? hostname(),
-                action: "copy",
-                reports: this.config.reports || [],
-                verbose: this.options.verbose,
-                onMessage: (result, report) =>
-                  this.dataFormat(result).format(report.format ?? "list"),
-              }),
             ];
           },
+        }),
+        ...createReportListTasks(l, {
+          hostname: this.config.hostname ?? hostname(),
+          action: "copy",
+          reports: this.config.reports || [],
+          verbose: this.options.verbose,
+          onMessage: (result, report) =>
+            this.dataFormat(result).format(report.format ?? "list"),
         }),
       ])
       .execAndParse(this.options.verbose);

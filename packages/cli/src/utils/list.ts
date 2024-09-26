@@ -14,6 +14,7 @@ import {
   ProcessOutput,
   ListrTaskWrapper,
   ListrTaskState,
+  ListrTaskFn,
 } from "listr2";
 
 export class List3Logger<
@@ -90,7 +91,6 @@ export class Listr3<T extends Listr3Context> extends Listr<
   "simple"
 > {
   readonly resultMap: Record<string, Listr3TaskResult<T>> = {};
-  readonly resultList: Listr3TaskResult<T>[] = [];
   readonly logger: List3Logger;
   protected execTimer: Timer;
   constructor(
@@ -133,6 +133,16 @@ export class Listr3<T extends Listr3Context> extends Listr<
   private createResultIndex(key: keyof T, keyIndex?: KeyIndex): string {
     return [key, ...this.serializeKeyIndex(keyIndex)].join(".");
   }
+  get resultList() {
+    return this.tasks
+      .flatMap((task) => [task, ...(task.subtasks || [])])
+      .map((task) => {
+        const result = (task.task.task as any)["_result"];
+        if (!result)
+          throw new Error(`Task result is not defined: ${task.title}`);
+        return result;
+      });
+  }
   result(key: keyof T, keyIndex?: KeyIndex): Listr3TaskResult<T> {
     const index = this.createResultIndex(key, keyIndex);
     const result = this.resultMap[index];
@@ -152,33 +162,34 @@ export class Listr3<T extends Listr3Context> extends Listr<
       error: undefined,
       data: item.data,
     };
-    this.resultList.push(this.resultMap[index]);
     const title =
       typeof item.title === "string" ? { initial: item.title } : item.title;
+    const task: ListrTaskFn<any, any, any> = async (_, task) => {
+      const result = this.result(item.key, item.keyIndex);
+      if (title.started) task.title = title.started;
+      const timer = createTimer();
+      if (title)
+        try {
+          const runResult = await item.run(task, result.data as any);
+          if (title.completed) task.title = title.completed;
+          return Array.isArray(runResult)
+            ? task.newListr(runResult)
+            : runResult;
+        } catch (error) {
+          result.error = error as Error;
+          if (title.failed) task.title = title.failed;
+          throw error;
+        } finally {
+          result.elapsed = timer.elapsed();
+        }
+    };
+    (task as any)["_result"] = this.resultMap[index];
     return {
       title: title.initial,
       exitOnError: item.exitOnError,
       enabled: item.enabled,
       skip: item.skip,
-      task: async (_, task) => {
-        const result = this.result(item.key, item.keyIndex);
-        if (title.started) task.title = title.started;
-        const timer = createTimer();
-        if (title)
-          try {
-            const runResult = await item.run(task, result.data as any);
-            if (title.completed) task.title = title.completed;
-            return Array.isArray(runResult)
-              ? task.newListr(runResult)
-              : runResult;
-          } catch (error) {
-            result.error = error as Error;
-            if (title.failed) task.title = title.failed;
-            throw error;
-          } finally {
-            result.elapsed = timer.elapsed();
-          }
-      },
+      task,
     };
   }
   $tasks<K extends keyof T>(

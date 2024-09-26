@@ -457,16 +457,16 @@ export class BackupAction {
                     }),
                 );
               }),
-              ...createReportListTasks(l, {
-                hostname: this.config.hostname ?? hostname(),
-                action: "backup",
-                reports: this.config.reports || [],
-                verbose: this.options.verbose,
-                onMessage: (result, report) =>
-                  this.dataFormat(result).format(report.format ?? "list"),
-              }),
             ];
           },
+        }),
+        ...createReportListTasks(l, {
+          hostname: this.config.hostname ?? hostname(),
+          action: "backup",
+          reports: this.config.reports || [],
+          verbose: this.options.verbose,
+          onMessage: (result, report) =>
+            this.dataFormat(result).format(report.format ?? "list"),
         }),
       ])
       .execAndParse(this.options.verbose);
