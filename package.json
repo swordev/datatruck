@@ -25,6 +25,7 @@
     "build:dist": "esbuild --bundle --platform=node --target=node20 ./packages/cli/lib/bin.js --outfile=dist/datatruck.js",
     "build:schema": "node ./packages/cli/scripts/gen-schema.mjs",
     "build:ts": "tsc -b tsconfig.build.json --pretty",
+    "build:win-setup": "node ./scripts/build-win-setup.mjs",
     "clean": "tsc -b tsconfig.build.json --clean",
     "format": "prettier --cache -w .",
     "format:check": "prettier --cache -c .",

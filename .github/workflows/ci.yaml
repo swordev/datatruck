@@ -145,3 +145,31 @@ jobs:
           tags: ${{ steps.image_meta.outputs.tags }}
           labels: ${{ steps.image_meta.outputs.labels }}
           push: ${{ steps.changesets_meta.outputs['@datatruck/cli:published'] }}
+  release-win-setup:
+    runs-on: windows-latest
+    needs: [release]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: bin
+      - run: node scripts/build-win-setup.mjs
+      - name: Upload release assets
+        if: needs.release.steps.release-name.outputs['datatruck']
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/*
+          name: datatruck@${{ needs.release.steps.release-name.outputs['datatruck'] }}
+          tag_name: datatruck@${{ needs.release.steps.release-name.outputs['datatruck'] }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create nightly release
+        if: needs.release.steps.release-name.outputs['datatruck'] == ''
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: datatruck@nightly
+          name: datatruck@nightly
+          files: bin/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

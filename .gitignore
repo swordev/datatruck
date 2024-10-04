@@ -10,3 +10,4 @@ node_modules
 /datatruck*.json
 /datatruck*.yaml
 config.schema.json
+scripts/*.h
