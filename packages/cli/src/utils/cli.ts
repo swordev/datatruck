@@ -56,7 +56,7 @@ export function logExec(
     : "";
 
   const text = `+ ${envText ? envText + " " : ""}${chalk.yellow(
-    `${command} ${argv.join(" ")}`,
+    `${command} ${argv.map(String).join(" ")}`,
   )}`;
 
   logToStderr /* && process.env.VITEST !== "true"*/
