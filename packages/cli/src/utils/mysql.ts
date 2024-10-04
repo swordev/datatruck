@@ -7,7 +7,7 @@ import { createPatternFilter, undefIfEmpty } from "./string";
 import { mkTmpDir } from "./temp";
 import { randomBytes } from "crypto";
 import { chmod, rm, writeFile } from "fs/promises";
-import { createConnection } from "mysql2/promise";
+import { ConnectionOptions, createConnection } from "mysql2/promise";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -56,13 +56,25 @@ export async function assertDumpFile(path: string) {
 export async function createMysqlCli(options: MysqlCliOptions) {
   let sqlConfigPath: string | undefined;
   const password = (await fetchData(options.password, (p) => p.path)) ?? "";
-  const sql = await createConnection({
+  const connectionOptions = {
     host: options.hostname,
     user: options.username,
     password,
     port: options.port,
     database: options.database,
-  });
+  } satisfies ConnectionOptions;
+  if (options.verbose)
+    logExec("sql.createConnection", [
+      JSON.stringify(
+        {
+          connectionOptions,
+          password: "********",
+        },
+        null,
+        2,
+      ),
+    ]);
+  const sql = await createConnection(connectionOptions);
 
   async function createSqlConfig() {
     if (sqlConfigPath) return sqlConfigPath;
@@ -85,7 +97,11 @@ export async function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function fetchAll<T>(query: string, params?: any[]): Promise<T[]> {
+    if (options.verbose)
+      logExec("> sql.query", [query, JSON.stringify({ params }, null, 2)]);
     const [rows] = await sql.query(query, params);
+    if (options.verbose)
+      logExec("< sql.query", [JSON.stringify(rows, null, 2)]);
     return rows as T[];
   }
 
@@ -267,7 +283,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function createDatabase(database: { name: string; charset?: string }) {
-    await sql.execute(`
+    await execute(`
       CREATE DATABASE IF NOT EXISTS \`${database.name}\`
       CHARACTER SET ${database.charset ?? "utf8"}
       COLLATE ${database.charset ?? "utf8_general_ci"}
@@ -301,7 +317,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     try {
       await mkdirIfNotExists(dir);
       await chmod(dir, 0o777);
-      await sql.execute(`SELECT 1 INTO OUTFILE ${outFileVar}`);
+      await execute(`SELECT 1 INTO OUTFILE ${outFileVar}`);
       const exists = await existsFile(outFile);
       if (!exists)
         throw new AppError(`MySQL shared dir is not reached: ${dir}`);
@@ -313,14 +329,8 @@ export async function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function execute(query: string, params: any[] = []) {
-    if (options.verbose) {
-      logExec(`mysql`, [
-        ...(await args()),
-        "-e",
-        `"${flatQuery(query)}"`,
-        ...(sql.config.database ? [sql.config.database] : []),
-      ]);
-    }
+    if (options.verbose)
+      logExec("> sql.execute", [query, JSON.stringify({ params }, null, 2)]);
     await sql.execute(query, params);
   }
 
@@ -339,10 +349,12 @@ export async function createMysqlCli(options: MysqlCliOptions) {
   }
 
   async function changeDatabase(name: string) {
+    if (options.verbose) logExec("sql.changeUser", [name]);
     await sql.changeUser({ database: name });
   }
   return {
     async [Symbol.asyncDispose]() {
+      if (options.verbose) logExec("sql.end");
       await sql.end();
     },
     options,
