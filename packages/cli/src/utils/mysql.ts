@@ -67,7 +67,7 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     logExec("sql.createConnection", [
       JSON.stringify(
         {
-          connectionOptions,
+          ...connectionOptions,
           password: "********",
         },
         null,
