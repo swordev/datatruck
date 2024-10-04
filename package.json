@@ -21,6 +21,8 @@
   ],
   "scripts": {
     "build": "pnpm build:ts && pnpm build:schema",
+    "build:bin": "node ./scripts/build-bin.mjs",
+    "build:dist": "esbuild --bundle --platform=node --target=node20 ./packages/cli/lib/bin.js --outfile=dist/datatruck.js",
     "build:schema": "node ./packages/cli/scripts/gen-schema.mjs",
     "build:ts": "tsc -b tsconfig.build.json --pretty",
     "clean": "tsc -b tsconfig.build.json --clean",
@@ -36,6 +38,8 @@
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@tsconfig/node20": "^20.1.4",
     "@types/node": "^20.16.9",
+    "@yao-pkg/pkg": "^5.15.0",
+    "esbuild": "^0.24.0",
     "npm-check-updates": "^17.1.3",
     "prettier": "3.3.3",
     "prettier-plugin-packagejson": "^2.5.2",
@@ -48,7 +52,8 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "smartwrap@2.0.2": "patches/smartwrap@2.0.2.patch"
+      "smartwrap@2.0.2": "patches/smartwrap@2.0.2.patch",
+      "tty-table@4.2.3": "patches/tty-table@4.2.3.patch"
     }
   },
   "engine": {

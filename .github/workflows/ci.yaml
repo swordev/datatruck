@@ -43,6 +43,11 @@ jobs:
         run: sudo npm test
         env:
           CI: true
+      - uses: actions/cache@v3
+        with:
+          path: ~/.pkg-cache/
+          key: ${{ runner.os }}-pkg
+      - run: pnpm build:bin
       - name: Create release pull request or publish to npm
         id: changesets
         uses: changesets/action@v1
@@ -53,6 +58,48 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts
+          path: bin/*
+          if-no-files-found: error
+      - id: release-name
+        uses: actions/github-script@v6
+        env:
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        with:
+          script: |
+            const published = JSON.parse(process.env.PUBLISHED_PACKAGES);
+            for (const { name, version } of published)
+              core.setOutput(name, version);
+      - name: Upload release assets
+        if: steps.release-name.outputs['datatruck']
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bin/*
+          name: datatruck@${{ steps.release-name.outputs['datatruck'] }}
+          tag_name: datatruck@${{ steps.release-name.outputs['datatruck'] }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Delete nightly release
+        uses: sgpublic/delete-release-action@v1.1
+        with:
+          pre-release-drop: true
+          pre-release-keep-count: -1
+          pre-release-drop-tag: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+      - name: Create nightly release
+        if: steps.release-name.outputs['datatruck'] == ''
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: datatruck@nightly
+          name: datatruck@nightly
+          files: bin/*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - id: changesets_meta
         name: Build changesets meta
         uses: actions/github-script@v7

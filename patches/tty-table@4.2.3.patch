@@ -1,0 +1,30 @@
+diff --git a/adapters/terminal-adapter.js b/adapters/terminal-adapter.js
+deleted file mode 100644
+index 3c5e8abc1eac0accb9d6873be268927894d7f6cc..0000000000000000000000000000000000000000
+diff --git a/package.json b/package.json
+index 618da1af1d7c8473d65581747fd37f0bb1bb1320..bfb114337ada532f0b628ccc809c9ea9c9205a45 100644
+--- a/package.json
++++ b/package.json
+@@ -7,9 +7,6 @@
+   "engines": {
+     "node": ">=8.0.0"
+   },
+-  "bin": {
+-    "tty-table": "adapters/terminal-adapter.js"
+-  },
+   "files": [
+     "adapters/",
+     "src/",
+diff --git a/src/main.js b/src/main.js
+index 6981919868be1b0db6ef6c0ad2ac88b5f858192b..d49206a98187d230e8c8f140d1d9782d8bfc0643 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -1,7 +1,7 @@
+ if (require.main === module) {
+   // called directly in terminal
+   /* istanbul ignore next */
+-  require("./../adapters/terminal-adapter.js")
++  //require("./../adapters/terminal-adapter.js")
+ } else {
+   // called as a module
+   module.exports = require("./../adapters/default-adapter.js")

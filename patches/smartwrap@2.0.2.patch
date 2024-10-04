@@ -1,8 +1,45 @@
+diff --git a/package.json b/package.json
+index b448ae7d2beab6212654d1d7dc7d67b0b8e505f2..cac137d56fd8a5e75af0bb01d076a83492e8a0c1 100644
+--- a/package.json
++++ b/package.json
+@@ -6,9 +6,6 @@
+   "engines": {
+     "node": ">=6"
+   },
+-  "bin": {
+-    "smartwrap": "src/terminal-adapter.js"
+-  },
+   "scripts": {
+     "test": "./node_modules/.bin/grunt t",
+     "test-display": "./node_modules/.bin/grunt test-display",
+@@ -25,12 +22,9 @@
+   "author": "tecfu",
+   "license": "MIT",
+   "dependencies": {
+-    "array.prototype.flat": "^1.2.3",
+     "breakword": "^1.0.5",
+-    "grapheme-splitter": "^1.0.4",
+     "strip-ansi": "^6.0.0",
+-    "wcwidth": "^1.0.1",
+-    "yargs": "^15.1.0"
++    "wcwidth": "^1.0.1"
+   },
+   "devDependencies": {
+     "chai": "^4.2.0",
 diff --git a/src/main.js b/src/main.js
-index acdc39bc31da8087a86384b651a32ea2de5a19aa..9e9553e06e942fb6221615933f5baf01072444f2 100644
+index acdc39bc31da8087a86384b651a32ea2de5a19aa..0d25228dfbcb77cf9062fd11fb0e97b459f7217d 100644
 --- a/src/main.js
 +++ b/src/main.js
-@@ -171,6 +171,7 @@ const wrap = (input, options) => {
+@@ -1,8 +1,6 @@
+ const breakword = require("breakword")
+ const stripansi = require("strip-ansi")
+ const wcwidth = require("wcwidth")
+-const flat = require("array.prototype.flat")
+-if (!Array.prototype.flat) flat.shim()
+ 
+ const ANSIPattern = [
+   "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+@@ -171,6 +169,7 @@ const wrap = (input, options) => {
  
  const splitAnsiInput = (text) => {
    // get start and end positions for matches
@@ -10,3 +47,6 @@ index acdc39bc31da8087a86384b651a32ea2de5a19aa..9e9553e06e942fb6221615933f5baf01
    let matches = []
    let textArr = [...text]
    let textLength = textArr.length
+diff --git a/src/terminal-adapter.js b/src/terminal-adapter.js
+deleted file mode 100644
+index 7ff8458e1a29583c0f85404b93502b70dbf14ec6..0000000000000000000000000000000000000000
