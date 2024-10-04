@@ -47,6 +47,7 @@ jobs:
         with:
           path: ~/.pkg-cache/
           key: ${{ runner.os }}-pkg
+      - run: pnpm build:dist
       - run: pnpm build:bin
       - name: Create release pull request or publish to npm
         id: changesets
