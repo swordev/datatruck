@@ -98,13 +98,13 @@ export async function createMysqlCli(options: MysqlCliOptions) {
       await fetchAll<{ table_name: string }>(
         `
       SELECT
-        table_name 
+        TABLE_NAME AS table_name
       FROM
-        information_schema.tables
+        information_schema.TABLES
       WHERE
-        table_schema = ?
+        TABLE_SCHEMA = ?
       ORDER BY
-        table_name
+        TABLE_NAME
   `,
         [database],
       )
@@ -257,9 +257,9 @@ export async function createMysqlCli(options: MysqlCliOptions) {
       SELECT
         COUNT(*) AS total 
       FROM
-        information_schema.tables
+        information_schema.TABLES
       WHERE
-        table_schema = ?
+        TABLE_SCHEMA = ?
     `,
       [database],
     );
