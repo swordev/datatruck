@@ -90,7 +90,7 @@ jobs:
           pre-release-keep-count: -1
           pre-release-drop-tag: true
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create nightly release
         if: steps.release-name.outputs['datatruck'] == ''
         uses: softprops/action-gh-release@v1
