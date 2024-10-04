@@ -26,7 +26,7 @@ jobs:
           docker exec $CONTAINER_ID sh -c 'echo "secure_file_priv=/var/lib/mysql-files" >> /etc/mysql/mariadb.conf.d/settings.cnf'
           docker kill --signal=SIGHUP $CONTAINER_ID
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -43,7 +43,7 @@ jobs:
         run: sudo npm test
         env:
           CI: true
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.pkg-cache/
           key: ${{ runner.os }}-pkg
@@ -60,13 +60,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-artifacts
           path: bin/*
           if-no-files-found: error
       - id: release-name
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         env:
           PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
         with:
@@ -84,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Delete nightly release
-        uses: sgpublic/delete-release-action@v1.1
+        uses: sgpublic/delete-release-action@v1.2
         with:
           pre-release-drop: true
           pre-release-keep-count: -1
