@@ -82,7 +82,7 @@ export function useTempFile(path: string): AsyncDisposable & { path: string } {
 export class GargabeCollector {
   readonly paths: Set<string> = new Set();
   readonly children: Set<GargabeCollector> = new Set();
-  constructor(protected parent?: GargabeCollector) {
+  constructor(protected verbose?: boolean) {
     collectors.add(this);
   }
   pending() {
@@ -93,7 +93,7 @@ export class GargabeCollector {
   async cleanup() {
     for (const path of this.paths) {
       try {
-        await rmTmpDir(path);
+        if (!this.verbose) await rmTmpDir(path);
         this.paths.delete(path);
       } catch (_) {}
     }
@@ -119,7 +119,7 @@ export class GargabeCollector {
     };
   }
   create() {
-    const gc = new GargabeCollector();
+    const gc = new GargabeCollector(this.verbose);
     this.children.add(gc);
     return gc;
   }

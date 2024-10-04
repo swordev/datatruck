@@ -147,7 +147,7 @@ export class ExportAction {
   }
   async exec() {
     const { options, settings } = this;
-    const gc = new GargabeCollector();
+    const gc = new GargabeCollector(this.options.verbose);
     const pm = new ProgressManager({
       verbose: options.verbose,
       tty: settings.tty,

@@ -22,6 +22,16 @@ describe("GargabeCollector", () => {
     expect(gc.paths.size).toBe(0);
     await expectDir(path2, false);
   });
+
+  it("cleanup is disabled", async () => {
+    const gc = new GargabeCollector(true);
+    const path1 = await mkTmpDir("1");
+    await expectDir(path1);
+    expect(gc.paths.size).toBe(1);
+    await gc.cleanup();
+    await expectDir(path1, true);
+    expect(gc.paths.size).toBe(0);
+  });
   it("dispose", async () => {
     const gc = new GargabeCollector();
     const path1 = await mkTmpDir("1");
