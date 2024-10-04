@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.40.3
+
+### Patch Changes
+
+- [`0170cbc`](https://github.com/swordev/datatruck/commit/0170cbcdac33e5587d4773374b4cfe232490ae52) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies
+
+- [`a7e13ca`](https://github.com/swordev/datatruck/commit/a7e13ca4bd2764e43cdaa5a50253548c03c808e1) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix MySQL task
+
 ## 0.40.2
 
 ### Patch Changes
