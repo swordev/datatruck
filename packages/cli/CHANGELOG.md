@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.40.4
+
+### Patch Changes
+
+- [`a78c38e`](https://github.com/swordev/datatruck/commit/a78c38e791391852faf9eac1104bef6315f75838) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix MySQL task
+
 ## 0.40.3
 
 ### Patch Changes
