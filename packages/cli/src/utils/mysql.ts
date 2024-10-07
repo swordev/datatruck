@@ -152,6 +152,8 @@ export async function createMysqlCli(options: MysqlCliOptions) {
               "--no-data",
               "--no-create-db",
               "--skip-opt",
+              // https://jira.mariadb.org/browse/MDEV-35091
+              "--create-options",
             ]
           : []),
         ...(input.items || []),
