@@ -86,6 +86,7 @@ jobs:
       - name: Delete nightly release
         uses: sgpublic/delete-release-action@v1.2
         with:
+          draft-drop: false
           pre-release-drop: true
           pre-release-keep-count: -1
           pre-release-drop-tag: true
