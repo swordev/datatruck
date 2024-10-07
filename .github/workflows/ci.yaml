@@ -76,7 +76,7 @@ jobs:
               core.setOutput(name, version);
       - name: Upload release assets
         if: steps.release-name.outputs['datatruck']
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: bin/*
           name: datatruck@${{ steps.release-name.outputs['datatruck'] }}
@@ -93,7 +93,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create nightly release
         if: steps.release-name.outputs['datatruck'] == ''
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: datatruck@nightly
           name: datatruck@nightly
@@ -163,7 +163,7 @@ jobs:
       - run: node scripts/build-win-setup.mjs
       - name: Upload release assets
         if: needs.release.steps.release-name.outputs['datatruck']
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: bin/*
           name: datatruck@${{ needs.release.steps.release-name.outputs['datatruck'] }}
@@ -172,7 +172,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create nightly release
         if: needs.release.steps.release-name.outputs['datatruck'] == ''
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: datatruck@nightly
           name: datatruck@nightly
