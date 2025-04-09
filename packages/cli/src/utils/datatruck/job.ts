@@ -116,7 +116,7 @@ export async function runCronJob(job: Job, name: string, config: JobConfig) {
 
   try {
     const log =
-      config.log?.enabled ?? true
+      (config.log?.enabled ?? true)
         ? await createJobLog(config.log, name)
         : undefined;
     const cliOptions = getJobCliOptions(job);

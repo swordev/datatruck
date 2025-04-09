@@ -225,8 +225,8 @@ export function normalizeTarPath(path: string) {
 
 export async function extractTar(options: ExtractOptions) {
   let total = options.onEntry
-    ? options.total ??
-      (await listTar({ input: options.input, verbose: options.verbose }))
+    ? (options.total ??
+      (await listTar({ input: options.input, verbose: options.verbose })))
     : undefined;
 
   if (!(await existsDir(options.output))) {

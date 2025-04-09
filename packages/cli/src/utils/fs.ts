@@ -284,7 +284,7 @@ export async function copyFileWithStreams(source: string, target: string) {
   const r = createReadStream(source);
   const w = createWriteStream(target);
   try {
-     await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       r.on("error", reject);
       w.on("error", reject);
       w.on("finish", resolve);

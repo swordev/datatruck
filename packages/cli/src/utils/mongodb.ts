@@ -37,7 +37,7 @@ export async function resolveMongoUri(
     ...object,
     password:
       object.password !== undefined
-        ? (await fetchData(object.password, (p) => p.path)) ?? ""
+        ? ((await fetchData(object.password, (p) => p.path)) ?? "")
         : "",
   };
 }

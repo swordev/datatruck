@@ -61,7 +61,7 @@ export class ProgressManager {
         ? this.tty
           ? `interval:${300}`
           : "interval"
-        : options.mode ?? "interval";
+        : (options.mode ?? "interval");
 
     this.intervalMs = 1000;
 

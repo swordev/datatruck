@@ -84,7 +84,7 @@ export async function sendFile(
     file = createReadStream(path);
     const fileStat = await stat(path);
     res.setHeader(
-      options.contentLength ?? true ? "Content-Length" : "x-content-length",
+      (options.contentLength ?? true) ? "Content-Length" : "x-content-length",
       fileStat.size,
     );
     if (options.checksum)

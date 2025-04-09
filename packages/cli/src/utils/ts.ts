@@ -17,13 +17,14 @@ export type IfRequireKeys<TResolved, T1> = TResolved extends true
   ? RequiredKeys<T1>
   : T1;
 
-export type Unwrap<T> = T extends Promise<infer U>
-  ? U
-  : T extends (...args: any) => Promise<infer U>
+export type Unwrap<T> =
+  T extends Promise<infer U>
     ? U
-    : T extends (...args: any) => infer U
+    : T extends (...args: any) => Promise<infer U>
       ? U
-      : T;
+      : T extends (...args: any) => infer U
+        ? U
+        : T;
 
 export type RequiredKeys<T> = {
   [K in keyof Required<T>]: T[K];
