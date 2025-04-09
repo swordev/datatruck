@@ -37,7 +37,7 @@ function createCrons(jobs: Record<string, Job>, options: JobConfig) {
     const job = jobs[name];
     if (job.schedule)
       crons.push(
-        Cron(
+        new Cron(
           typeof job.schedule === "string"
             ? job.schedule
             : formatCronScheduleObject(job.schedule),

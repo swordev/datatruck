@@ -183,7 +183,7 @@ export async function readPartialFile(
     });
     reader
       .on("error", reject)
-      .on("data", (chunk: Buffer) => {
+      .on("data", (chunk) => {
         result += chunk.toString();
       })
       .on("close", () => resolve(result));
@@ -271,7 +271,7 @@ export async function writeGitIgnoreList(options: {
     stream.write(`!${value}\n`);
   }
 
-  await new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     stream.close();
     stream.on("close", resolve);
     stream.on("error", reject);
@@ -284,7 +284,7 @@ export async function copyFileWithStreams(source: string, target: string) {
   const r = createReadStream(source);
   const w = createWriteStream(target);
   try {
-    return await new Promise((resolve, reject) => {
+     await new Promise<void>((resolve, reject) => {
       r.on("error", reject);
       w.on("error", reject);
       w.on("finish", resolve);
