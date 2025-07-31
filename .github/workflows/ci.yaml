@@ -37,8 +37,6 @@ jobs:
       - run: pnpm build
       - name: Install system dependencies
         run: sudo apt-get install restic git tar pigz -y
-      - name: Update restic
-        run: sudo restic self-update
       - name: Test
         run: sudo npm test
         env:
