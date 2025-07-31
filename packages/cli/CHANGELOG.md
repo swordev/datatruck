@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.0
+
+### Minor Changes
+
+- [`a160b7d`](https://github.com/swordev/datatruck/commit/a160b7d65d50cbecd497906638c2a82291c19b78) Thanks [@juanrgm](https://github.com/juanrgm)! - Update dependencies.
+
 ## 0.40.4
 
 ### Patch Changes
