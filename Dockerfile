@@ -23,7 +23,7 @@ WORKDIR /var/lib/datatruck/
 COPY . /var/lib/datatruck
 
 RUN set -x \
-    && npm install -g pnpm@9 \
+    && npm install -g pnpm@10 \
     && pnpm install \
     && pnpm build \
     && echo "#!/bin/sh" > $BIN_PATH \
