@@ -68,7 +68,9 @@ export function createCommand<T extends OptionsConfig>(
       argumentOptions.push(name);
     } else if (typeof flag === "string") {
       const flags = [
-        option.shortFlag ? `-${option.shortFlag},` : "",
+        option.shortFlag
+          ? `${"-".repeat(option.shortFlag.length > 1 ? 2 : 1)}${option.shortFlag},`
+          : "",
         `--${name}`,
         option.value !== "boolean"
           ? option.value === "array"

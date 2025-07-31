@@ -6,6 +6,7 @@ export default defineConfig({
     globalSetup: ["./packages/cli/test/globalSetup.ts"],
     include: ["./packages/*/test/**/*.test.ts"],
     exclude: ["./packages/cli/test/mongo-dump-task.test.ts"],
+    pool: "threads",
   },
   esbuild: { target: "es2022" },
 });

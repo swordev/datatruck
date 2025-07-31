@@ -4,7 +4,13 @@ module.exports = {
   root: true,
   dep: "dev,optional,prod,bundle",
   target: (name) => {
-    if (["chalk", "@types/node"].includes(name)) {
+    if (
+      [
+        "@types/node",
+        // require ESM
+        "chalk",
+      ].includes(name)
+    ) {
       return "minor";
     } else {
       return "latest";
