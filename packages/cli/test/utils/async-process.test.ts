@@ -1,4 +1,5 @@
 import { AsyncProcess } from "../../src/utils/async-process";
+import { AppError } from "../../src/utils/error";
 import { mkTmpDir } from "../../src/utils/temp";
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
@@ -46,7 +47,7 @@ describe("AsyncProcess.waitForClose", () => {
   it("throws error", async () => {
     const p = new AsyncProcess("node", ["-e", "process.exit(3)"]);
     await expect(p.waitForClose()).rejects.toThrowError(
-      new Error("Process exit code: 3 (node)"),
+      new AppError("Process exit code: 3 (node)"),
     );
   });
   it("throws error with std error", async () => {
@@ -55,7 +56,7 @@ describe("AsyncProcess.waitForClose", () => {
       "console.log('a'); console.error('b'); process.exit(4)",
     ]);
     await expect(p.waitForClose()).rejects.toThrowError(
-      new Error("Process exit code: 4 (node) | b"),
+      new AppError("Process exit code: 4 (node) | b"),
     );
   });
   it("silents the error", async () => {
