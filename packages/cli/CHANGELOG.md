@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.1
+
+### Patch Changes
+
+- [`02e2fe4`](https://github.com/swordev/datatruck/commit/02e2fe47d40721196d568f8222806138543fe0eb) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix restore action
+
 ## 0.41.0
 
 ### Minor Changes
