@@ -91,7 +91,7 @@ export class RestoreAction {
         package: pkg,
         snapshot,
       });
-      snapshotPath = taskResult?.snapshotPath;
+      snapshotPath = taskResult?.snapshotPath ?? snapshotPath;
     }
     ok(snapshotPath);
     await initSnapshotPath(snapshotPath, this.config.minFreeDiskSpace);
