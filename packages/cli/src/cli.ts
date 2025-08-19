@@ -16,6 +16,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { rmSync } from "fs";
 import { dirname, isAbsolute, join, sep } from "path";
+import { format } from "util";
 
 function getGlobalOptions() {
   const result = program.opts() as Omit<GlobalOptions<false>, "config"> & {
@@ -67,21 +68,19 @@ function createCommandAction<T extends keyof DatatruckCommandMap>(
     if (errors?.length) {
       console.error();
       errors.forEach((error, index) => {
-        console.error(
-          chalk.red(`${index + 1}. ` + (error.stack ?? error.message)),
-        );
+        console.error(chalk.red(`${index + 1}. ` + format(error)));
         if (errors![index + 1]) console.error();
       });
     }
 
     if (error) {
       if (globalOptions.verbose) {
-        console.error(chalk.red(error.stack));
+        console.error(chalk.red(format(error)));
       } else {
         if (error instanceof AppError) {
           console.error(chalk.red(error.message));
         } else {
-          console.error(chalk.red(error.stack));
+          console.error(chalk.red(format(error)));
         }
       }
     }
@@ -132,7 +131,7 @@ export function parseArgs(args: string[]) {
     if (eventName !== "exit") {
       process.stdout.write(showCursorCommand);
       console.info(`\nClosing... (reason: ${eventName})`);
-      if (error instanceof Error) console.error(error.stack);
+      if (error instanceof Error) console.error(format(error));
     }
 
     if (!verbose)
