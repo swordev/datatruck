@@ -25,6 +25,7 @@ export function resolvePath(path: string) {
 
 export type FsOptions = {
   backend: string;
+  insecureTls?: boolean;
 };
 
 export abstract class AbstractFs {

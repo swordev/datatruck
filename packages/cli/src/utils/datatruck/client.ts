@@ -4,10 +4,12 @@ import { createHref, downloadFile, fetchJson, post, uploadFile } from "../http";
 import { BasicProgress } from "../progress";
 import { AbstractFs, FsOptions, LocalFs } from "../virtual-fs";
 import { headerKey } from "./repository-server";
+import { Agent } from "undici";
 
 export class RemoteFs extends AbstractFs {
   protected url: string;
   protected headers: Record<string, string>;
+  protected agent: Agent | undefined;
   constructor(readonly options: FsOptions & { verbose?: boolean }) {
     super(options);
     const url = new URL(options.backend);
@@ -19,24 +21,54 @@ export class RemoteFs extends AbstractFs {
     url.password = "";
     this.url = url.href;
     if (this.url.endsWith("/")) this.url = this.url.slice(0, -1);
+    if (options.insecureTls)
+      this.agent = new Agent({
+        connect: {
+          rejectUnauthorized: false,
+        },
+      });
   }
   isLocal() {
     return false;
   }
+
+  private getCurlArgs(headers: Record<string, string> = {}) {
+    const args = Object.entries({ ...headers, ...this.headers }).flatMap(
+      ([k, v]) => ["-H", `"${k}: ${v}"`],
+    );
+    if (this.options.insecureTls) args.push("-k");
+    args.push("-v");
+    return args;
+  }
+
   protected async fetchJson(name: string, params: any[]) {
     const url = createHref(`${this.url}/${name}`, {
       params: JSON.stringify(params),
     });
+    if (this.options.verbose)
+      logExec("curl", [...this.getCurlArgs(), `"${url}"`]);
     return await fetchJson(url, {
       headers: this.headers,
+      dispatcher: this.agent,
     });
   }
+
   protected async post(name: string, params: any[], data: string) {
     const url = createHref(`${this.url}/${name}`, {
       params: JSON.stringify(params),
     });
+    if (this.options.verbose)
+      logExec("curl", [
+        ...this.getCurlArgs({ "Content-Type": "application/json" }),
+        "--request",
+        "POST",
+        "--data",
+        `"${data}"`,
+        `"${url}"`,
+      ]);
     return await post(url, data, {
       headers: this.headers,
+      dispatcher: this.agent,
     });
   }
   override async existsDir(path: string): Promise<boolean> {
@@ -75,9 +107,17 @@ export class RemoteFs extends AbstractFs {
     const url = createHref(`${this.url}/upload`, {
       params: JSON.stringify([target]),
     });
+    if (this.options.verbose)
+      logExec("curl", [
+        ...this.getCurlArgs(),
+        "-F",
+        `data=@${source}`,
+        `"${url}"`,
+      ]);
     return await uploadFile(url, source, {
       headers: this.headers,
       checksum: true,
+      dispatcher: this.agent,
     });
   }
   override async download(
@@ -92,9 +132,12 @@ export class RemoteFs extends AbstractFs {
     const url = createHref(`${this.url}/download`, {
       params: JSON.stringify([source]),
     });
+    if (this.options.verbose)
+      logExec("curl", [...this.getCurlArgs(), `"${url}"`, ">", target]);
     return await downloadFile(url, target, {
       ...options,
       headers: this.headers,
+      dispatcher: this.agent,
     });
   }
 }
@@ -104,10 +147,14 @@ export function isRemoteBackend(backend: string) {
 }
 
 export function createFs(
-  backend: string,
+  options: { backend: string; insecureTls?: boolean },
   verbose: boolean | undefined,
 ): AbstractFs {
-  return isRemoteBackend(backend)
-    ? new RemoteFs({ backend, verbose })
-    : new LocalFs({ backend });
+  return isRemoteBackend(options.backend)
+    ? new RemoteFs({
+        backend: options.backend,
+        insecureTls: options.insecureTls,
+        verbose,
+      })
+    : new LocalFs({ backend: options.backend });
 }

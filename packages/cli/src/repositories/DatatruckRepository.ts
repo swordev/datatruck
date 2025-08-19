@@ -48,6 +48,7 @@ export type MetaData = Omit<SnapshotTagObject, "shortId" | "size"> & {
 export type DatatruckRepositoryConfig = {
   backend: string;
   compress?: boolean | CompressOptions;
+  insecureTls?: boolean;
 };
 
 type PackObject = {
@@ -100,17 +101,17 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override fetchDiskStats(config: DatatruckRepositoryConfig) {
-    const fs = createFs(config.backend, this.verbose);
+    const fs = createFs(config, this.verbose);
     return fs.fetchDiskStats(".");
   }
 
   override async init(data: RepoInitData) {
-    const fs = createFs(this.config.backend, this.verbose);
+    const fs = createFs(this.config, this.verbose);
     await fs.mkdir(".");
   }
 
   override async prune(data: RepoPruneData) {
-    const fs = createFs(this.config.backend, this.verbose);
+    const fs = createFs(this.config, this.verbose);
     const snapshotName = DatatruckRepository.createSnapshotName(data.snapshot, {
       name: data.snapshot.packageName,
     });
@@ -121,7 +122,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async fetchSnapshots(data: RepoFetchSnapshotsData) {
-    const fs = createFs(this.config.backend, this.verbose);
+    const fs = createFs(this.config, this.verbose);
     if (!(await fs.existsDir(".")))
       throw new AppError(
         `Repository (${
@@ -188,7 +189,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   override async backup(
     data: RepoBackupData<DatatruckPackageRepositoryConfig>,
   ) {
-    const fs = createFs(this.config.backend, this.verbose);
+    const fs = createFs(this.config, this.verbose);
     const snapshotName = DatatruckRepository.createSnapshotName(
       data.snapshot,
       data.package,
@@ -357,11 +358,8 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   }
 
   override async copy(data: RepoCopyData<DatatruckRepositoryConfig>) {
-    const sourceFs = createFs(this.config.backend, this.verbose);
-    const targetFs = createFs(
-      data.mirrorRepositoryConfig.backend,
-      this.verbose,
-    );
+    const sourceFs = createFs(this.config, this.verbose);
+    const targetFs = createFs(data.mirrorRepositoryConfig, this.verbose);
     const snapshotName = DatatruckRepository.createSnapshotName(
       data.snapshot,
       data.package,
@@ -454,7 +452,7 @@ export class DatatruckRepository extends RepositoryAbstract<DatatruckRepositoryC
   override async restore(
     data: RepoRestoreData<DatatruckPackageRepositoryConfig>,
   ) {
-    const fs = createFs(this.config.backend, this.verbose);
+    const fs = createFs(this.config, this.verbose);
     const relRestorePath = data.snapshotPath;
     ok(relRestorePath);
     const restorePath = resolve(relRestorePath);
