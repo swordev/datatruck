@@ -16,6 +16,10 @@
     "email": "juanrgm724@gmail.com",
     "url": "https://github.com/juanrgm"
   },
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/"
+  },
   "main": "lib/index.js",
   "bin": {
     "datatruck": "lib/bin.js",
