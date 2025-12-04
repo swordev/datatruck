@@ -1,5 +1,12 @@
 # datatruck
 
+## 0.41.2
+
+### Patch Changes
+
+- Updated dependencies [[`fc37153`](https://github.com/swordev/datatruck/commit/fc37153afdf2c461310415d96b5e7e987f9a1e30)]:
+  - @datatruck/cli@0.41.2
+
 ## 0.41.1
 
 ### Patch Changes
