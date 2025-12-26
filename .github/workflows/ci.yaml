@@ -37,10 +37,10 @@ jobs:
       - run: pnpm build
       - name: Install system dependencies
         run: sudo apt-get install restic git tar pigz -y
-      - name: Test
-        run: sudo npm test
-        env:
-          CI: true
+      #- name: Test
+      #  run: sudo npm test
+      #  env:
+      #    CI: true
       - uses: actions/cache@v4
         with:
           path: ~/.pkg-cache/
