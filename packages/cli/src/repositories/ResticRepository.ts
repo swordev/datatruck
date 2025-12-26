@@ -131,7 +131,6 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
       log: data.options.verbose,
     });
     const result = await restic.snapshots({
-      json: true,
       tags: [
         ...(data.options.ids?.map((id) =>
           ResticRepository.createSnapshotTag(
@@ -270,7 +269,6 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     });
 
     const [lastSnapshot] = await restic.snapshots({
-      json: true,
       tags: [packageTag],
       latest: 1,
     });
@@ -385,18 +383,14 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     if (!snapshot) throw new AppError(`Snapshot not found`);
 
     const restic = new Restic({
-      env: {
-        ...(await this.buildEnv()),
-        ...(typeof config.password === "string"
-          ? { RESTIC_PASSWORD2: config.password }
-          : { RESTIC_PASSWORD_FILE2: resolve(config.password.path) }),
-        RESTIC_REPOSITORY2: await Restic.formatRepository(config.repository),
-      },
+      env: await this.buildEnv(),
       log: data.options.verbose,
     });
     let bytes = 0;
     await restic.copy({
-      id: snapshot.originalId,
+      ids: [snapshot.originalId],
+      fromRepo: await Restic.formatRepository(config.repository),
+      fromRepoPassword: config.password,
       onStream(data) {
         if (data.message_type === "status") {
           bytes = data.total_bytes;

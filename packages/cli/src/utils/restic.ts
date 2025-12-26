@@ -2,6 +2,7 @@ import { AsyncProcess, AsyncProcessOptions } from "./async-process";
 import { fastFolderSizeAsync } from "./fs";
 import { ProcessEnv } from "./process";
 import { formatUri, Uri } from "./string";
+import { useTempDir } from "./temp";
 import { writeFile, readFile, rm } from "fs/promises";
 import { join, resolve } from "path";
 
@@ -50,7 +51,11 @@ export class Restic {
   constructor(
     readonly options: {
       log?: boolean;
-      env: Record<string, string>;
+      env: {
+        RESTIC_REPOSITORY: string;
+        RESTIC_PASSWORD?: string;
+        RESTIC_PASSWORD_FILE?: string;
+      };
     },
   ) {}
 
@@ -85,7 +90,8 @@ export class Restic {
   private createProcess(args: string[], options?: AsyncProcessOptions) {
     return new AsyncProcess("restic", args, {
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, ...this.options.env },
+      ...(options ?? {}),
+      env: { ...process.env, ...this.options.env, ...options?.env },
       $log: this.options.log
         ? {
             exec: true,
@@ -100,16 +106,18 @@ export class Restic {
             ],
           }
         : {},
-      ...(options ?? {}),
     });
   }
 
   async exec(args: string[], options?: AsyncProcessOptions) {
     return await this.createProcess(args, options).waitForClose();
   }
-  private async stdout(args: string[], options?: AsyncProcessOptions) {
-    return await this.createProcess(args, options).stdout.fetch();
+
+  async json<T>(args: string[], options?: AsyncProcessOptions): Promise<T> {
+    const stdout = await this.createProcess(args, options).stdout.fetch();
+    return JSON.parse(stdout);
   }
+
   async checkRepository() {
     return (
       (await this.exec(["cat", "config"], {
@@ -130,6 +138,7 @@ export class Restic {
     keepTag?: string[];
     tag?: string[];
     prune?: boolean;
+    args?: string[];
   }) {
     await this.exec([
       "forget",
@@ -157,16 +166,19 @@ export class Restic {
         : []),
       ...(options.tag ? options.tag.flatMap((v) => ["--tag", v]) : []),
       ...(options.prune ? ["--prune"] : []),
+      ...(options.args || []),
       ...(options.snapshotId ? [options.snapshotId] : []),
     ]);
   }
 
   async snapshots(options: {
+    ids?: string[];
     tags?: string[];
     paths?: string[];
     latest?: number;
     json?: boolean;
-    snapshotIds?: string[];
+    group?: ("path" | "tags" | "host")[];
+    args?: string[];
   }): Promise<
     {
       time: string;
@@ -180,15 +192,17 @@ export class Restic {
       short_id: string;
     }[]
   > {
-    const json = await this.stdout([
+    const json = options.json ?? true;
+    return await this.json([
       "snapshots",
+      ...(json ? ["--json"] : []),
       ...(options.tags?.flatMap((tag) => [`--tag`, tag]) ?? []),
-      ...(options.json ? ["--json"] : []),
       ...(options.paths?.flatMap((path) => ["--path", path]) ?? []),
+      ...(options.group ? ["--group-by", options.group.join(",")] : []),
       ...(options.latest ? ["--latest", options.latest.toString()] : []),
-      ...(options.snapshotIds || []),
+      ...(options.args || []),
+      ...(options.ids || []),
     ]);
-    return JSON.parse(json);
   }
 
   async backup(options: {
@@ -202,6 +216,7 @@ export class Restic {
     allowEmptySnapshot?: boolean;
     onStream?: (data: ResticBackupStream) => void;
     createEmptyDir?: () => Promise<string>;
+    args?: string[];
   }): Promise<void> {
     try {
       const backup = this.createProcess(
@@ -213,6 +228,7 @@ export class Restic {
           ...(options.tags?.flatMap((v) => ["--tag", v]) ?? []),
           ...(options.setPaths?.flatMap((v) => ["--set-path", v]) ?? []),
           ...(options.parent ? ["--parent", options.parent] : []),
+          ...(options.args || []),
           ...options.paths,
         ],
         { cwd: options.cwd },
@@ -257,10 +273,44 @@ export class Restic {
   }
 
   async copy(options: {
-    id: string;
+    ids: string[];
+    fromRepo?: string;
+    fromRepoPassword?: string | { path: string };
     onStream?: (data: ResticBackupStream) => void;
+    args?: string[];
   }) {
-    const copy = this.createProcess(["copy", "--json", options.id]);
+    const rawPassword =
+      typeof options.fromRepoPassword === "string"
+        ? options.fromRepoPassword
+        : undefined;
+
+    await using fromPasswordDir = rawPassword
+      ? await useTempDir("restic-copy")
+      : undefined;
+
+    const fromPasswordFile = fromPasswordDir
+      ? join(fromPasswordDir.path, "password.txt")
+      : !!options.fromRepoPassword &&
+          typeof options.fromRepoPassword !== "string"
+        ? options.fromRepoPassword.path
+        : undefined;
+
+    if (fromPasswordFile && rawPassword)
+      await writeFile(fromPasswordFile, rawPassword);
+
+    const copy = this.createProcess(
+      [
+        "copy",
+        "--json",
+        ...(fromPasswordFile ? ["--from-password-file", fromPasswordFile] : []),
+        ...(options.fromRepo ? ["--from-repo", options.fromRepo] : []),
+        ...(options.args || []),
+        ...options.ids,
+      ],
+      {
+        env: {},
+      },
+    );
     if (options.onStream) {
       await copy.stdout.parseLines((line) => {
         if (line.startsWith("{") && line.endsWith("}")) {
@@ -280,6 +330,7 @@ export class Restic {
      */
     progressInterval?: number | false;
     onStream?: (data: ResticBackupStream) => void;
+    args?: string[];
   }) {
     let progressTimeout: NodeJS.Timeout | undefined;
     const progressInterval = options.progressInterval ?? 30_000;
@@ -298,8 +349,7 @@ export class Restic {
     }
 
     const snapshots = await this.snapshots({
-      snapshotIds: [options.id],
-      json: true,
+      ids: [options.id],
     });
 
     if (typeof progressInterval === "number") progressRutine();
@@ -311,6 +361,7 @@ export class Restic {
         options.id,
         "--target",
         options.target,
+        ...(options.args || []),
       ]);
 
       if (options.onStream) {
