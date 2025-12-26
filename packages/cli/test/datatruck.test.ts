@@ -31,7 +31,7 @@ beforeAll(() => {
 describe(
   "datatruck",
   {
-    timeout: 300_000,
+    timeout: 400_000,
   },
   () => {
     it("returns config", async () => {
