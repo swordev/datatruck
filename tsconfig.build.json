@@ -6,6 +6,9 @@
     },
     {
       "path": "./packages/datatruck/tsconfig.json"
+    },
+    {
+      "path": "./packages/restic/tsconfig.build.json"
     }
   ]
 }

@@ -1,0 +1,48 @@
+{
+  "name": "@datatruck/restic",
+  "version": "0.0.1",
+  "description": "Tool for creating and managing backups",
+  "homepage": "https://github.com/swordev/datatruck#readme",
+  "bugs": {
+    "url": "https://github.com/swordev/datatruck/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swordev/datatruck"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Juanra GM",
+    "email": "juanrgm724@gmail.com",
+    "url": "https://github.com/juanrgm"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./*": "./lib/*"
+  },
+  "main": "lib/index.js",
+  "bin": {
+    "datatruck-restic": "lib/bin.js",
+    "dttr": "lib/bin.js"
+  },
+  "files": [
+    "lib",
+    "config.schema.json"
+  ],
+  "scripts": {
+    "build": "tsc -b && pnpm build:schema",
+    "build:schema": "node ./packages/cli/scripts/gen-schema.mjs",
+    "clean": "tsc -b --clean",
+    "watch": "tsc -b -w"
+  },
+  "dependencies": {
+    "@datatruck/cli": "workspace:*",
+    "ajv": "^8.17.1",
+    "commander": "^14.0.2",
+    "undici": "^7.18.2"
+  },
+  "engine": {
+    "node": ">=20.0.0"
+  }
+}

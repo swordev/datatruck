@@ -136,6 +136,21 @@ importers:
         specifier: workspace:*
         version: link:../cli
 
+  packages/restic:
+    dependencies:
+      '@datatruck/cli':
+        specifier: workspace:*
+        version: link:../cli
+      ajv:
+        specifier: ^8.17.1
+        version: 8.17.1
+      commander:
+        specifier: ^14.0.2
+        version: 14.0.2
+      undici:
+        specifier: ^7.18.2
+        version: 7.18.2
+
 packages:
 
   '@babel/code-frame@7.26.2':
@@ -876,6 +891,10 @@ packages:
 
   commander@14.0.0:
     resolution: {integrity: sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==}
+    engines: {node: '>=20'}
+
+  commander@14.0.2:
+    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
     engines: {node: '>=20'}
 
   commander@2.20.3:
@@ -2195,6 +2214,10 @@ packages:
     resolution: {integrity: sha512-Vqs8HTzjpQXZeXdpsfChQTlafcMQaaIwnGwLam1wudSSjlJeQ3bw1j+TLPePgrCnCpUXx7Ba5Pdpf5OBih62NQ==}
     engines: {node: '>=20.18.1'}
 
+  undici@7.18.2:
+    resolution: {integrity: sha512-y+8YjDFzWdQlSE9N5nzKMT3g4a5UBX1HKowfdXh0uvAnTaqqwqB92Jt4UXBAeKekDs5IaDKyJFR4X1gYVCgXcw==}
+    engines: {node: '>=20.18.1'}
+
   universalify@0.1.2:
     resolution: {integrity: sha512-rBJeI5CXAlmy1pV+617WB9J63U6XcazHHF2f2dbJix4XzpUF0RS3Zbj0FGIOCAva5P/d/GBOYaACQ1w+0azUkg==}
     engines: {node: '>= 4.0.0'}
@@ -3153,6 +3176,8 @@ snapshots:
   colorette@2.0.20: {}
 
   commander@14.0.0: {}
+
+  commander@14.0.2: {}
 
   commander@2.20.3: {}
 
@@ -4521,6 +4546,8 @@ snapshots:
   undici-types@6.21.0: {}
 
   undici@7.14.0: {}
+
+  undici@7.18.2: {}
 
   universalify@0.1.2: {}
 
