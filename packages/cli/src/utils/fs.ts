@@ -61,7 +61,7 @@ function pathIterator(stream: AsyncIterable<string | Buffer>) {
 }
 
 export function isLocalDir(path: string) {
-  return /^[\/\.]|([A-Z]:)/i.test(path);
+  return /^[\/\.]|([A-Z]:)/i.test(path) || !path.includes(":");
 }
 
 export async function mkdirIfNotExists(path: string) {
