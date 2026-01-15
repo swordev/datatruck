@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.5
+
+### Patch Changes
+
+- [`8b48364`](https://github.com/swordev/datatruck/commit/8b48364dc43a38af74ff2fbd6cf120659a83e96d) Thanks [@juanrgm](https://github.com/juanrgm)! - Check local dir
+
 ## 0.41.4
 
 ### Patch Changes
