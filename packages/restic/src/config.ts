@@ -1,4 +1,5 @@
 import { parseJSONFile } from "./utils/fs.js";
+import { match } from "@datatruck/cli/utils/string.js";
 import { Ajv, ValidateFunction } from "ajv";
 
 export type GlobalConfig = {
@@ -12,6 +13,7 @@ export type Config = {
   ntfyToken?: string;
   minFreeSpace?: string;
   verbose?: boolean;
+  prunePolicy?: PrunePolicy;
   tasks?: {
     type: "mysql-dump";
     packages: string[];
@@ -38,12 +40,24 @@ export type Config = {
     name: string;
     path: string;
     exclude?: string[];
+    prunePolicy?: PrunePolicy;
   }[];
   repositories: {
     name: string;
     password: string;
     uri: string;
+    prunePolicy?: PrunePolicy;
   }[];
+};
+
+export type PrunePolicy = {
+  keepMinutely?: number;
+  keepDaily?: number;
+  keepHourly?: number;
+  keepLast?: number;
+  keepMonthly?: number;
+  keepWeekly?: number;
+  keepYearly?: number;
 };
 
 export function defineConfig(config: Config): Config {
@@ -73,4 +87,36 @@ export async function parseConfigFile(
   const config = await parseJSONFile<Config>(path);
   await validateConfig(config);
   return config;
+}
+
+export class ConfigManager {
+  constructor(readonly config: Config) {}
+  filterRepositories(filter: string[] | undefined) {
+    const repositories = this.config.repositories.filter((v) =>
+      filter ? match(v.name, filter) : true,
+    );
+    if (!repositories.length)
+      throw new Error(
+        `No repositories found for filter: ${filter?.join(", ")}`,
+      );
+    return repositories;
+  }
+  filterPackages(filter: string[] | undefined) {
+    const packages = this.config.packages.filter((v) =>
+      filter ? match(v.name, filter) : true,
+    );
+    if (!packages.length)
+      throw new Error(`No packages found for filter: ${filter?.join(", ")}`);
+    return packages;
+  }
+  findRepository(name: string) {
+    const repo = this.config.repositories.find((repo) => repo.name === name);
+    if (!repo) throw new Error(`Repository '${name}' not found`);
+    return repo;
+  }
+  findPackage(name: string) {
+    const pkg = this.config.packages.find((pkg) => pkg.name === name);
+    if (!pkg) throw new Error(`Package '${name}' not found`);
+    return pkg;
+  }
 }

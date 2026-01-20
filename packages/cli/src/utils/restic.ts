@@ -126,7 +126,7 @@ export class Restic {
     );
   }
 
-  async forget(options: {
+  async forget<JSON extends boolean = false>(options: {
     snapshotId?: string;
     keepLast?: number;
     keepHourly?: number;
@@ -139,36 +139,64 @@ export class Restic {
     tag?: string[];
     prune?: boolean;
     args?: string[];
-  }) {
-    await this.exec([
-      "forget",
-      ...(options.keepLast ? ["--keep-last", options.keepLast.toString()] : []),
-      ...(options.keepHourly
-        ? ["--keep-hourly", options.keepHourly.toString()]
-        : []),
-      ...(options.keepDaily
-        ? ["--keep-daily", options.keepDaily.toString()]
-        : []),
-      ...(options.keepWeekly
-        ? ["--keep-weekly", options.keepWeekly.toString()]
-        : []),
-      ...(options.keepMonthly
-        ? ["--keep-monthly", options.keepMonthly.toString()]
-        : []),
-      ...(options.keepYearly
-        ? ["--keep-yearly", options.keepYearly.toString()]
-        : []),
-      ...(options.keepWithin
-        ? ["--keep-within", options.keepWithin.toString()]
-        : []),
-      ...(options.keepTag
-        ? options.keepTag.flatMap((v) => ["--keepTag", v])
-        : []),
-      ...(options.tag ? options.tag.flatMap((v) => ["--tag", v]) : []),
-      ...(options.prune ? ["--prune"] : []),
-      ...(options.args || []),
-      ...(options.snapshotId ? [options.snapshotId] : []),
-    ]);
+    json?: JSON;
+  }): Promise<
+    [true] extends [JSON]
+      ? {
+          tags: any;
+          host: any;
+          paths: any;
+          keep: any[] | null;
+          remove: any[] | null;
+          reason: any[] | null;
+        }[]
+      : string
+  > {
+    const p = this.createProcess(
+      [
+        "forget",
+        ...(options.json ? ["--json"] : []),
+        ...(options.keepLast
+          ? ["--keep-last", options.keepLast.toString()]
+          : []),
+        ...(options.keepHourly
+          ? ["--keep-hourly", options.keepHourly.toString()]
+          : []),
+        ...(options.keepDaily
+          ? ["--keep-daily", options.keepDaily.toString()]
+          : []),
+        ...(options.keepWeekly
+          ? ["--keep-weekly", options.keepWeekly.toString()]
+          : []),
+        ...(options.keepMonthly
+          ? ["--keep-monthly", options.keepMonthly.toString()]
+          : []),
+        ...(options.keepYearly
+          ? ["--keep-yearly", options.keepYearly.toString()]
+          : []),
+        ...(options.keepWithin
+          ? ["--keep-within", options.keepWithin.toString()]
+          : []),
+        ...(options.keepTag
+          ? options.keepTag.flatMap((v) => ["--keepTag", v])
+          : []),
+        ...(options.tag ? options.tag.flatMap((v) => ["--tag", v]) : []),
+        ...(options.prune ? ["--prune"] : []),
+        ...(options.args || []),
+        ...(options.snapshotId ? [options.snapshotId] : []),
+      ],
+      {},
+    );
+
+    const stdout = await p.stdout.fetch();
+
+    if (options.json) {
+      if (stdout === "") return [] as any;
+      const [json] = stdout.split("\n");
+      return JSON.parse(json);
+    } else {
+      return stdout as any;
+    }
   }
 
   async snapshots(options: {

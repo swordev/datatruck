@@ -100,7 +100,7 @@ export class ResticBackup {
           const tags: ResticBackupTags = {
             ...this.options.tags,
             package: item.name,
-            tags: item.tags,
+            tags: item.tags ?? [],
           };
           return this.restic.backup({
             tags: ResticRepository.createSnapshotTags(tags as any),
@@ -135,10 +135,7 @@ export class ResticBackup {
         "- Duration": duration(Date.now() - now),
         "- Error": error?.message,
       },
-      {
-        priority: error ? "high" : "default",
-        tags: [error ? "red_circle" : "green_circle"],
-      },
+      error,
     );
   }
 }

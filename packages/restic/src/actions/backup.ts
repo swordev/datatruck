@@ -1,10 +1,10 @@
-import { GlobalConfig, type Config } from "../config.js";
 import { MySQLDump } from "../utils/mysql.js";
-import { Ntfy } from "../utils/ntfy.js";
 import {
   CommonResticBackupTags,
   ResticBackup,
 } from "../utils/restic-backup.js";
+import { Action } from "./base.js";
+import { Prune } from "./prune.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { duration } from "@datatruck/cli/utils/date.js";
 import { match } from "@datatruck/cli/utils/string.js";
@@ -14,55 +14,31 @@ import { hostname } from "os";
 export type BackupRunOptions = {
   packages?: string[];
   repositories?: string[];
+  prune?: boolean;
 };
 
-export class Backup {
-  readonly ntfy: Ntfy;
-  protected verbose: boolean | undefined;
-  readonly tags: CommonResticBackupTags;
-  constructor(
-    readonly config: Config,
-    readonly global?: GlobalConfig,
-  ) {
-    this.tags = {
-      id: randomUUID().replaceAll("-", ""),
-      get shortId() {
-        return this.id.slice(0, 8);
-      },
-      hostname: this.config.hostname ?? hostname(),
-      date: new Date().toISOString(),
-      vendor: "dtt-restic",
-      version: "1",
-    };
-    this.verbose = this.global?.verbose ?? this.config.verbose;
-    this.ntfy = new Ntfy({
-      token: this.config.ntfyToken,
-      titlePrefix: `[${this.tags.hostname}] `,
-    });
-  }
-
+export class Backup extends Action {
+  protected tags!: CommonResticBackupTags;
   protected createInstances(
     packageNames: string[],
     repositoryNames?: string[],
   ) {
-    const repositories = this.config.repositories
-      .filter((repo) => !repositoryNames || repositoryNames.includes(repo.name))
-      .map(
-        (repo) =>
-          new ResticBackup(
-            {
-              tags: this.tags,
-              minFreeSpace: this.config.minFreeSpace,
-              name: repo.name,
-              connection: {
-                password: repo.password,
-                uri: repo.uri,
-              },
+    const repositories = this.cm.filterRepositories(repositoryNames).map(
+      (repo) =>
+        new ResticBackup(
+          {
+            tags: this.tags,
+            minFreeSpace: this.config.minFreeSpace,
+            name: repo.name,
+            connection: {
+              password: repo.password,
+              uri: repo.uri,
             },
-            this.ntfy,
-            this.verbose,
-          ),
-      );
+          },
+          this.ntfy,
+          this.verbose,
+        ),
+    );
 
     const sqlDumps =
       this.config.tasks
@@ -92,10 +68,19 @@ export class Backup {
   }
 
   async run(options: BackupRunOptions = {}) {
+    this.tags = {
+      id: randomUUID().replaceAll("-", ""),
+      get shortId() {
+        return this.id.slice(0, 8);
+      },
+      hostname: this.config.hostname ?? hostname(),
+      date: new Date().toISOString(),
+      vendor: "dtt-restic",
+      version: "1",
+    };
+
     const now = Date.now();
-    const packages = this.config.packages.filter((pkg) =>
-      options.packages ? match(pkg.name, options.packages) : true,
-    );
+    const packages = this.cm.filterPackages(options.packages);
     const packageNames = packages.map((p) => p.name);
 
     const { sqlDumps, repositories } = this.createInstances(
@@ -192,11 +177,15 @@ export class Backup {
               `- ${p.errors ? `❌ ` : ""}${p.name}: ${p.success}/${p.total}`,
           ),
         ],
-        {
-          priority: error ? "high" : "default",
-          tags: [error ? "red_circle" : "green_circle"],
-        },
+        error,
       );
+
+      if (options.prune) {
+        await new Prune(this.config, this.global).run({
+          packages: options.packages,
+          repositories: options.repositories,
+        });
+      }
     }
   }
 }

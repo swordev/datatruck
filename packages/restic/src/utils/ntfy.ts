@@ -19,10 +19,7 @@ export class Ntfy {
   async send(
     inTitle: string,
     message: any[] | string | Record<string, any>,
-    options: {
-      priority?: "default" | "high";
-      tags?: string[];
-    } = {},
+    error?: Error | boolean,
   ) {
     const title = this.options.titlePrefix
       ? `${this.options.titlePrefix}${inTitle}`
@@ -42,6 +39,10 @@ export class Ntfy {
 
     if (lines.length) console.info([...lines, ""].join("\n"));
 
+    const options = {
+      priority: error ? "high" : "default",
+      tags: [error ? "red_circle" : "green_circle"],
+    };
     try {
       if (this.options.token)
         await fetch(`https://ntfy.sh/${this.options.token}`, {

@@ -1,6 +1,7 @@
 import { Backup, BackupRunOptions } from "./actions/backup.js";
 import { Copy, CopyRunOptions } from "./actions/copy.js";
 import { Init, InitOptions } from "./actions/init.js";
+import { Prune, PruneRunOptions } from "./actions/prune.js";
 import { GlobalConfig, parseConfigFile } from "./config.js";
 import { parseStringList } from "@datatruck/cli/utils/string.js";
 import { program } from "commander";
@@ -52,6 +53,7 @@ program
   .option("-p, --packages <packages>", "Package names", (v) =>
     parseStringList(v),
   )
+  .option("--prune", "Prune after backup")
   .action(async (options: BackupRunOptions) => {
     const { config, globalOptions } = await load();
     const backup = new Backup(config, globalOptions);
@@ -69,10 +71,28 @@ program
   .requiredOption("-t, --targets <names>", "Target repository names", (v) =>
     parseStringList(v),
   )
+  .option("--prune", "Prune after copy")
   .action(async (options: CopyRunOptions) => {
     const { config, globalOptions } = await load();
     const copy = new Copy(config, globalOptions);
     await copy.run(options);
+  });
+
+program
+  .command("prune")
+  .alias("p")
+  .description("Run prune action")
+  .option("-r, --repositories <names>", "Repository names", (v) =>
+    parseStringList(v),
+  )
+  .option("-p, --packages <packages>", "Package names", (v) =>
+    parseStringList(v),
+  )
+  .option("--prune", "Prune after copy")
+  .action(async (options: PruneRunOptions) => {
+    const { config, globalOptions } = await load();
+    const prune = new Prune(config, globalOptions);
+    await prune.run(options);
   });
 
 program.parse();

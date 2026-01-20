@@ -4,12 +4,13 @@ const sizeRegex = new RegExp(
   "i",
 );
 
-export function formatBytes(bytes: number) {
+export function formatBytes(inBytes: number) {
   let u = 0;
-  let n = bytes;
-  if (bytes < 0n) throw new Error(`Invalid bytes: ${bytes.toString()}`);
+  let n = Math.abs(inBytes);
+  if (n < 0n) throw new Error(`Invalid bytes: ${n.toString()}`);
   while (n >= 1024n && ++u) n = n / 1024;
-  return Number(n).toFixed(n < 10 && u > 0 ? 1 : 0) + units[u];
+  const result = Number(n).toFixed(n < 10 && u > 0 ? 1 : 0) + units[u];
+  return inBytes < 0 ? `-${result}` : result;
 }
 
 export function parseSize(size: string) {

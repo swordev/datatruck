@@ -163,10 +163,7 @@ export class MySQLDump {
         "- Duration": duration(Date.now() - now),
         "- Error": error?.message,
       },
-      {
-        priority: error ? "high" : "default",
-        tags: [error ? "red_circle" : "green_circle"],
-      },
+      error,
     );
   }
 }
