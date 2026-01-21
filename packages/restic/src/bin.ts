@@ -1,7 +1,7 @@
-import { Backup, BackupRunOptions } from "./actions/backup.js";
-import { Copy, CopyRunOptions } from "./actions/copy.js";
+import { Backup, BackupOptions } from "./actions/backup.js";
+import { Copy, CopyOptions } from "./actions/copy.js";
 import { Init, InitOptions } from "./actions/init.js";
-import { Prune, PruneRunOptions } from "./actions/prune.js";
+import { Prune, PruneOptions } from "./actions/prune.js";
 import { GlobalConfig, parseConfigFile } from "./config.js";
 import { parseStringList } from "@datatruck/cli/utils/string.js";
 import { program } from "commander";
@@ -54,7 +54,7 @@ program
     parseStringList(v),
   )
   .option("--prune", "Prune after backup")
-  .action(async (options: BackupRunOptions) => {
+  .action(async (options: BackupOptions) => {
     const { config, globalOptions } = await load();
     const backup = new Backup(config, globalOptions);
     await backup.run(options);
@@ -72,7 +72,7 @@ program
     parseStringList(v),
   )
   .option("--prune", "Prune after copy")
-  .action(async (options: CopyRunOptions) => {
+  .action(async (options: CopyOptions) => {
     const { config, globalOptions } = await load();
     const copy = new Copy(config, globalOptions);
     await copy.run(options);
@@ -89,7 +89,7 @@ program
     parseStringList(v),
   )
   .option("--prune", "Prune after copy")
-  .action(async (options: PruneRunOptions) => {
+  .action(async (options: PruneOptions) => {
     const { config, globalOptions } = await load();
     const prune = new Prune(config, globalOptions);
     await prune.run(options);

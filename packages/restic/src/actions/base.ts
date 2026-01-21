@@ -13,7 +13,7 @@ export class Action {
     this.verbose = this.global?.verbose ?? this.config.verbose;
     this.ntfy = new Ntfy({
       token: this.config.ntfyToken,
-      titlePrefix: `[${this.config.hostname}] `,
+      titlePrefix: this.config.hostname,
     });
   }
 }

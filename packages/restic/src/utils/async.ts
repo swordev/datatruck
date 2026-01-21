@@ -2,9 +2,9 @@ import { duration } from "@datatruck/cli/utils/date.js";
 
 export function createRunner(rutine: () => any) {
   return {
-    start: async (
-      cb: (data: { error: Error | undefined; duration: string }) => any,
-    ) => {
+    start: async <R = any>(
+      cb: (data: { error: Error | undefined; duration: string }) => Promise<R>,
+    ): Promise<R> => {
       const now = Date.now();
       let error: Error | undefined;
       try {
@@ -13,7 +13,7 @@ export function createRunner(rutine: () => any) {
         error = inError as Error;
       }
       try {
-        await cb({
+        return await cb({
           duration: duration(Date.now() - now),
           error,
         });

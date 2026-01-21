@@ -8,7 +8,7 @@ import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 
-export type PruneRunOptions = {
+export type PruneOptions = {
   packages?: string[];
   repositories?: string[];
 };
@@ -20,7 +20,7 @@ export class Prune extends Action {
     policy: PrunePolicy,
   ) {
     let stats: { keep: number; remove: number } | undefined;
-    let diffSize: number | undefined;
+    let space: { diff: number; size: number } | undefined;
     await createRunner(async () => {
       const repo = this.cm.findRepository(repoName);
       const pkg = this.cm.findPackage(pkgName);
@@ -34,7 +34,7 @@ export class Prune extends Action {
 
       const targetPath = isLocalDir(repo.uri) ? repo.uri : undefined;
 
-      diffSize = await checkDiskSpace({
+      space = await checkDiskSpace({
         minFreeSpace: this.config.minFreeSpace,
         targetPath,
         rutine: async () => {
@@ -66,8 +66,8 @@ export class Prune extends Action {
             "- Snapshots": `${stats.keep}`,
             "- Removed": `${stats.remove}`,
           }),
-          ...(diffSize !== undefined && {
-            "- Diff size": (diffSize > 0 ? "+" : "") + formatBytes(diffSize),
+          ...(space !== undefined && {
+            "- Size": `${formatBytes(space.size)} (${formatBytes(space.diff, true)})`,
           }),
           "- Duration": data.duration,
           "- Error": data.error?.message,
@@ -75,18 +75,18 @@ export class Prune extends Action {
         data.error,
       );
     });
-    return diffSize;
+    return space?.diff ?? 0;
   }
 
-  async run(options: PruneRunOptions) {
+  async run(options: PruneOptions) {
     let globalDiffSize: number | undefined;
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
       const packages = this.cm.filterPackages(options.packages);
 
       await this.ntfy.send(`Prune start`, {
-        "- Repositories": repositories.length,
-        "- Packages": packages.length,
+        Repositories: repositories.length,
+        Packages: packages.length,
       });
 
       for (const repo of repositories) {
@@ -102,12 +102,12 @@ export class Prune extends Action {
       }
     }).start(async (data) => {
       await this.ntfy.send(`Prune end`, {
-        "- Duration": data.duration,
+        Duration: data.duration,
         ...(globalDiffSize !== undefined && {
-          "- Diff size":
+          "Diff size":
             (globalDiffSize > 0 ? "+" : "") + formatBytes(globalDiffSize),
         }),
-        "- Error": data.error?.message,
+        Error: data.error?.message,
       });
     });
   }

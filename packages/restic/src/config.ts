@@ -1,4 +1,5 @@
 import { parseJSONFile } from "./utils/fs.js";
+import { MySQLDumpOptions } from "./utils/mysql.js";
 import { match } from "@datatruck/cli/utils/string.js";
 import { Ajv, ValidateFunction } from "ajv";
 
@@ -28,12 +29,7 @@ export type Config = {
           }[]
         | string;
       concurrency?: number;
-      connection: {
-        hostname: string;
-        username: string;
-        password: string;
-        database?: string;
-      };
+      connection: MySQLDumpOptions["connection"];
     };
   }[];
   packages: {

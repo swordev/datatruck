@@ -8,7 +8,7 @@ import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 
-export type CopyRunOptions = {
+export type CopyOptions = {
   packages?: string[];
   source: string;
   targets: string[];
@@ -49,19 +49,6 @@ export class Copy extends Action {
     return tags.find((t) => t.name === SnapshotTagEnum.PACKAGE);
   }
 
-  private async initRepo(name: string) {
-    const repo = this.cm.findRepository(name);
-    const target = new Restic({
-      log: this.verbose,
-      env: {
-        RESTIC_REPOSITORY: repo.uri,
-        RESTIC_PASSWORD: repo.password,
-      },
-    });
-    const exists = await target.checkRepository();
-    if (!exists && isLocalDir(repo.uri)) await target.exec(["init"]);
-  }
-
   async runSingle(options: {
     source: string;
     target: string;
@@ -86,14 +73,14 @@ export class Copy extends Action {
       },
     });
 
-    let diffSize: number | undefined;
+    let space: { diff: number; size: number } | undefined;
 
     await createRunner(async () => {
       if (!this.initializedRepos.has(targetRepo.name)) {
-        await this.initRepo(targetRepo.name);
+        await target.tryInit();
         this.initializedRepos.add(targetRepo.name);
       }
-      diffSize = await checkDiskSpace({
+      space = await checkDiskSpace({
         minFreeSpace: this.config.minFreeSpace,
         targetPath,
         rutine: () =>
@@ -107,24 +94,24 @@ export class Copy extends Action {
       await this.ntfy.send(
         `Copy`,
         {
-          "- Id": snapshot.short_id,
-          "- Source": sourceRepo.name,
-          "- Target": targetRepo.name,
-          "- Package": packageName,
-          ...(diffSize !== undefined && {
-            "- Diff size": (diffSize > 0 ? "+" : "") + formatBytes(diffSize),
+          Id: snapshot.short_id,
+          Source: sourceRepo.name,
+          Target: targetRepo.name,
+          Package: packageName,
+          ...(space !== undefined && {
+            Size: `${formatBytes(space.size)} (${formatBytes(space.diff, true)})`,
           }),
-          "- Duration": data.duration,
-          "- Error": data.error?.message,
+          Duration: data.duration,
+          Error: data.error?.message,
         },
         data.error,
       );
     });
 
-    return diffSize ?? 0;
+    return space?.diff ?? 0;
   }
 
-  async run(options: CopyRunOptions) {
+  async run(options: CopyOptions) {
     let globalDiffSize: number | undefined;
 
     await createRunner(async () => {
@@ -132,8 +119,8 @@ export class Copy extends Action {
       const targets = this.cm.filterRepositories(options.targets);
 
       await this.ntfy.send(`Copy start`, {
-        "- Source": source.name,
-        "- Targets": targets.map((t) => t.name).join(", "),
+        Source: source.name,
+        Targets: targets.map((t) => t.name).join(", "),
       });
 
       const snapshots = await this.findSnapshots(source.name, options.packages);
@@ -156,11 +143,10 @@ export class Copy extends Action {
         `Copy end`,
         {
           ...(globalDiffSize !== undefined && {
-            "- Diff size":
-              (globalDiffSize > 0 ? "+" : "") + formatBytes(globalDiffSize),
+            "Diff size": formatBytes(globalDiffSize, true),
           }),
-          "- Duration": data.duration,
-          "- Error": data.error?.message,
+          Duration: data.duration,
+          Error: data.error?.message,
         },
         data.error,
       );

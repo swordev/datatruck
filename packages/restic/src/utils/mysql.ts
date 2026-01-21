@@ -6,7 +6,7 @@ import {
   ensureFreeDiskSpace,
   fetchDiskStats,
 } from "@datatruck/cli/utils/fs.js";
-import { createMysqlCli } from "@datatruck/cli/utils/mysql.js";
+import { createMysqlCli, MysqlCliOptions } from "@datatruck/cli/utils/mysql.js";
 import { match } from "@datatruck/cli/utils/string.js";
 import { existsSync } from "fs";
 import { mkdir, rm, stat } from "fs/promises";
@@ -28,14 +28,7 @@ export type MySQLDumpOptions = {
   verbose?: boolean;
   minFreeSpace?: string;
   concurrency?: number;
-  connection: MySQLDumpConnection;
-};
-
-export type MySQLDumpConnection = {
-  hostname: string;
-  password: string;
-  username: string;
-  port?: number;
+  connection: Omit<MysqlCliOptions, "verbose">;
 };
 
 export type MySQLDumpStats = {
@@ -155,13 +148,13 @@ export class MySQLDump {
     });
 
     await this.ntfy.send(
-      `SQL dump`,
+      "SQL dump",
       {
-        "- Package": item.name,
-        "- Size": formatBytes(stats.bytes),
-        "- Files": stats.files,
-        "- Duration": duration(Date.now() - now),
-        "- Error": error?.message,
+        Package: item.name,
+        Size: formatBytes(stats.bytes),
+        Files: stats.files,
+        Duration: duration(Date.now() - now),
+        Error: error?.message,
       },
       error,
     );

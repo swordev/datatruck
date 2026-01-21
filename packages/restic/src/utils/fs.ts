@@ -31,5 +31,8 @@ export async function checkDiskSpace(options: {
   const prev = await fastFolderSizeAsync(options.targetPath);
   await options.rutine();
   const next = await fastFolderSizeAsync(options.targetPath);
-  return next - prev;
+  return {
+    diff: next - prev,
+    size: next,
+  };
 }

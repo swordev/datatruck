@@ -1,5 +1,5 @@
 import { AsyncProcess, AsyncProcessOptions } from "./async-process";
-import { fastFolderSizeAsync } from "./fs";
+import { fastFolderSizeAsync, isLocalDir } from "./fs";
 import { ProcessEnv } from "./process";
 import { formatUri, Uri } from "./string";
 import { useTempDir } from "./temp";
@@ -116,6 +116,17 @@ export class Restic {
   async json<T>(args: string[], options?: AsyncProcessOptions): Promise<T> {
     const stdout = await this.createProcess(args, options).stdout.fetch();
     return JSON.parse(stdout);
+  }
+
+  async init() {
+    await this.exec(["init"]);
+  }
+
+  async tryInit() {
+    const exists = await this.checkRepository();
+    if (isLocalDir(this.options.env.RESTIC_REPOSITORY) && !exists)
+      await this.init();
+    return exists;
   }
 
   async checkRepository() {

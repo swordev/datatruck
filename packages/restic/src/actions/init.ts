@@ -19,16 +19,15 @@ export class Init extends Action {
           RESTIC_PASSWORD: repo.password,
         },
       });
-      exists = await restic.checkRepository();
-      if (!exists && isLocalDir(repo.uri)) await restic.exec(["init"]);
+      exists = await restic.tryInit();
     }).start(async (data) => {
       await this.ntfy.send(
         `Init`,
         {
-          "- Repository": name,
-          "- Exists": exists ? "yes" : "no",
-          "- Duration": data.duration,
-          "- Error": data.error?.message,
+          Repository: name,
+          Exists: exists ? "yes" : "no",
+          Duration: data.duration,
+          Error: data.error?.message,
         },
         data.error,
       );
@@ -39,13 +38,13 @@ export class Init extends Action {
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
       await this.ntfy.send(`Init start`, {
-        "- Repositories": repositories.length,
+        Repositories: repositories.length,
       });
       for (const repo of repositories) await this.runSingle(repo.name);
     }).start(async (data) => {
       await this.ntfy.send(`Init end`, {
-        "- Duration": data.duration,
-        "- Error": data.error?.message,
+        Duration: data.duration,
+        Error: data.error?.message,
       });
     });
   }
