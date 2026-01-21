@@ -18,6 +18,8 @@ export type MysqlCliOptions = {
   username: string;
   verbose?: boolean;
   database?: string;
+  ssl?: boolean;
+  vars?: Record<string, string | number>;
 };
 
 function flatQuery(query: string, params?: any[]) {
@@ -83,9 +85,13 @@ export async function createMysqlCli(options: MysqlCliOptions) {
     const data = [
       `[client]`,
       `host = "${options.hostname}"`,
+      ...(options.ssl === false ? [`skip-ssl`] : []),
       ...(options.port ? [`port = "${options.port}"`] : []),
       `user = "${options.username}"`,
       `password = "${password}"`,
+      ...Object.entries(options.vars || {}).map(
+        ([key, value]) => `${key} = "${value}"`,
+      ),
     ];
     const path = join(dir, "mysql.conf");
     await writeFile(path, data.join("\n"));
