@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.41.6
+
+### Patch Changes
+
+- [`9b2073e`](https://github.com/swordev/datatruck/commit/9b2073e0c584c2bff02626d3f63fa9992749b752) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `ssl` and `vars` options to MySQL
+
+- [`965ad38`](https://github.com/swordev/datatruck/commit/965ad38a2763d374d772a411015d8cfb4807b0d1) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `copy` action
+
 ## 0.41.5
 
 ### Patch Changes
