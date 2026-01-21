@@ -23,3 +23,16 @@ export function createRunner(rutine: () => any) {
     },
   };
 }
+
+export async function safeRun<T>(
+  cb: () => Promise<T>,
+): Promise<{ error: Error | undefined; result: T | undefined }> {
+  try {
+    return {
+      error: undefined,
+      result: await cb(),
+    };
+  } catch (error) {
+    return { error: error as Error, result: undefined };
+  }
+}

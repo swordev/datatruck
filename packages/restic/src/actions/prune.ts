@@ -1,11 +1,12 @@
 import { PrunePolicy } from "../config.js";
-import { createRunner } from "../utils/async.js";
-import { checkDiskSpace } from "../utils/fs.js";
+import { createRunner, safeRun } from "../utils/async.js";
+import { checkDiskSpace, fetchMultipleDiskStats } from "../utils/fs.js";
 import { Action } from "./base.js";
 import { SnapshotTagEnum } from "@datatruck/cli/repositories/RepositoryAbstract.js";
 import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
+import { progressPercent } from "@datatruck/cli/utils/math.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 
 export type PruneOptions = {
@@ -60,17 +61,17 @@ export class Prune extends Action {
       await this.ntfy.send(
         `Prune`,
         {
-          "- Repository": repoName,
-          "- Package": pkgName,
+          Repository: repoName,
+          Package: pkgName,
           ...(stats && {
-            "- Snapshots": `${stats.keep}`,
-            "- Removed": `${stats.remove}`,
+            Snapshots: `${stats.keep}`,
+            Removed: `${stats.remove}`,
           }),
           ...(space !== undefined && {
-            "- Size": `${formatBytes(space.size)} (${formatBytes(space.diff, true)})`,
+            Size: `${formatBytes(space.size)} (${formatBytes(space.diff, true)})`,
           }),
-          "- Duration": data.duration,
-          "- Error": data.error?.message,
+          Duration: data.duration,
+          Error: data.error?.message,
         },
         data.error,
       );
@@ -80,6 +81,7 @@ export class Prune extends Action {
 
   async run(options: PruneOptions) {
     let globalDiffSize: number | undefined;
+    let localRepositoryPaths: string[] = [];
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
       const packages = this.cm.filterPackages(options.packages);
@@ -88,6 +90,10 @@ export class Prune extends Action {
         Repositories: repositories.length,
         Packages: packages.length,
       });
+
+      localRepositoryPaths = repositories
+        .filter((repo) => isLocalDir(repo.uri))
+        .map((repo) => repo.uri);
 
       for (const repo of repositories) {
         for (const pkg of packages) {
@@ -101,6 +107,10 @@ export class Prune extends Action {
         }
       }
     }).start(async (data) => {
+      const diskStats = await safeRun(() =>
+        fetchMultipleDiskStats(localRepositoryPaths),
+      );
+      if (diskStats.error) console.error(diskStats.error);
       await this.ntfy.send(`Prune end`, {
         Duration: data.duration,
         ...(globalDiffSize !== undefined && {
@@ -108,6 +118,14 @@ export class Prune extends Action {
             (globalDiffSize > 0 ? "+" : "") + formatBytes(globalDiffSize),
         }),
         Error: data.error?.message,
+        "": [
+          !!diskStats.result?.length && { key: "Disk stats", value: "" },
+          ...(diskStats.result?.map((p) => ({
+            key: p.name,
+            value: `${formatBytes(p.free)}/${formatBytes(p.total)} (${progressPercent(p.total, p.free)}%)`,
+            level: 1,
+          })) || []),
+        ],
       });
     });
   }

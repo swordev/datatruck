@@ -1,11 +1,12 @@
-import { createRunner } from "../utils/async.js";
-import { checkDiskSpace } from "../utils/fs.js";
+import { createRunner, safeRun } from "../utils/async.js";
+import { checkDiskSpace, fetchMultipleDiskStats } from "../utils/fs.js";
 import { MySQLDump } from "../utils/mysql.js";
 import { Action } from "./base.js";
 import { Prune } from "./prune.js";
 import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
+import { progressPercent } from "@datatruck/cli/utils/math.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 import { match } from "@datatruck/cli/utils/string.js";
 import { randomUUID } from "crypto";
@@ -118,6 +119,8 @@ export class Backup extends Action {
       bytes: number;
       files: number;
     }[] = [];
+    let localRepositoryPaths: string[] = [];
+
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
       const packages = this.cm.filterPackages(options.packages);
@@ -125,9 +128,14 @@ export class Backup extends Action {
       const tasks = this.filterTasks(packageNames);
 
       await this.ntfy.send(`Backup start`, {
+        Repositories: repositories.length,
         Packages: packageNames.length,
         Tasks: tasks?.length,
       });
+
+      localRepositoryPaths = repositories
+        .filter((repo) => isLocalDir(repo.uri))
+        .map((repo) => repo.uri);
 
       const tags: CommonResticBackupTags = {
         id: randomUUID().replaceAll("-", ""),
@@ -213,31 +221,43 @@ export class Backup extends Action {
       );
 
       const backupsValues = Object.values(summary);
-      const sqlDumpProccesses = sqlDumps.flatMap((sql) => sql.processes);
+      const sqlDumpProcesses = sqlDumps.flatMap((sql) => sql.processes);
       const error =
         !!data.error ||
-        sqlDumpProccesses.some((p) => p.error) ||
+        sqlDumpProcesses.some((p) => p.error) ||
         backupsValues.some((p) => p.errors);
 
       const size = [
-        ...sqlDumpProccesses.map((p) => p.stats.bytes),
+        ...sqlDumpProcesses.map((p) => p.stats.bytes),
         ...backupsValues.map((b) => b.bytes),
       ].reduce((r, b) => r + b, 0);
+
+      const diskStats = await safeRun(() =>
+        fetchMultipleDiskStats(localRepositoryPaths),
+      );
+
+      if (diskStats.error) console.error(diskStats.error);
 
       await this.ntfy.send(
         "Backup end",
         {
           Duration: data.duration,
           Size: formatBytes(size),
-          "Fatal error": data.error?.message,
+          Error: data.error?.message,
           "": [
-            !!sqlDumpProccesses.length && { key: "SQL Dumps", value: "" },
-            ...sqlDumpProccesses.map((p) => ({
+            !!diskStats.result?.length && { key: "Disk stats", value: "" },
+            ...(diskStats.result?.map((p) => ({
+              key: p.name,
+              value: `${formatBytes(p.free)}/${formatBytes(p.total)} (${progressPercent(p.total, p.free)}%)`,
+              level: 1,
+            })) || []),
+            !!sqlDumpProcesses.length && { key: "SQL Dumps", value: "" },
+            ...sqlDumpProcesses.map((p) => ({
               key: p.name,
               value: formatBytes(p.stats.bytes),
               level: 1,
             })),
-            !!sqlDumpProccesses.length && { key: "Packages", value: "" },
+            !!backupsValues.length && { key: "Packages", value: "" },
             ...backupsValues.map((p) => ({
               key: p.name,
               value: `${p.success}/${p.total}`,
