@@ -12,7 +12,7 @@ export class Run extends Action {
     const p = restic["createProcess"](options.args, { $log: true });
     const exit = spawnSync(
       p["command"],
-      p["argv"]?.map((v) => v.toString()),
+      p["argv"]?.map((v: string | number) => v.toString()),
       { stdio: "inherit", env: p["options"]?.env },
     );
     if (exit.status) process.exit(exit.status);
