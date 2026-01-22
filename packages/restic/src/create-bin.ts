@@ -3,12 +3,13 @@ import { Copy, CopyOptions } from "./actions/copy.js";
 import { Create, CreateOptions } from "./actions/create.js";
 import { Init, InitOptions } from "./actions/init.js";
 import { Prune, PruneOptions } from "./actions/prune.js";
+import { Run } from "./actions/run.js";
 import { Config, GlobalConfig, parseConfigFile } from "./config.js";
 import { parseStringList } from "@datatruck/cli/utils/string.js";
 import { Command } from "commander";
 import { resolve } from "path";
 
-export function createBin(inConfig?: Config) {
+export function createBin(inConfig?: Config): Command {
   async function load() {
     const globalOptions = { ...program.opts() } as GlobalConfig;
     if (globalOptions.config)
@@ -48,6 +49,19 @@ export function createBin(inConfig?: Config) {
     .action(async (options: CreateOptions) => {
       const create = new Create();
       await create.run(options);
+    });
+
+  program
+    .command("run", {})
+    .description("Run arbitrary restic command")
+    .argument("<repository>", "Repository name")
+    .argument("[args...]", "Restic arguments")
+    .allowUnknownOption()
+    .allowExcessArguments()
+    .action(async (repository: string, args: string[]) => {
+      const { config, globalOptions } = await load();
+      const run = new Run(config, globalOptions);
+      await run.run({ repository, args });
     });
 
   program
@@ -114,6 +128,25 @@ export function createBin(inConfig?: Config) {
       const prune = new Prune(config, globalOptions);
       await prune.run(options);
     });
+
+  const parse = program.parse.bind(program);
+
+  program.parse = function (args, options) {
+    if (!args) args = process.argv;
+    const [node, script, ...rest] = args;
+    const commandIndex = rest.findIndex((v) => !v.startsWith("-"));
+    const command = rest[commandIndex];
+    if (command === "run") {
+      args = [
+        node,
+        script,
+        ...rest.flatMap((value, index) =>
+          commandIndex === index ? [value, "--"] : value,
+        ),
+      ];
+    }
+    return parse(args, options);
+  };
 
   return program;
 }
