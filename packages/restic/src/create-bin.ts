@@ -1,5 +1,6 @@
 import { Backup, BackupOptions } from "./actions/backup.js";
 import { Copy, CopyOptions } from "./actions/copy.js";
+import { Create, CreateOptions } from "./actions/create.js";
 import { Init, InitOptions } from "./actions/init.js";
 import { Prune, PruneOptions } from "./actions/prune.js";
 import { Config, GlobalConfig, parseConfigFile } from "./config.js";
@@ -29,6 +30,25 @@ export function createBin(inConfig?: Config) {
       "Path to config file",
       "datatruck.restic.json",
     );
+
+  program
+    .command("create")
+    .description("Create config file")
+    .option(
+      "--cwd <path>",
+      "Current working directory to create config file in",
+      ".",
+    )
+    .option(
+      "-c,--config <path>",
+      "Output path for config file",
+      "datatruck.restic.json",
+    )
+    .option("-f,--force", "Force overwrite if config file already exists")
+    .action(async (options: CreateOptions) => {
+      const create = new Create();
+      await create.run(options);
+    });
 
   program
     .command("init")
