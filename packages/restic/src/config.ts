@@ -1,5 +1,6 @@
 import { parseJSONFile } from "./utils/fs.js";
 import { MySQLDumpOptions } from "./utils/mysql.js";
+import { Restic } from "@datatruck/cli/utils/restic.js";
 import { match } from "@datatruck/cli/utils/string.js";
 import { Ajv, ValidateFunction } from "ajv";
 
@@ -114,5 +115,16 @@ export class ConfigManager {
     const pkg = this.config.packages.find((pkg) => pkg.name === name);
     if (!pkg) throw new Error(`Package '${name}' not found`);
     return pkg;
+  }
+  createRestic(repoName: string, verbose: boolean | undefined) {
+    const repo = this.findRepository(repoName);
+    const restic = new Restic({
+      log: verbose,
+      env: {
+        RESTIC_REPOSITORY: repo.uri,
+        RESTIC_PASSWORD: repo.password,
+      },
+    });
+    return [restic, repo] as const;
   }
 }

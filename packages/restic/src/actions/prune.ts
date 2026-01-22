@@ -7,7 +7,7 @@ import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.j
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { progressPercent } from "@datatruck/cli/utils/math.js";
-import { Restic } from "@datatruck/cli/utils/restic.js";
+import { match } from "@datatruck/cli/utils/string.js";
 
 export type PruneOptions = {
   packages?: string[];
@@ -22,17 +22,9 @@ export class Prune extends Action {
   ) {
     let stats: { keep: number; remove: number } | undefined;
     let space: { diff: number; size: number } | undefined;
+    let removed: number | undefined;
     await createRunner(async () => {
-      const repo = this.cm.findRepository(repoName);
-      const pkg = this.cm.findPackage(pkgName);
-      const restic = new Restic({
-        log: this.verbose,
-        env: {
-          RESTIC_REPOSITORY: repo.uri,
-          RESTIC_PASSWORD: repo.password,
-        },
-      });
-
+      const [restic, repo] = this.cm.createRestic(repoName, this.verbose);
       const targetPath = isLocalDir(repo.uri) ? repo.uri : undefined;
 
       space = await checkDiskSpace({
@@ -47,7 +39,7 @@ export class Prune extends Action {
             tag: [
               ResticRepository.createSnapshotTag(
                 SnapshotTagEnum.PACKAGE,
-                pkg.name,
+                pkgName,
               ),
             ],
           });
@@ -58,13 +50,14 @@ export class Prune extends Action {
         },
       });
     }).start(async (data) => {
+      if (stats) removed = stats.remove;
       await this.ntfy.send(
         `Prune`,
         {
           Repository: repoName,
           Package: pkgName,
           ...(stats && {
-            Snapshots: `${stats.keep}`,
+            Keeped: `${stats.keep}`,
             Removed: `${stats.remove}`,
           }),
           ...(space !== undefined && {
@@ -76,36 +69,70 @@ export class Prune extends Action {
         data.error,
       );
     });
-    return space?.diff ?? 0;
+    return {
+      diffSize: space?.diff ?? 0,
+      removed,
+    };
+  }
+
+  protected async fetchPackages(repoName: string) {
+    const [restic] = this.cm.createRestic(repoName, this.verbose);
+    const snapshots = await restic.snapshots({ json: true });
+    const packages = new Set(
+      snapshots.map((s) => {
+        const tags = ResticRepository.parseSnapshotTags(s.tags ?? []);
+        return tags[SnapshotTagEnum.PACKAGE];
+      }),
+    );
+
+    return [...packages].filter((v) => typeof v === "string");
   }
 
   async run(options: PruneOptions) {
     let globalDiffSize: number | undefined;
+    let globalRemoved: number | undefined;
     let localRepositoryPaths: string[] = [];
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
-      const packages = this.cm.filterPackages(options.packages);
 
       await this.ntfy.send(`Prune start`, {
         Repositories: repositories.length,
-        Packages: packages.length,
       });
 
       localRepositoryPaths = repositories
         .filter((repo) => isLocalDir(repo.uri))
         .map((repo) => repo.uri);
 
+      let some = false;
+
       for (const repo of repositories) {
-        for (const pkg of packages) {
+        const inPackageNames = await this.fetchPackages(repo.name);
+        const packageNames = inPackageNames.filter((pkgName) =>
+          options.packages ? match(pkgName, options.packages) : true,
+        );
+        for (const pkgName of packageNames) {
+          const pkg = this.config.packages.find((pkg) => pkg.name === pkgName);
           const policy =
-            pkg.prunePolicy ?? repo.prunePolicy ?? this.config.prunePolicy;
+            pkg?.prunePolicy ?? repo.prunePolicy ?? this.config.prunePolicy;
           if (policy) {
-            const diffSize = await this.runSingle(repo.name, pkg.name, policy);
+            const { diffSize, removed } = await this.runSingle(
+              repo.name,
+              pkgName,
+              policy,
+            );
+            some = true;
             if (diffSize !== undefined)
               globalDiffSize = (globalDiffSize ?? 0) + diffSize;
+            if (removed !== undefined)
+              globalRemoved = (globalRemoved ?? 0) + removed;
           }
         }
       }
+
+      if (options.packages && !some)
+        throw new Error(
+          `No packages found for filter: ${options.packages.join(", ")}`,
+        );
     }).start(async (data) => {
       const diskStats = await safeRun(() =>
         fetchMultipleDiskStats(localRepositoryPaths),
@@ -113,6 +140,7 @@ export class Prune extends Action {
       if (diskStats.error) console.error(diskStats.error);
       await this.ntfy.send(`Prune end`, {
         Duration: data.duration,
+        Removed: globalRemoved,
         ...(globalDiffSize !== undefined && {
           "Diff size":
             (globalDiffSize > 0 ? "+" : "") + formatBytes(globalDiffSize),
