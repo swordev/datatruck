@@ -1,5 +1,11 @@
 # @datatruck/restic
 
+## 0.0.4
+
+### Patch Changes
+
+- [`9992019`](https://github.com/swordev/datatruck/commit/9992019c7c98ad624f5c0a774fb3adccc710634f) Thanks [@juanrgm](https://github.com/juanrgm)! - Add `run` command
+
 ## 0.0.3
 
 ### Patch Changes
