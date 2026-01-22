@@ -94,7 +94,9 @@ export class ConfigManager {
     );
     if (!repositories.length)
       throw new Error(
-        `No repositories found for filter: ${filter?.join(", ")}`,
+        filter
+          ? `No repositories found for filter: ${filter.join(", ")}`
+          : `No repositories found`,
       );
     return repositories;
   }
@@ -103,7 +105,11 @@ export class ConfigManager {
       filter ? match(v.name, filter) : true,
     );
     if (!packages.length)
-      throw new Error(`No packages found for filter: ${filter?.join(", ")}`);
+      throw new Error(
+        filter
+          ? `No packages found for filter: ${filter.join(", ")}`
+          : `No packages found`,
+      );
     return packages;
   }
   findRepository(name: string) {

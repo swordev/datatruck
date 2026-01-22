@@ -1,0 +1,99 @@
+import { Backup, BackupOptions } from "./actions/backup.js";
+import { Copy, CopyOptions } from "./actions/copy.js";
+import { Init, InitOptions } from "./actions/init.js";
+import { Prune, PruneOptions } from "./actions/prune.js";
+import { Config, GlobalConfig, parseConfigFile } from "./config.js";
+import { parseStringList } from "@datatruck/cli/utils/string.js";
+import { Command } from "commander";
+import { resolve } from "path";
+
+export function createBin(inConfig?: Config) {
+  async function load() {
+    const globalOptions = { ...program.opts() } as GlobalConfig;
+    if (globalOptions.config)
+      globalOptions.config = resolve(globalOptions.config);
+    const config = inConfig ?? (await parseConfigFile(globalOptions.config));
+    globalOptions.verbose = process.env.DEBUG
+      ? true
+      : globalOptions.verbose || config.verbose;
+    return { config, globalOptions };
+  }
+
+  const program = new Command();
+
+  program.option("-v, --verbose");
+
+  if (!inConfig)
+    program.option(
+      "-c, --config <path>",
+      "Path to config file",
+      "datatruck.restic.json",
+    );
+
+  program
+    .command("init")
+    .alias("i")
+    .description("Run init action")
+    .option("-r, --repositories <names>", "Repository names", (v) =>
+      parseStringList(v),
+    )
+    .action(async (options: InitOptions) => {
+      const { config, globalOptions } = await load();
+      const init = new Init(config, globalOptions);
+      await init.run(options);
+    });
+
+  program
+    .command("backup")
+    .alias("b")
+    .description("Run backup action")
+    .option("-r, --repositories <names>", "Repository names", (v) =>
+      parseStringList(v),
+    )
+    .option("-p, --packages <packages>", "Package names", (v) =>
+      parseStringList(v),
+    )
+    .option("--prune", "Prune after backup")
+    .action(async (options: BackupOptions) => {
+      const { config, globalOptions } = await load();
+      const backup = new Backup(config, globalOptions);
+      await backup.run(options);
+    });
+
+  program
+    .command("copy")
+    .alias("c")
+    .description("Run copy action")
+    .option("-p, --packages <packages>", "Package names", (v) =>
+      parseStringList(v),
+    )
+    .requiredOption("-s, --source <name>", "Source repository name")
+    .requiredOption("-t, --targets <names>", "Target repository names", (v) =>
+      parseStringList(v),
+    )
+    .option("--prune", "Prune after copy")
+    .action(async (options: CopyOptions) => {
+      const { config, globalOptions } = await load();
+      const copy = new Copy(config, globalOptions);
+      await copy.run(options);
+    });
+
+  program
+    .command("prune")
+    .alias("p")
+    .description("Run prune action")
+    .option("-r, --repositories <names>", "Repository names", (v) =>
+      parseStringList(v),
+    )
+    .option("-p, --packages <packages>", "Package names", (v) =>
+      parseStringList(v),
+    )
+    .option("--prune", "Prune after copy")
+    .action(async (options: PruneOptions) => {
+      const { config, globalOptions } = await load();
+      const prune = new Prune(config, globalOptions);
+      await prune.run(options);
+    });
+
+  return program;
+}

@@ -5,7 +5,9 @@ export { Prune, type PruneOptions } from "./actions/prune.js";
 export {
   type Config,
   type GlobalConfig,
+  type PrunePolicy,
   parseConfigFile,
   defineConfig,
   validateConfig,
 } from "./config.js";
+export { createBin } from "./create-bin.js";
