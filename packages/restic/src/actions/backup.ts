@@ -3,6 +3,7 @@ import { checkDiskSpace, fetchMultipleDiskStats } from "../utils/fs.js";
 import { MySQLDump } from "../utils/mysql.js";
 import { Action } from "./base.js";
 import { Prune } from "./prune.js";
+import { SnapshotTagEnum } from "@datatruck/cli/repositories/RepositoryAbstract.js";
 import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
@@ -48,6 +49,7 @@ export class Backup extends Action {
       },
     });
     let space: { diff: number; size: number } | undefined;
+    let snapshotsAmount: number | undefined;
     let bytes = 0;
     let files = 0;
 
@@ -77,6 +79,13 @@ export class Backup extends Action {
           });
         },
       });
+      const snapshots = await restic.snapshots({
+        json: true,
+        tags: [
+          ResticRepository.createSnapshotTag(SnapshotTagEnum.PACKAGE, pkg.name),
+        ],
+      });
+      snapshotsAmount = snapshots.length;
     }).start(async (data) => {
       await this.ntfy.send(
         "Backup",
@@ -87,6 +96,7 @@ export class Backup extends Action {
             formatBytes(bytes) +
             (space !== undefined ? ` (${formatBytes(space.diff, true)})` : ""),
           Files: files,
+          Snapshots: snapshotsAmount,
           Duration: data.duration,
           Error: data.error?.message,
         },
