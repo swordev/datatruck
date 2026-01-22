@@ -75,8 +75,9 @@ export class Prune extends Action {
     };
   }
 
-  protected async fetchPackages(repoName: string) {
+  protected async fetchPackages(repoName: string): Promise<string[]> {
     const [restic] = this.cm.createRestic(repoName, this.verbose);
+    if (!(await restic.checkRepository())) return [];
     const snapshots = await restic.snapshots({ json: true });
     const packages = new Set(
       snapshots.map((s) => {
@@ -90,7 +91,7 @@ export class Prune extends Action {
 
   async run(options: PruneOptions) {
     let globalDiffSize: number | undefined;
-    let globalRemoved: number | undefined;
+    let globalRemoved = 0;
     let localRepositoryPaths: string[] = [];
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
@@ -123,8 +124,7 @@ export class Prune extends Action {
             some = true;
             if (diffSize !== undefined)
               globalDiffSize = (globalDiffSize ?? 0) + diffSize;
-            if (removed !== undefined)
-              globalRemoved = (globalRemoved ?? 0) + removed;
+            if (removed !== undefined) globalRemoved += removed;
           }
         }
       }
