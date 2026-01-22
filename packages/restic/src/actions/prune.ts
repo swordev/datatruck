@@ -150,7 +150,7 @@ export class Prune extends Action {
           !!diskStats.result?.length && { key: "Disk stats", value: "" },
           ...(diskStats.result?.map((p) => ({
             key: p.name,
-            value: `${formatBytes(p.free)}/${formatBytes(p.total)} (${progressPercent(p.total, p.free)}%)`,
+            value: `${formatBytes(p.free)}/${formatBytes(p.total)} (${progressPercent(p.total, p.total - p.free)}%)`,
             level: 1,
           })) || []),
         ],
