@@ -1,5 +1,16 @@
 # @datatruck/restic
 
+## 0.0.5
+
+### Patch Changes
+
+- [`d44f9b4`](https://github.com/swordev/datatruck/commit/d44f9b4851ef78341c8ee952162d28c4da60e75a) Thanks [@juanrgm](https://github.com/juanrgm)! - Simplify tags
+
+- [`fc97be4`](https://github.com/swordev/datatruck/commit/fc97be42e1acce7358a55bbe355aa61d25773c88) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix stats and bin shortcut
+
+- Updated dependencies [[`d44f9b4`](https://github.com/swordev/datatruck/commit/d44f9b4851ef78341c8ee952162d28c4da60e75a)]:
+  - @datatruck/cli@0.41.7
+
 ## 0.0.4
 
 ### Patch Changes
