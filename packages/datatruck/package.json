@@ -1,6 +1,6 @@
 {
   "name": "datatruck",
-  "version": "0.41.6",
+  "version": "0.41.7",
   "description": "Tool for creating and managing backups",
   "homepage": "https://github.com/swordev/datatruck#readme",
   "bugs": {
