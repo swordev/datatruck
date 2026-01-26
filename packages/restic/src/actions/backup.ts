@@ -54,7 +54,13 @@ export class Backup extends Action {
         minFreeSpacePath: targetPath ?? process.cwd(),
         targetPath,
         rutine: async () => {
+          const last = await restic.snapshots({
+            latest: 1,
+            host: this.config.hostname,
+            tags: stringifyTags({ pkg: pkg.name }),
+          });
           return await restic.backup({
+            parent: last.at(0)?.id,
             host: this.config.hostname,
             tags: stringifyTags({
               ...tags,
