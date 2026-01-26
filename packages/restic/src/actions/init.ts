@@ -1,6 +1,5 @@
 import { createRunner } from "../utils/async.js";
 import { Action } from "./base.js";
-import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 
 export type InitOptions = {

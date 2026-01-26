@@ -214,6 +214,7 @@ export class Restic {
     ids?: string[];
     tags?: string[];
     paths?: string[];
+    host?: string;
     latest?: number;
     json?: boolean;
     group?: ("path" | "tags" | "host")[];
@@ -235,6 +236,7 @@ export class Restic {
     return await this.json([
       "snapshots",
       ...(json ? ["--json"] : []),
+      ...(options.host ? ["--host", options.host] : []),
       ...(options.tags?.flatMap((tag) => [`--tag`, tag]) ?? []),
       ...(options.paths?.flatMap((path) => ["--path", path]) ?? []),
       ...(options.group ? ["--group-by", options.group.join(",")] : []),
@@ -248,6 +250,7 @@ export class Restic {
     cwd?: string;
     tags?: string[];
     paths: string[];
+    host?: string;
     setPaths?: string[];
     exclude?: string[];
     excludeFile?: string[];
@@ -262,6 +265,7 @@ export class Restic {
         [
           "backup",
           "--json",
+          ...(options.host ? ["--host", options.host] : []),
           ...(options.exclude?.flatMap((v) => ["-e", v]) ?? []),
           ...(options.excludeFile?.flatMap((v) => ["--exclude-file", v]) ?? []),
           ...(options.tags?.flatMap((v) => ["--tag", v]) ?? []),

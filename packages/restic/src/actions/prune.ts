@@ -1,9 +1,8 @@
 import { PrunePolicy } from "../config.js";
 import { createRunner, safeRun } from "../utils/async.js";
 import { checkDiskSpace, fetchMultipleDiskStats } from "../utils/fs.js";
+import { parseTags, stringifyTags } from "../utils/tags.js";
 import { Action } from "./base.js";
-import { SnapshotTagEnum } from "@datatruck/cli/repositories/RepositoryAbstract.js";
-import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { progressPercent } from "@datatruck/cli/utils/math.js";
@@ -36,12 +35,7 @@ export class Prune extends Action {
             json: true,
             prune: true,
             args: ["--group-by", ""],
-            tag: [
-              ResticRepository.createSnapshotTag(
-                SnapshotTagEnum.PACKAGE,
-                pkgName,
-              ),
-            ],
+            tag: stringifyTags({ pkg: pkgName }),
           });
           stats = {
             keep: results.at(0)?.keep?.length ?? 0,
@@ -79,13 +73,7 @@ export class Prune extends Action {
     const [restic] = this.cm.createRestic(repoName, this.verbose);
     if (!(await restic.checkRepository())) return [];
     const snapshots = await restic.snapshots({ json: true });
-    const packages = new Set(
-      snapshots.map((s) => {
-        const tags = ResticRepository.parseSnapshotTags(s.tags ?? []);
-        return tags[SnapshotTagEnum.PACKAGE];
-      }),
-    );
-
+    const packages = new Set(snapshots.map((s) => parseTags(s.tags ?? []).pkg));
     return [...packages].filter((v) => typeof v === "string");
   }
 

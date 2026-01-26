@@ -1,9 +1,8 @@
 import { createRunner } from "../utils/async.js";
 import { checkDiskSpace } from "../utils/fs.js";
+import { parseTags, stringifyTags } from "../utils/tags.js";
 import { Action } from "./base.js";
 import { Prune } from "./prune.js";
-import { SnapshotTagEnum } from "@datatruck/cli/repositories/RepositoryAbstract.js";
-import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
@@ -31,22 +30,13 @@ export class Copy extends Action {
       latest: 1,
       group: ["path"],
       tags: packages
-        ? packages.map((name) =>
-            ResticRepository.createSnapshotTag(SnapshotTagEnum.PACKAGE, name),
-          )
+        ? packages.flatMap((name) => stringifyTags({ pkg: name }))
         : undefined,
     })) as any as {
       group_key: Record<string, any>;
       snapshots: [{ id: string; short_id: string; tags: string[] }];
     }[];
     return snapshots.flatMap((s) => s.snapshots);
-  }
-
-  private findPackageTag(inTags: string[]) {
-    const tags = inTags
-      .map((t) => ResticRepository.parseSnapshotTag(t))
-      .filter((t) => !!t);
-    return tags.find((t) => t.name === SnapshotTagEnum.PACKAGE);
   }
 
   async runSingle(options: {
@@ -61,8 +51,7 @@ export class Copy extends Action {
     const { snapshot } = options;
     const targetRepo = this.cm.findRepository(options.target);
     const sourceRepo = this.cm.findRepository(options.source);
-    const pkgTag = this.findPackageTag(snapshot.tags);
-    const packageName = pkgTag?.value;
+    const packageName = parseTags(snapshot.tags).pkg;
     const targetPath = isLocalDir(targetRepo.uri) ? targetRepo.uri : undefined;
     const target = new Restic({
       log: this.verbose,

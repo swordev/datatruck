@@ -1,17 +1,15 @@
 import { createRunner, safeRun } from "../utils/async.js";
 import { checkDiskSpace, fetchMultipleDiskStats } from "../utils/fs.js";
 import { MySQLDump } from "../utils/mysql.js";
+import { randomString } from "../utils/string.js";
+import { stringifyTags } from "../utils/tags.js";
 import { Action } from "./base.js";
 import { Prune } from "./prune.js";
-import { SnapshotTagEnum } from "@datatruck/cli/repositories/RepositoryAbstract.js";
-import { ResticRepository } from "@datatruck/cli/repositories/ResticRepository.js";
 import { formatBytes } from "@datatruck/cli/utils/bytes.js";
 import { isLocalDir } from "@datatruck/cli/utils/fs.js";
 import { progressPercent } from "@datatruck/cli/utils/math.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
 import { match } from "@datatruck/cli/utils/string.js";
-import { randomUUID } from "crypto";
-import { hostname } from "os";
 
 export type BackupOptions = {
   packages?: string[];
@@ -20,17 +18,12 @@ export type BackupOptions = {
 };
 
 export type CommonResticBackupTags = {
+  dt: boolean;
   id: string;
-  shortId: string;
-  hostname: string;
-  date: string;
-  vendor: string;
-  version: string;
 };
 
 export type ResticBackupTags = CommonResticBackupTags & {
-  package: string;
-  tags?: string[];
+  pkg: string;
 };
 
 export class Backup extends Action {
@@ -60,14 +53,13 @@ export class Backup extends Action {
         minFreeSpace: this.config.minFreeSpace,
         minFreeSpacePath: targetPath ?? process.cwd(),
         targetPath,
-        rutine: () => {
-          const pkgTags: ResticBackupTags = {
-            ...tags,
-            package: pkg.name,
-            tags: [],
-          };
-          return restic.backup({
-            tags: ResticRepository.createSnapshotTags(pkgTags as any),
+        rutine: async () => {
+          return await restic.backup({
+            host: this.config.hostname,
+            tags: stringifyTags({
+              ...tags,
+              pkg: pkg.name,
+            }),
             paths: [pkg.path],
             exclude: pkg.exclude,
             onStream(data) {
@@ -81,9 +73,7 @@ export class Backup extends Action {
       });
       const snapshots = await restic.snapshots({
         json: true,
-        tags: [
-          ResticRepository.createSnapshotTag(SnapshotTagEnum.PACKAGE, pkg.name),
-        ],
+        tags: stringifyTags({ pkg: pkg.name }),
       });
       snapshotsAmount = snapshots.length;
     }).start(async (data) => {
@@ -148,14 +138,8 @@ export class Backup extends Action {
         .map((repo) => repo.uri);
 
       const tags: CommonResticBackupTags = {
-        id: randomUUID().replaceAll("-", ""),
-        get shortId() {
-          return this.id.slice(0, 8);
-        },
-        hostname: this.config.hostname ?? hostname(),
-        date: new Date().toISOString(),
-        vendor: "dtt-restic",
-        version: "1",
+        dt: true,
+        id: randomString(8),
       };
 
       for (const task of tasks ?? []) {
