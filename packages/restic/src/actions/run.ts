@@ -1,4 +1,5 @@
 import { Action } from "./base.js";
+import { logExec } from "@datatruck/cli/utils/cli.js";
 import { spawnSync } from "child_process";
 
 export type RunOptions = {
@@ -9,12 +10,11 @@ export type RunOptions = {
 export class Run extends Action {
   async run(options: RunOptions) {
     const [restic] = this.cm.createRestic(options.repository, this.verbose);
-    const p = restic["createProcess"](options.args, { $log: true });
-    const exit = spawnSync(
-      p["command"],
-      p["argv"]?.map((v: string | number) => v.toString()),
-      { stdio: "inherit", env: p["options"]?.env },
-    );
-    if (exit.status) process.exit(exit.status);
+    if (this.verbose) logExec("restic", options.args, restic.options.env);
+    const p = spawnSync("restic", options.args, {
+      stdio: "inherit",
+      env: { ...process.env, ...restic.options.env },
+    });
+    if (p.status) process.exit(p.status);
   }
 }

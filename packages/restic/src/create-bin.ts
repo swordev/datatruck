@@ -52,14 +52,17 @@ export function createBin(inConfig?: Config): Command {
     });
 
   program
-    .command("run", {})
+    .command("run")
     .description("Run arbitrary restic command")
-    .argument("<repository>", "Repository name")
+    .option("-r, --repository <name>", "Repository name")
     .argument("[args...]", "Restic arguments")
     .allowUnknownOption()
     .allowExcessArguments()
-    .action(async (repository: string, args: string[]) => {
+    .action(async (args: string[], options: { repository?: string }) => {
       const { config, globalOptions } = await load();
+      if (!options.repository && config.repositories.length !== 1)
+        throw new Error("Repository name is required");
+      const repository = options.repository ?? config.repositories[0].name;
       const run = new Run(config, globalOptions);
       await run.run({ repository, args });
     });
@@ -133,17 +136,20 @@ export function createBin(inConfig?: Config): Command {
 
   program.parse = function (args, options) {
     if (!args) args = process.argv;
-    const [node, script, ...rest] = args;
-    const commandIndex = rest.findIndex((v) => !v.startsWith("-"));
-    const command = rest[commandIndex];
+    const [node, script, command, ...rest] = args;
     if (command === "run") {
-      args = [
-        node,
-        script,
-        ...rest.flatMap((value, index) =>
-          commandIndex === index ? [value, "--"] : value,
-        ),
-      ];
+      const repositoryIndex = rest.findIndex(
+        (v) => v === "-r" || v === "--repository",
+      );
+      if (repositoryIndex !== -1) {
+        const repositoryName = rest[repositoryIndex + 1];
+        const others = rest.filter(
+          (_, i) => i !== repositoryIndex && i !== repositoryIndex + 1,
+        );
+        args = [node, script, command, "-r", repositoryName, "--", ...others];
+      } else {
+        args = [node, script, command, "--", ...rest];
+      }
     }
     return parse(args, options);
   };
