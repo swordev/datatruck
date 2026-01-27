@@ -1,5 +1,13 @@
 # @datatruck/restic
 
+## 0.0.6
+
+### Patch Changes
+
+- [`bb212ea`](https://github.com/swordev/datatruck/commit/bb212eaf2b65d2e0a8d46115217d468649866a4b) Thanks [@juanrgm](https://github.com/juanrgm)! - Add notification updates
+
+- [`fd57961`](https://github.com/swordev/datatruck/commit/fd57961d3bc3b3bcb648102fa1aff3434c97632f) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix disk stats
+
 ## 0.0.5
 
 ### Patch Changes
