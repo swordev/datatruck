@@ -60,7 +60,12 @@ export async function fetchMultipleDiskStats(paths: string[]) {
     if (!devices[info.dev]) devices[info.dev] = path;
   }
 
-  const result: { name: string; free: number; total: number }[] = [];
+  const result: {
+    name: string;
+    free: number;
+    occupied: number;
+    total: number;
+  }[] = [];
 
   for (const dev in devices) {
     const path = devices[dev];
@@ -68,6 +73,7 @@ export async function fetchMultipleDiskStats(paths: string[]) {
     result.push({
       name: await getDiskName(path),
       ...stats,
+      occupied: stats.total - stats.free,
     });
   }
   return result;

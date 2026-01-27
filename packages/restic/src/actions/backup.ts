@@ -248,7 +248,7 @@ export class Backup extends Action {
             !!diskStats.result?.length && { key: "Disk stats", value: "" },
             ...(diskStats.result?.map((p) => ({
               key: p.name,
-              value: `${formatBytes(p.free)}/${formatBytes(p.total)} (${progressPercent(p.total, p.total - p.free)}%)`,
+              value: `${formatBytes(p.occupied)}/${formatBytes(p.total)} (${progressPercent(p.total, p.occupied)}%)`,
               level: 1,
             })) || []),
             !!sqlDumpProcesses.length && { key: "SQL Dumps", value: "" },
