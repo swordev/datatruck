@@ -59,7 +59,7 @@ export class Ntfy {
   async send(
     inTitle: string,
     message: MessageObject,
-    options: { error?: Error | boolean } = {},
+    options: { error?: Error | boolean; logId?: string } = {},
   ) {
     const title = this.formatTitle(inTitle);
     const body = this.formatMessageObject(message);
@@ -74,7 +74,10 @@ export class Ntfy {
 
     try {
       if (this.options.token) {
-        const response = await fetch(`https://ntfy.sh/${this.options.token}`, {
+        const token = options.logId
+          ? `${this.options.token}/${options.logId}`
+          : this.options.token;
+        const response = await fetch(`https://ntfy.sh/${token}`, {
           dispatcher: this.agent,
           method: "POST",
           body: unstyle(body),

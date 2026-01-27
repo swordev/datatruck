@@ -11,3 +11,6 @@ node_modules
 /datatruck*.yaml
 config.schema.json
 scripts/*.h
+./data
+/repo
+/data

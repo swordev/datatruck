@@ -6,6 +6,7 @@ import {
   ensureFreeDiskSpace,
   fetchDiskStats,
 } from "@datatruck/cli/utils/fs.js";
+import { progressPercent } from "@datatruck/cli/utils/math.js";
 import { createMysqlCli, MysqlCliOptions } from "@datatruck/cli/utils/mysql.js";
 import { match } from "@datatruck/cli/utils/string.js";
 import { existsSync } from "fs";
@@ -74,7 +75,7 @@ export class MySQLDump {
       const parentFolder = basename(dirname(outPath));
       if (!parentFolder.startsWith("sql-dump"))
         throw new Error(
-          `sql-dump out dir must begins with 'sql-dump': ${outPath}`,
+          `sql-dump out dir base name must begins with 'sql-dump': ${outPath}`,
         );
       if (existsSync(outPath)) await rm(outPath, { recursive: true });
       if (!init) this.outPaths.delete(outPath);
@@ -113,7 +114,25 @@ export class MySQLDump {
 
     await this.cleanup(true);
 
+    let logId: string | undefined;
+    let logIntervalId: NodeJS.Timeout | undefined;
     try {
+      logId = await this.ntfy.send("SQL dump", {
+        Name: item.name,
+      });
+      logIntervalId = setInterval(async () => {
+        await this.ntfy.send(
+          "SQL dump",
+          {
+            Name: item.name,
+            Size: formatBytes(stats.bytes),
+            Files: `${stats.files}/${items.length} (${progressPercent(items.length, stats.files)}%)`,
+            Duration: duration(Date.now() - now),
+          },
+          { logId },
+        );
+      }, 30_000);
+
       await runParallel({
         items,
         concurrency: this.options.concurrency ?? 1,
@@ -139,6 +158,8 @@ export class MySQLDump {
       });
     } catch (inError) {
       error = inError as Error;
+    } finally {
+      clearInterval(logIntervalId);
     }
 
     this.processes.push({
@@ -150,13 +171,13 @@ export class MySQLDump {
     await this.ntfy.send(
       "SQL dump",
       {
-        Package: item.name,
+        Name: item.name,
         Size: formatBytes(stats.bytes),
         Files: stats.files,
         Duration: duration(Date.now() - now),
         Error: error?.message,
       },
-      { error },
+      { error, logId },
     );
   }
 }

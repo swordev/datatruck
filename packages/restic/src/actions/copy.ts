@@ -62,9 +62,15 @@ export class Copy extends Action {
       },
     });
 
+    let logId: string | undefined;
     let space: { diff: number; size: number } | undefined;
 
     await createRunner(async () => {
+      logId = await this.ntfy.send("Copy", {
+        Id: snapshot.short_id,
+        Source: sourceRepo.name,
+        Target: targetRepo.name,
+      });
       if (!this.initializedRepos.has(targetRepo.name)) {
         await target.tryInit();
         this.initializedRepos.add(targetRepo.name);
@@ -93,7 +99,7 @@ export class Copy extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        { error: data.error },
+        { error: data.error, logId },
       );
     });
 

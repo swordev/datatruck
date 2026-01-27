@@ -19,10 +19,15 @@ export class Prune extends Action {
     pkgName: string,
     policy: PrunePolicy,
   ) {
+    let logId: string | undefined;
     let stats: { keep: number; remove: number } | undefined;
     let space: { diff: number; size: number } | undefined;
     let removed: number | undefined;
     await createRunner(async () => {
+      logId = await this.ntfy.send("Prune", {
+        Repository: repoName,
+        Package: pkgName,
+      });
       const [restic, repo] = this.cm.createRestic(repoName, this.verbose);
       const targetPath = isLocalDir(repo.uri) ? repo.uri : undefined;
 
@@ -60,7 +65,7 @@ export class Prune extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        { error: data.error },
+        { error: data.error, logId },
       );
     });
     return {

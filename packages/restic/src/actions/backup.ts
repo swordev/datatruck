@@ -41,12 +41,17 @@ export class Backup extends Action {
         RESTIC_REPOSITORY: repo.uri,
       },
     });
+    let logId: string | undefined;
     let space: { diff: number; size: number } | undefined;
     let snapshotsAmount: number | undefined;
     let bytes = 0;
     let files = 0;
 
     return await createRunner(async () => {
+      logId = await this.ntfy.send("Backup", {
+        Repository: repo.name,
+        Package: pkg.name,
+      });
       await restic.tryInit();
       const targetPath = isLocalDir(repo.uri) ? repo.uri : undefined;
       space = await checkDiskSpace({
@@ -96,7 +101,7 @@ export class Backup extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        { error: data.error },
+        { error: data.error, logId },
       );
       return {
         error: data.error,
@@ -125,7 +130,10 @@ export class Backup extends Action {
       files: number;
     }[] = [];
     let localRepositoryPaths: string[] = [];
-
+    const tags: CommonResticBackupTags = {
+      dt: true,
+      id: randomString(8),
+    };
     await createRunner(async () => {
       const repositories = this.cm.filterRepositories(options.repositories);
       const packages = this.cm.filterPackages(options.packages);
@@ -133,6 +141,7 @@ export class Backup extends Action {
       const tasks = this.filterTasks(packageNames);
 
       await this.ntfy.send(`Backup start`, {
+        Id: tags.id,
         Repositories: repositories.length,
         Packages: packageNames.length,
         Tasks: tasks?.length,
@@ -141,11 +150,6 @@ export class Backup extends Action {
       localRepositoryPaths = repositories
         .filter((repo) => isLocalDir(repo.uri))
         .map((repo) => repo.uri);
-
-      const tags: CommonResticBackupTags = {
-        dt: true,
-        id: randomString(8),
-      };
 
       for (const task of tasks ?? []) {
         if (task.type === "mysql-dump") {
@@ -189,7 +193,11 @@ export class Backup extends Action {
         }
       }
     }).start(async (data) => {
-      for (const sqlDump of sqlDumps) await sqlDump.cleanup();
+      try {
+        for (const sqlDump of sqlDumps) await sqlDump.cleanup();
+      } catch (error) {
+        console.error(error);
+      }
 
       const summary = backups.reduce(
         (acc, p) => {
@@ -240,6 +248,7 @@ export class Backup extends Action {
       await this.ntfy.send(
         "Backup end",
         {
+          Id: tags.id,
           Duration: data.duration,
           Size: formatBytes(size),
           Error: data.error?.message,
