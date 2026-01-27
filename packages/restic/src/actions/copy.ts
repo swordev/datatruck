@@ -93,7 +93,7 @@ export class Copy extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        data.error,
+        { error: data.error },
       );
     });
 
@@ -137,7 +137,7 @@ export class Copy extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        data.error,
+        { error: data.error },
       );
       if (options.prune) {
         await new Prune(this.config, this.global).run({

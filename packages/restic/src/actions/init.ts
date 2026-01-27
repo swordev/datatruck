@@ -28,7 +28,7 @@ export class Init extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        data.error,
+        { error: data.error },
       );
     });
   }

@@ -96,9 +96,8 @@ export class Backup extends Action {
           Duration: data.duration,
           Error: data.error?.message,
         },
-        data.error,
+        { error: data.error },
       );
-
       return {
         error: data.error,
         files,
@@ -265,7 +264,7 @@ export class Backup extends Action {
             })),
           ],
         },
-        error,
+        { error },
       );
 
       if (options.prune) {

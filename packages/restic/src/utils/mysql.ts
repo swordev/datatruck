@@ -156,7 +156,7 @@ export class MySQLDump {
         Duration: duration(Date.now() - now),
         Error: error?.message,
       },
-      error,
+      { error },
     );
   }
 }

@@ -56,33 +56,40 @@ export class Ntfy {
       .join("\n");
   }
 
-  async send(inTitle: string, message: MessageObject, error?: Error | boolean) {
+  async send(
+    inTitle: string,
+    message: MessageObject,
+    options: { error?: Error | boolean } = {},
+  ) {
     const title = this.formatTitle(inTitle);
     const body = this.formatMessageObject(message);
     const lines = [title, body].filter((v) => v.length);
 
     if (lines.length) console.info([...lines, ""].join("\n"));
 
-    const options = {
-      priority: error ? "high" : "default",
-      tags: [error ? "red_circle" : "green_circle"],
+    const ntfyOptions = {
+      priority: options.error ? "high" : "default",
+      tags: [options.error ? "red_circle" : "green_circle"],
     };
 
     try {
-      if (this.options.token)
-        await fetch(`https://ntfy.sh/${this.options.token}`, {
+      if (this.options.token) {
+        const response = await fetch(`https://ntfy.sh/${this.options.token}`, {
           dispatcher: this.agent,
           method: "POST",
           body: unstyle(body),
           headers: {
             Markdown: "yes",
             Title: unstyle(title),
-            Priority: options.priority ?? "default",
-            ...(options.tags && {
-              Tags: options.tags?.join(","),
+            Priority: ntfyOptions.priority ?? "default",
+            ...(ntfyOptions.tags && {
+              Tags: ntfyOptions.tags?.join(","),
             }),
           },
         });
+        const json = (await response.json()) as { id: string };
+        return json.id;
+      }
       await setTimeout(this.options.delay ?? 800);
     } catch (error) {
       console.error("Ntfy error", error);
