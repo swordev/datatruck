@@ -26,7 +26,7 @@
     "build:schema": "node ./packages/cli/scripts/gen-schema.mjs && node ./packages/restic/scripts/gen-schema.mjs",
     "build:ts": "tsc -b tsconfig.build.json --pretty",
     "build:win-setup": "node ./scripts/build-win-setup.mjs",
-    "clean": "tsc -b tsconfig.build.json --clean",
+    "clean:ts": "tsc -b tsconfig.build.json --clean",
     "format": "prettier --cache -w .",
     "format:check": "prettier --cache -c .",
     "start": "node packages/datatruck/lib/bin.js",

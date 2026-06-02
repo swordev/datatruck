@@ -33,7 +33,9 @@ RUN set -x \
     && chmod +x $BIN_PATH $SHORTBIN_PATH $ENTRYPOINT_PATH \
     && mkdir -p "/usr/local/lib/node_modules/@datatruck" \
     && ln -s "/var/lib/datatruck/packages/cli/lib" "/usr/local/lib/node_modules/@datatruck/cli" \
-    && CI=true pnpm prune --production \
+    && rm -rf ./node_modules \
+    && rm -rf ./packages/*/node_modules \
+    && CI=true pnpm install --prod \
     && npm uninstall -g pnpm
 
 ENTRYPOINT ["docker-entrypoint.sh"]
