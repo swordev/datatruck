@@ -1,14 +1,8 @@
 {
-  "files": [],
+  "include": [],
   "references": [
-    {
-      "path": "./packages/cli/tsconfig.build.json"
-    },
-    {
-      "path": "./packages/datatruck/tsconfig.json"
-    },
-    {
-      "path": "./packages/restic/tsconfig.build.json"
-    }
+    { "path": "./packages/cli/tsconfig.build.json" },
+    { "path": "./packages/datatruck/tsconfig.build.json" },
+    { "path": "./packages/restic/tsconfig.build.json" }
   ]
 }

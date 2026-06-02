@@ -1,9 +1,11 @@
 {
+  "extends": ["@tsconfig/node20"],
+  "include": ["src"],
   "compilerOptions": {
-    "outDir": "lib",
+    "composite": true,
     "rootDir": "src",
-    "composite": true
-  },
-  "extends": "./../../tsconfig.json",
-  "include": ["src"]
+    "outDir": "lib",
+    "incremental": true,
+    "resolveJsonModule": true
+  }
 }

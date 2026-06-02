@@ -2,7 +2,7 @@
 import { writeFileSync } from "fs";
 import { programFromConfig, generateSchema } from "typescript-json-schema";
 
-const program = programFromConfig("./packages/restic/tsconfig.build.json");
+const program = programFromConfig("./packages/restic/tsconfig.json");
 const schema = generateSchema(program, "Config", {
   noExtraProps: true,
   ref: true,

@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "incremental": true,
-    "resolveJsonModule": true
-  },
-  "exclude": ["**/temp/", "**/.*/", "**/lib", "**/node_modules"],
-  "extends": "@tsconfig/node20"
-}

@@ -6,6 +6,6 @@ backup*
 **/coverage
 **/lib
 **/node_modules
-**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
 **/datatruck*.ts
 **/datatruck*.json

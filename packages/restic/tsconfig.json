@@ -1,16 +1,5 @@
 {
-  "compilerOptions": {
-    "outDir": "lib",
-    "rootDir": "src",
-    "paths": {
-      "@datatruck/cli/*": ["./../cli/src/*"]
-    }
-  },
-  "extends": "./../../tsconfig.json",
-  "include": ["src"],
-  "references": [
-    {
-      "path": "./../cli/tsconfig.build.json"
-    }
-  ]
+  "extends": ["./tsconfig.build.json"],
+  "include": ["src", "test"],
+  "compilerOptions": { "rootDir": "." }
 }
