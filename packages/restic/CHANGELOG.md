@@ -1,5 +1,14 @@
 # @datatruck/restic
 
+## 0.0.8
+
+### Patch Changes
+
+- [`4cf0411`](https://github.com/swordev/datatruck/commit/4cf04118cc0a67e21b0a1578bb34ffef2777dde3) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix docker image.
+
+- Updated dependencies [[`4cf0411`](https://github.com/swordev/datatruck/commit/4cf04118cc0a67e21b0a1578bb34ffef2777dde3)]:
+  - @datatruck/cli@0.41.9
+
 ## 0.0.7
 
 ### Patch Changes
