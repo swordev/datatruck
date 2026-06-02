@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.10
+
+### Patch Changes
+
+- [`04d5668`](https://github.com/swordev/datatruck/commit/04d5668d71911afe6b01bb148c9aad1d9666de68) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix run jobs
+
 ## 0.41.9
 
 ### Patch Changes
