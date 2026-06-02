@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.8
+
+### Patch Changes
+
+- [`f11d8c1`](https://github.com/swordev/datatruck/commit/f11d8c14612d5288c2fa8d4fb1b3ee169c3a817d) Thanks [@juanrgm](https://github.com/juanrgm)! - Publish docker image
+
 ## 0.41.7
 
 ### Patch Changes
