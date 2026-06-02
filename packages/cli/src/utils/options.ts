@@ -126,7 +126,7 @@ export function stringifyOptions(options: OptionsConfig, object: any) {
       prepend.push(value);
     } else {
       const flag = option.shortFlag
-        ? `-${option.shortFlag}`
+        ? `${"-".repeat(option.shortFlag.length > 1 ? 2 : 1)}${option.shortFlag}`
         : `--${option.flag ?? name}`;
 
       if (option.value === "boolean") {
