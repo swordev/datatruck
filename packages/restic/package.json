@@ -40,6 +40,7 @@
     "@datatruck/cli": "workspace:*",
     "ajv": "^8.17.1",
     "commander": "^14.0.2",
+    "cron-schedule": "^6.0.0",
     "undici": "^7.18.2"
   },
   "engine": {

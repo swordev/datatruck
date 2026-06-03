@@ -1,9 +1,11 @@
 import { Backup, BackupOptions } from "./actions/backup.js";
 import { Copy, CopyOptions } from "./actions/copy.js";
 import { Create, CreateOptions } from "./actions/create.js";
+import { Exec } from "./actions/exec.js";
 import { Init, InitOptions } from "./actions/init.js";
 import { Prune, PruneOptions } from "./actions/prune.js";
 import { Run } from "./actions/run.js";
+import { StartCron } from "./actions/start-cron.js";
 import { Config, GlobalConfig, parseConfigFile } from "./config.js";
 import { parseStringList } from "@datatruck/cli/utils/string.js";
 import { Command } from "commander";
@@ -29,8 +31,21 @@ export function createBin(inConfig?: Config): Command {
     program.option(
       "-c, --config <path>",
       "Path to config file",
-      "datatruck.restic.json",
+      process.env.DATATRUCK_RESTIC_CONFIG || "datatruck.restic.json",
     );
+  program
+    .command("start-cron")
+    .alias("start")
+    .description("Start cron process to run scheduled jobs")
+    .action(async () => {
+      const { config, globalOptions } = await load();
+      if (!globalOptions.config) throw new Error("Config path is required");
+      const start = new StartCron(config, {
+        config: globalOptions.config,
+        verbose: globalOptions.verbose,
+      });
+      await start.run({});
+    });
 
   program
     .command("create")
@@ -53,7 +68,20 @@ export function createBin(inConfig?: Config): Command {
 
   program
     .command("run")
-    .description("Run arbitrary restic command")
+    .description("Run job")
+    .argument("[args...]", "Job names")
+    .allowUnknownOption()
+    .allowExcessArguments()
+    .action(async (jobNames: string[]) => {
+      const { config, globalOptions } = await load();
+      const run = new Run(config, globalOptions);
+      await run.run({ jobNames });
+    });
+
+  program
+    .command("exec")
+    .alias("e")
+    .description("Exec arbitrary restic command")
     .option("-r, --repository <name>", "Repository name")
     .argument("[args...]", "Restic arguments")
     .allowUnknownOption()
@@ -63,7 +91,7 @@ export function createBin(inConfig?: Config): Command {
       if (!options.repository && config.repositories.length !== 1)
         throw new Error("Repository name is required");
       const repository = options.repository ?? config.repositories[0].name;
-      const run = new Run(config, globalOptions);
+      const run = new Exec(config, globalOptions);
       await run.run({ repository, args });
     });
 
@@ -137,7 +165,7 @@ export function createBin(inConfig?: Config): Command {
   program.parse = function (args, options) {
     if (!args) args = process.argv;
     const [node, script, command, ...rest] = args;
-    if (command === "run") {
+    if (command === "exec") {
       const repositoryIndex = rest.findIndex(
         (v) => v === "-r" || v === "--repository",
       );

@@ -15,9 +15,14 @@ RUN apk add --no-cache \
     pigz
 
 ENV NODE_PATH=/usr/local/lib/node_modules
+
 ARG BIN_PATH=/usr/local/bin/datatruck
 ARG SHORTBIN_PATH=/usr/local/bin/dtt
 ARG ENTRYPOINT_PATH=/usr/local/bin/docker-entrypoint.sh
+
+ARG BIN_RESTIC_PATH=/usr/local/bin/datatruck-restic
+ARG SHORTBIN_RESTIC_PATH=/usr/local/bin/dtt-restic
+ARG ENTRYPOINT_RESTIC_PATH=/usr/local/bin/docker-restic-entrypoint.sh
 
 WORKDIR /var/lib/datatruck/
 COPY . /var/lib/datatruck
@@ -26,6 +31,7 @@ RUN set -x \
     && npm install -g pnpm@10 \
     && pnpm install \
     && pnpm build \
+    # datatruck
     && echo "#!/bin/sh" > $BIN_PATH \
     && echo "node /var/lib/datatruck/packages/cli/lib/bin.js \"\$@\"" >> $BIN_PATH \
     && cp "/var/lib/datatruck/docker/docker-entrypoint.sh" $ENTRYPOINT_PATH \
@@ -33,6 +39,15 @@ RUN set -x \
     && chmod +x $BIN_PATH $SHORTBIN_PATH $ENTRYPOINT_PATH \
     && mkdir -p "/usr/local/lib/node_modules/@datatruck" \
     && ln -s "/var/lib/datatruck/packages/cli/lib" "/usr/local/lib/node_modules/@datatruck/cli" \
+    # datatruck-restic
+    && echo "#!/bin/sh" > $BIN_RESTIC_PATH \
+    && echo "node /var/lib/datatruck/packages/restic/lib/bin.js \"\$@\"" >> $BIN_RESTIC_PATH \
+    && cp "/var/lib/datatruck/docker/docker-restic-entrypoint.sh" $ENTRYPOINT_RESTIC_PATH \
+    && cp $BIN_RESTIC_PATH $SHORTBIN_RESTIC_PATH \
+    && chmod +x $BIN_RESTIC_PATH $SHORTBIN_RESTIC_PATH $ENTRYPOINT_RESTIC_PATH \
+    && mkdir -p "/usr/local/lib/node_modules/@datatruck" \
+    && ln -s "/var/lib/datatruck/packages/restic/lib" "/usr/local/lib/node_modules/@datatruck/restic" \
+    # clean
     && rm -rf ./node_modules \
     && rm -rf ./packages/*/node_modules \
     && CI=true pnpm install --prod \

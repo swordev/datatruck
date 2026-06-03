@@ -1,3 +1,7 @@
+import { BackupOptions } from "./actions/backup.js";
+import { CopyOptions } from "./actions/copy.js";
+import { ExecOptions } from "./actions/exec.js";
+import { CronScheduleObject } from "./utils/cron.js";
 import { parseJSONFile } from "./utils/fs.js";
 import { MySQLDumpOptions } from "./utils/mysql.js";
 import { Restic } from "@datatruck/cli/utils/restic.js";
@@ -16,6 +20,39 @@ export type Config = {
   minFreeSpace?: string;
   verbose?: boolean;
   prunePolicy?: PrunePolicy;
+  packages: {
+    name: string;
+    path: string;
+    exclude?: string[];
+    prunePolicy?: PrunePolicy;
+  }[];
+  repositories: {
+    name: string;
+    password: string;
+    uri: string;
+    prunePolicy?: PrunePolicy;
+  }[];
+  jobs?: {
+    [name: string]:
+      | {
+          action: "backup";
+          options: BackupOptions;
+          group?: string;
+          schedule?: CronScheduleObject | string;
+        }
+      | {
+          action: "copy";
+          options: CopyOptions;
+          group?: string;
+          schedule?: CronScheduleObject | string;
+        }
+      | {
+          action: "exec";
+          options: ExecOptions;
+          group?: string;
+          schedule?: CronScheduleObject | string;
+        };
+  };
   tasks?: {
     type: "mysql-dump";
     packages: string[];
@@ -32,18 +69,6 @@ export type Config = {
       concurrency?: number;
       connection: MySQLDumpOptions["connection"];
     };
-  }[];
-  packages: {
-    name: string;
-    path: string;
-    exclude?: string[];
-    prunePolicy?: PrunePolicy;
-  }[];
-  repositories: {
-    name: string;
-    password: string;
-    uri: string;
-    prunePolicy?: PrunePolicy;
   }[];
 };
 

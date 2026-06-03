@@ -727,7 +727,7 @@ export async function checkFreeDiskSpace(
   if (stat.free < size)
     throw new Error(
       `Free disk space is less than ${humanSize}: ${formatBytes(
-        stat.free,
+        stat.total - stat.free,
       )}/${formatBytes(stat.total)}`,
     );
 }

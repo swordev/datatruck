@@ -38,8 +38,8 @@ export class Ntfy {
     return `${pad}- ${name}: ${styleText("gray", value!.toString())}`;
   }
 
-  private formatMessageObject(object: MessageObject, level = 0) {
-    return Object.entries(object)
+  private formatMessageObject(object: MessageObject | undefined, level = 0) {
+    return Object.entries(object || {})
       .filter(([, value]) => value !== undefined)
       .map(([name, value]) => {
         if (Array.isArray(value)) {
@@ -58,7 +58,7 @@ export class Ntfy {
 
   async send(
     inTitle: string,
-    message: MessageObject,
+    message: MessageObject = {},
     options: { error?: Error | boolean; logId?: string } = {},
   ) {
     const title = this.formatTitle(inTitle);
