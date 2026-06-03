@@ -15,6 +15,18 @@ export type ResticRepositoryUri = {
   backend: "local" | "rest" | "sftp" | "s3" | "azure" | "gs" | "rclone";
 } & Omit<Uri, "password">;
 
+export type ResticSnapshot = {
+  time: string;
+  tree: string;
+  paths: string[];
+  tags?: string[];
+  hostname: string;
+  username: string;
+  excludes: string[];
+  id: string;
+  short_id: string;
+};
+
 export type ResticBackupStream =
   | {
       message_type: "status";
@@ -219,19 +231,7 @@ export class Restic {
     json?: boolean;
     group?: ("path" | "tags" | "host")[];
     args?: string[];
-  }): Promise<
-    {
-      time: string;
-      tree: string;
-      paths: string[];
-      tags?: string[];
-      hostname: string;
-      username: string;
-      excludes: string[];
-      id: string;
-      short_id: string;
-    }[]
-  > {
+  }): Promise<ResticSnapshot[]> {
     const json = options.json ?? true;
     return await this.json([
       "snapshots",

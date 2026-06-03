@@ -11,7 +11,7 @@ import {
 } from "../utils/fs";
 import { progressPercent } from "../utils/math";
 import { Progress } from "../utils/progress";
-import { ResticRepositoryUri, Restic } from "../utils/restic";
+import { ResticRepositoryUri, Restic, ResticSnapshot } from "../utils/restic";
 import { formatUri } from "../utils/string";
 import { mkTmpDir } from "../utils/temp";
 import {
@@ -26,6 +26,7 @@ import {
   RepoPruneData,
   RepoCopyData,
 } from "./RepositoryAbstract";
+import dayjs from "dayjs";
 import FastGlob from "fast-glob";
 import { writeFile } from "fs/promises";
 import { join, resolve } from "path";
@@ -81,17 +82,24 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
   static parseSnapshotTag(tag: string) {
     for (const metaName in SnapshotTagEnum) {
       const name = (SnapshotTagEnum as any)[metaName];
-      const prefix = `${ResticRepository.refPrefix}${name}:`;
-      if (tag.startsWith(prefix))
-        return {
-          name: name as SnapshotTagEnum,
-          value: tag.slice(prefix.length),
-        };
+      const tagNames = [name];
+      if (name === SnapshotTagEnum.PACKAGE) tagNames.push("pkg");
+      for (const tagName of tagNames) {
+        const prefix = `${ResticRepository.refPrefix}${tagName}:`;
+        if (tag.startsWith(prefix))
+          return {
+            name: name as SnapshotTagEnum,
+            value: tag.slice(prefix.length),
+          };
+      }
     }
     return null;
   }
 
-  static parseSnapshotTags(tags: string[]): SnapshotTagObject {
+  static parseSnapshotTags(
+    tags: string[],
+    snapshot: ResticSnapshot,
+  ): SnapshotTagObject {
     const result: SnapshotTagObject = {
       tags: [],
     } as any;
@@ -103,7 +111,13 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
         result.tags.push(tag);
       }
     }
-    return result as typeof result;
+
+    result[SnapshotTagEnum.SHORT_ID] ??= result[SnapshotTagEnum.ID].slice(0, 8);
+    result[SnapshotTagEnum.HOSTNAME] ??= snapshot.hostname;
+    result[SnapshotTagEnum.DATE] ??= dayjs(snapshot.time).format(
+      "YYYY-MM-DDTHH:mm:ss.SSS[Z]",
+    );
+    return result;
   }
 
   override getSource() {
@@ -144,7 +158,7 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     const filterTask = createTaskFilter(data.options.packageTaskNames);
 
     return result.reduce((items, item) => {
-      const tag = ResticRepository.parseSnapshotTags(item.tags ?? []);
+      const tag = ResticRepository.parseSnapshotTags(item.tags ?? [], item);
       if (!tag.id) return items;
       if (!filterPkg(tag.package)) return items;
       if (!filterTask(tag.task)) return items;
