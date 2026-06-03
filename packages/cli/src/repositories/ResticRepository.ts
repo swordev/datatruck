@@ -49,14 +49,18 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     RESTIC_REPOSITORY: string;
   };
 
+  async createEnv(config: ResticRepositoryConfig) {
+    return {
+      ...(typeof config.password === "string"
+        ? { RESTIC_PASSWORD: config.password }
+        : { RESTIC_PASSWORD_FILE: resolve(config.password.path) }),
+      RESTIC_REPOSITORY: await Restic.formatRepository(config.repository),
+    };
+  }
+
   async buildEnv() {
     if (this.env) return this.env;
-    return (this.env = {
-      ...(typeof this.config.password === "string"
-        ? { RESTIC_PASSWORD: this.config.password }
-        : { RESTIC_PASSWORD_FILE: resolve(this.config.password.path) }),
-      RESTIC_REPOSITORY: await Restic.formatRepository(this.config.repository),
-    });
+    return (this.env = await this.createEnv(this.config));
   }
 
   static createSnapshotTag(name: SnapshotTagEnum, value: string) {
@@ -392,8 +396,6 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
   }
 
   override async copy(data: RepoCopyData<ResticRepositoryConfig>) {
-    const config = data.mirrorRepositoryConfig;
-
     const [snapshot] = await this.fetchSnapshots({
       options: {
         ids: [data.snapshot.id],
@@ -405,14 +407,14 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     if (!snapshot) throw new AppError(`Snapshot not found`);
 
     const restic = new Restic({
-      env: await this.buildEnv(),
+      env: await this.createEnv(data.mirrorRepositoryConfig),
       log: data.options.verbose,
     });
     let bytes = 0;
     await restic.copy({
       ids: [snapshot.originalId],
-      fromRepo: await Restic.formatRepository(config.repository),
-      fromRepoPassword: config.password,
+      fromRepo: await Restic.formatRepository(this.config.repository),
+      fromRepoPassword: this.config.password,
       onStream(data) {
         if (data.message_type === "status") {
           bytes = data.total_bytes;
