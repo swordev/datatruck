@@ -6,9 +6,7 @@ describe("formatBytes", () => {
     expect(formatBytes(1)).toBe("1B");
     expect(formatBytes(1024)).toBe("1.0KB");
     expect(formatBytes(1024 * 1024)).toBe("1.0MB");
-  });
-  it("throws error", () => {
-    expect(() => formatBytes(-1)).toThrowError();
+    expect(formatBytes(-1)).toBe("-1B");
   });
 });
 

@@ -7,8 +7,8 @@ const sizeRegex = new RegExp(
 export function formatBytes(inBytes: number, sign = false) {
   let u = 0;
   let n = Math.abs(inBytes);
-  if (n < 0n) throw new Error(`Invalid bytes: ${n.toString()}`);
-  while (n >= 1024n && ++u) n = n / 1024;
+  if (n < 0) throw new Error(`Invalid bytes: ${n.toString()}`);
+  while (n >= 1024 && ++u) n = n / 1024;
   const result = Number(n).toFixed(n < 10 && u > 0 ? 1 : 0) + units[u];
   return inBytes < 0 ? `-${result}` : `${sign ? "+" : ""}${result}`;
 }
