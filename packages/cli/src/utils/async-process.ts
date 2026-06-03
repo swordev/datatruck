@@ -193,11 +193,10 @@ export class AsyncProcess {
     this.controller = $controller || new AbortController();
 
     if (this.log?.exec)
-      logProcess(
-        command,
-        argv || [],
-        this.log.exec === true ? {} : this.log.exec,
-      );
+      logProcess(command, argv || [], {
+        env: options.env,
+        ...this.log,
+      });
 
     if (typeof options.cwd === "string") ensureDir(options.cwd);
 
