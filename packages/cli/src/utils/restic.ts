@@ -354,15 +354,18 @@ export class Restic {
         env: {},
       },
     );
-    if (options.onStream) {
-      await copy.stdout.parseLines((line) => {
-        if (line.startsWith("{") && line.endsWith("}")) {
-          options.onStream?.(JSON.parse(line));
-        }
-      });
-    } else {
-      await copy.waitForClose();
-    }
+    let snapshotError: string | undefined;
+    await copy.stdout.parseLines((line) => {
+      if (line.startsWith("{") && line.endsWith("}")) {
+        options.onStream?.(JSON.parse(line));
+        // https://github.com/restic/restic/issues/5071
+      } else if (line.includes("failed to load snapshot")) {
+        snapshotError = line;
+      }
+    });
+
+    if (typeof snapshotError === "string")
+      throw new Error(`Failed to load snapshot: ${snapshotError}`);
   }
 
   async restore(options: {
