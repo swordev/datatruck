@@ -1,5 +1,11 @@
 # @datatruck/cli
 
+## 0.41.12
+
+### Patch Changes
+
+- [`3983e19`](https://github.com/swordev/datatruck/commit/3983e1931fd66532d72fb1a99e0cd72e3f980aee) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix compatibility
+
 ## 0.41.11
 
 ### Patch Changes
