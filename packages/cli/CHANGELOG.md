@@ -1,5 +1,13 @@
 # @datatruck/cli
 
+## 0.41.13
+
+### Patch Changes
+
+- [`9b6a244`](https://github.com/swordev/datatruck/commit/9b6a24420727f5808c2463172c87b279755127a1) Thanks [@juanrgm](https://github.com/juanrgm)! - Fix copy command
+
+- [`aef2799`](https://github.com/swordev/datatruck/commit/aef27994520d7e88d5036ddb40d2640e11ce2b11) Thanks [@juanrgm](https://github.com/juanrgm)! - Capture copy error.
+
 ## 0.41.12
 
 ### Patch Changes
