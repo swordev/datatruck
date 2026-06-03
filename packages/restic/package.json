@@ -1,6 +1,6 @@
 {
   "name": "@datatruck/restic",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Tool for creating and managing backups",
   "homepage": "https://github.com/swordev/datatruck#readme",
   "bugs": {

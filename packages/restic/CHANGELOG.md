@@ -1,5 +1,12 @@
 # @datatruck/restic
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`3983e19`](https://github.com/swordev/datatruck/commit/3983e1931fd66532d72fb1a99e0cd72e3f980aee)]:
+  - @datatruck/cli@0.41.12
+
 ## 0.0.10
 
 ### Patch Changes
