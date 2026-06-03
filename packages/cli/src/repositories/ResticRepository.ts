@@ -146,11 +146,16 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     });
     const result = await restic.snapshots({
       tags: [
-        ...(data.options.ids?.map((id) =>
-          ResticRepository.createSnapshotTag(
-            id.length === 8 ? SnapshotTagEnum.SHORT_ID : SnapshotTagEnum.ID,
-            id,
-          ),
+        ...(data.options.ids?.flatMap((id) =>
+          id.length === 8
+            ? [
+                ResticRepository.createSnapshotTag(SnapshotTagEnum.ID, id),
+                ResticRepository.createSnapshotTag(
+                  SnapshotTagEnum.SHORT_ID,
+                  id,
+                ),
+              ]
+            : ResticRepository.createSnapshotTag(SnapshotTagEnum.ID, id),
         ) ?? []),
       ],
     });
@@ -283,7 +288,10 @@ export class ResticRepository extends RepositoryAbstract<ResticRepositoryConfig>
     });
 
     const [lastSnapshot] = await restic.snapshots({
-      tags: [packageTag],
+      tags: [
+        packageTag,
+        `${ResticRepository.refPrefix}pkg:${data.package.name}`,
+      ],
       latest: 1,
     });
 
